@@ -1,8 +1,8 @@
 import { compile } from './frontend';
 import { Harness, setup } from './setup';
-import Debug from 'debug';
+import { Debugger } from './debug';
 
-const debug = Debug('sar');
+const debug = Debugger(__filename);
 
 interface Parameters {
     host: string;

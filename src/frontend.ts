@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
 import { AbiItem } from 'web3-utils';
-import Debug from 'debug';
+import { Debugger } from './debug';
 
-const debug = Debug('sar:frontend');
+const debug = Debugger(__filename);
 const solc = require('solc');
 
 export interface Metadata {

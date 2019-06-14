@@ -1,5 +1,5 @@
 {
-  "name": "smart-contract-explorer",
+  "name": "sc-explore",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",

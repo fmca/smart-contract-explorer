@@ -1,9 +1,10 @@
 import Web3 from 'web3';
+
 import { Contract } from 'web3-eth-contract';
 import { Metadata } from './frontend';
-import Debug from 'debug';
+import { Debugger } from './debug';
 
-const debug = Debug('sar:setup');
+const debug = Debugger(__filename);
 
 export interface Harness {
     address: string;
