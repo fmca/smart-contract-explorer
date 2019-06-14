@@ -5,14 +5,13 @@ import { Debugger } from './debug';
 const debug = Debugger(__filename);
 
 interface Parameters {
-    host: string;
     filename: string;
 }
 
 export async function run(parameters: Parameters) {
-    const { filename, host } = parameters;
+    const { filename } = parameters;
     const metadata = await compile(filename);
-    const harness = await setup(host, metadata);
+    const harness = await setup(metadata);
     await doSomething(harness, 'displayMessage');
 }
 

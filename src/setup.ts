@@ -5,14 +5,15 @@ import { Metadata } from './frontend';
 import { Debugger } from './debug';
 
 const debug = Debugger(__filename);
+const ganache = require("ganache-cli");
 
 export interface Harness {
     address: string;
     creator: Creator;
 }
 
-export async function setup(host: string, metadata: Metadata): Promise<Harness> {
-    const provider = new Web3.providers.HttpProvider(host);
+export async function setup(metadata: Metadata): Promise<Harness> {
+    const provider = ganache.provider();
     const web3 = new Web3(provider);
     const accounts = await web3.eth.getAccounts();
     const address = accounts[1];
