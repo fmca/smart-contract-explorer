@@ -6,5 +6,6 @@ Exploring behaviors of Solidity smart contracts.
 
 ```bash
 $ npm link
+$ ganache-cli &
 $ DEBUG=* sce resources/HelloWorld.sol
 ```
