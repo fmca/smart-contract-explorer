@@ -29,7 +29,13 @@ async function doSomething(harness: Harness, action: string, obs: string) {
             const tx = instance.methods[action];
 
             const gas = await tx.estimateGas() + 1;
-            await tx.send({ from: address, gas });
+            /* await */ tx.send({ from: address, gas });
+            /* await */ tx.send({ from: address, gas });
+            debug(`actions`);
+
+            // awaiting a dummy call seems to ensure that pending transactions
+            // have completed
+            await instance.methods[obs].call();
 
             const result = await instance.methods[obs].call();
             debug(`result: %o`, result);

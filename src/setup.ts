@@ -36,6 +36,18 @@ export async function setup(metadata: Metadata): Promise<Harness> {
             const gas = await tx.estimateGas() + 1;
             debug(`gas: %o`, gas);
 
+            // Many instances can be created quickly…
+            //
+            // tx.send({ from, gas });
+            // tx.send({ from, gas });
+            // tx.send({ from, gas });
+            // tx.send({ from, gas });
+            // tx.send({ from, gas });
+            // tx.send({ from, gas });
+            // debug(`ignored instances`);
+            //
+            // …but waiting for the result takes time.
+
             const instance = await tx.send({ from, gas });
             debug(`instance: %o`, instance.address);
 
