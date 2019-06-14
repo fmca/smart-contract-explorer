@@ -28,6 +28,7 @@ export async function setup(metadata: Metadata): Promise<Harness> {
             const { abi, bytecode: data } = metadata;
 
             const contract = new web3.eth.Contract(abi);
+            (contract as any).transactionConfirmationBlocks = 1;
 
             const tx = contract.deploy({ data });
             debug(`tx: %o`, tx);
