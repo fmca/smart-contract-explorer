@@ -8,17 +8,19 @@ const debug = Debugger(__filename);
 const ganache = require("ganache-cli");
 
 export interface Harness {
-    address: string;
+    accounts: string[];
     creator: Creator;
 }
 
 export async function setup(metadata: Metadata): Promise<Harness> {
     const provider = ganache.provider();
     const web3 = new Web3(provider);
+
     const accounts = await web3.eth.getAccounts();
-    const address = accounts[1];
+    debug(`accounts: %o`, accounts);
+
     const creator = getCreator(web3, metadata);
-    return { address, creator };
+    return { accounts, creator };
 }
 
 interface Creator {

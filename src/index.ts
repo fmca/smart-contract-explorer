@@ -16,7 +16,7 @@ export async function run(parameters: Parameters) {
 }
 
 async function doSomething(harness: Harness, action: string) {
-    const { address, creator } = harness;
+    const { accounts: [ , address], creator } = harness;
     const instance = await creator.create(address);
     const result = await instance.methods[action].call();
     debug(`result: %o`, result);
