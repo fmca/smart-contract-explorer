@@ -34,5 +34,7 @@ export async function compile(filename: string): Promise<Metadata> {
         throw Error('Expected single contract.');
 
     const { abi, evm: { bytecode: { object: bytecode } } } = contract as any;
+    debug(`abi: %O`, abi);
+
     return { abi, bytecode };
 }
