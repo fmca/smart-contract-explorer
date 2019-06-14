@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "bin": {
-    "sc-explore": "dist/cli.js"
+    "sc-explore": "dist/cli.js",
+    "sc-product": "dist/cli-product-gen.js"
   },
   "scripts": {
     "build": "tsc",
