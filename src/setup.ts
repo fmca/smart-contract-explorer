@@ -12,6 +12,10 @@ export interface Harness {
     creator: Creator;
 }
 
+interface Creator {
+    create(address: string): Promise<Contract>;
+}
+
 export async function setup(metadata: Metadata): Promise<Harness> {
     const provider = ganache.provider();
     const web3 = new Web3(provider);
@@ -19,21 +23,11 @@ export async function setup(metadata: Metadata): Promise<Harness> {
     const accounts = await web3.eth.getAccounts();
     debug(`accounts: %o`, accounts);
 
-    const creator = getCreator(web3, metadata);
-    return { accounts, creator };
-}
-
-interface Creator {
-    create(address: string): Promise<Contract>;
-}
-
-function getCreator(web3: Web3, metadata: Metadata): Creator {
-    return {
+    const creator = {
         create: async function(from: string): Promise<Contract> {
             const { abi, bytecode: data } = metadata;
 
             const contract = new web3.eth.Contract(abi);
-            (contract as any).transactionConfirmationBlocks = 1;
 
             const tx = contract.deploy({ data });
             debug(`tx: %o`, tx);
@@ -47,4 +41,6 @@ function getCreator(web3: Web3, metadata: Metadata): Creator {
             return instance;
         }
     };
+
+    return { accounts, creator };
 }
