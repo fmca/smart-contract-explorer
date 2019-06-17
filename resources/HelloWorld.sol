@@ -4,11 +4,15 @@ contract HelloWorld {
 
 	int counter;
 
-	function increment() public {
+	function inc() public {
 		counter ++;
 	}
 
-	function getCount() public view returns(int) {
+	function dec() public {
+		counter ++;
+	}
+
+	function get() public view returns(int) {
 		return counter;
 	}
 }

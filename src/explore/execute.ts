@@ -1,6 +1,6 @@
 import { Contract } from 'web3-eth-contract';
 
-import { State } from './states';
+import { State, Trace, Operation, Result } from './states';
 import { Invocation } from './invocations';
 import { ContractCreator } from './creator';
 
@@ -16,16 +16,17 @@ export class Executer {
     async execute(state: State, invocation: Invocation): Promise<State> {
         const contract = await this.creator.createInstance();
 
-        for (const { invocation } of state.trace.actions) {
+        for (const { invocation } of state.trace.operations) {
             invoke(contract, invocation, this.address);
         }
 
         await invoke(contract, invocation, this.address);
 
-        const result = { outputs: [] };
-        const actions = [...state.trace.actions, { invocation, result }];
-        const trace = { actions };
-        return { trace };
+        const result = new Result([]);
+        const operation = new Operation(invocation, result);
+        const actions = [...state.trace.operations, operation];
+        const trace = new Trace(actions);
+        return new State(trace);
     }
 }
 

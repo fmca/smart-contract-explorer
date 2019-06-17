@@ -15,7 +15,7 @@ export class Explorer {
     async * explore(abi: Iterable<AbiItem>, limiter: Limiter): AsyncIterable<State> {
         const invGen = new InvocationGenerator(abi);
 
-        const initialState: State = { trace: emptyTrace };
+        const initialState: State = new State(emptyTrace);
         const workList = [ initialState ];
 
         while (true) {

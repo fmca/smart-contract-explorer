@@ -1,25 +1,49 @@
 import { Value } from './values';
 import { Invocation } from './invocations';
 
-type Result = {
-    outputs: Value[];
+export class Result {
+    constructor(public outputs: Value[]) {}
+
+    toString() {
+        switch (this.outputs.length) {
+        case 0:
+            return `void`;
+        case 1:
+            return this.outputs[0].toString();
+        default:
+            return `(${this.outputs.map(toString).join(', ')})`
+        }
+    }
 };
 
-type Operation = {
-    invocation: Invocation;
-    result: Result;
-};
+export class Operation {
+    constructor(public invocation: Invocation, public result: Result) {}
 
-export type Trace = {
-    actions: Operation[];
-};
+    toString() {
+        return `${this.invocation} => ${this.result}`;
+    }
+}
 
-export const emptyTrace: Trace = { actions: [] };
+export class Trace {
+    constructor(public operations: Operation[]) {}
+
+    toString() {
+        return this.operations.length > 0
+            ? this.operations.join("; ")
+            : `@empty`;
+    }
+}
+
+export const emptyTrace: Trace = new Trace([]);
 
 type Observation = {
 
 };
 
-export type State = {
-    trace: Trace;
-};
+export class State {
+    constructor(public trace: Trace) {}
+
+    toString() {
+        return `[[ ${this.trace} ]]`;
+    }
+}
