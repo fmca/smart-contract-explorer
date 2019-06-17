@@ -2,16 +2,16 @@ import { Value } from './values';
 import { Invocation } from './invocations';
 
 export class Result {
-    constructor(public outputs: Value[]) {}
+    constructor(public values: Value[]) {}
 
     toString() {
-        switch (this.outputs.length) {
+        switch (this.values.length) {
         case 0:
             return `void`;
         case 1:
-            return this.outputs[0].toString();
+            return this.values[0].toString();
         default:
-            return `(${this.outputs.map(toString).join(', ')})`
+            return `(${this.values.join(', ')})`
         }
     }
 };
@@ -20,7 +20,9 @@ export class Operation {
     constructor(public invocation: Invocation, public result: Result) {}
 
     toString() {
-        return `${this.invocation} => ${this.result}`;
+        return this.result.values.length < 1
+            ? `${this.invocation}`
+            : `${this.invocation} => ${this.result}`;
     }
 }
 
@@ -32,18 +34,28 @@ export class Trace {
             ? this.operations.join("; ")
             : `@empty`;
     }
+
+    static empty(): Trace {
+        return new Trace([]);
+    }
 }
 
-export const emptyTrace: Trace = new Trace([]);
-
-type Observation = {
-
-};
-
-export class State {
-    constructor(public trace: Trace) {}
+export class Observation {
+    constructor(public operations: Operation[]) {}
 
     toString() {
-        return `[[ ${this.trace} ]]`;
+        return this.operations.join(', ');
+    }
+}
+
+export class State {
+    constructor(public trace: Trace, public observation: Observation) {}
+
+    toString() {
+        return `[[ ${this.trace} : ${this.observation} ]]`;
+    }
+
+    static initial(observation: Observation): State {
+        return new State(Trace.empty(), observation);
     }
 }

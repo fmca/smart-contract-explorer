@@ -1,7 +1,6 @@
 import { AbiItem } from 'web3-utils';
 
 import { Value, ValueGenerator } from './values';
-import { stat } from 'fs-extra';
 
 export class Invocation {
     constructor(public method: AbiItem, public inputs: Value[]) {}
@@ -20,9 +19,9 @@ export class InvocationGenerator {
         this.valueGenerator = new ValueGenerator();
     }
 
-    * invocations(): Iterable<Invocation> {
+    * invocations(accept: (method: AbiItem) => boolean): Iterable<Invocation> {
         for (const method of this.abi) {
-            if (!isMutator(method))
+            if (!accept(method))
                 continue;
 
             const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
@@ -31,6 +30,14 @@ export class InvocationGenerator {
                 yield invocation;
             }
         }
+    }
+
+    mutators(): Iterable<Invocation> {
+        return this.invocations(isMutator);
+    }
+
+    observers(): Iterable<Invocation> {
+        return this.invocations(m => !isMutator(m));
     }
 }
 

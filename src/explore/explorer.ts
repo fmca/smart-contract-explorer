@@ -1,6 +1,6 @@
 import { AbiItem } from 'web3-utils';
 
-import { State, emptyTrace } from './states';
+import { State } from './states';
 import { Executer } from './execute';
 import { Limiter } from './limiter';
 import { InvocationGenerator } from './invocations';
@@ -14,8 +14,9 @@ export class Explorer {
 
     async * explore(abi: Iterable<AbiItem>, limiter: Limiter): AsyncIterable<State> {
         const invGen = new InvocationGenerator(abi);
-
-        const initialState: State = new State(emptyTrace);
+        const observers = [...invGen.observers()];
+        const initialObservation = await this.executer.observe(observers);
+        const initialState: State = State.initial(initialObservation);
         const workList = [ initialState ];
 
         while (true) {
@@ -29,8 +30,8 @@ export class Explorer {
 
             yield state;
 
-            for (const invocation of invGen.invocations()) {
-                const nextState = await this.executer.execute(state, invocation);
+            for (const invocation of invGen.mutators()) {
+                const nextState = await this.executer.execute(state, invocation, observers);
 
                 workList.push(nextState);
             }
