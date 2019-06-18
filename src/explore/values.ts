@@ -10,10 +10,23 @@ export function valuesOf(x: any): Value[] {
 
 export class ValueGenerator {
     * valuesOfType(type: string): Iterable<Value> {
-        yield 0;
+
+        if (type.match(/int\d*/)) {
+            for (const v of [0,1,2])
+                yield v;
+            return;
+        }
+
+        throw Error(`unexpected type: ${type}`);
     }
 
     * valuesOfTypes(types: string[]): Iterable<Value[]> {
-        yield types.map(_ => 0);
+        if (types.length !== 1)
+            throw Error(`unexpected arity: ${types.length}`);
+
+        const [ type ] = types;
+
+        for (const value of this.valuesOfType(type))
+            yield [value];
     }
 }

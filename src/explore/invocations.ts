@@ -6,7 +6,7 @@ export class Invocation {
     constructor(public method: AbiItem, public inputs: Value[]) {}
 
     toString() {
-        return `${this.method.name}(${this.inputs.map(toString).join(', ')})`;
+        return `${this.method.name}(${this.inputs.join(', ')})`;
     }
 }
 

@@ -2,17 +2,17 @@ pragma solidity ^0.5.9;
 
 contract HelloWorld {
 
-	int counter;
+	mapping (int => int) counters;
 
-	function inc() public {
-		counter ++;
+	function inc(int i) public {
+		counters[i] ++;
 	}
 
-	function dec() public {
-		counter ++;
+	function dec(int i) public {
+		counters[i] --;
 	}
 
-	function get() public view returns(int) {
-		return counter;
+	function get(int i) public view returns(int) {
+		return counters[i];
 	}
 }

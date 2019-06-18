@@ -17,6 +17,13 @@ export class Executer {
         this.address = address;
     }
 
+    async initial(observers: Invocation[]): Promise<State> {
+        const contract = await this.creator.createInstance();
+        const observations = await observe(contract, observers);
+        const trace = new Trace([]);
+        return new State(trace, observations);
+    }
+
     async execute(state: State, invocation: Invocation, observers: Invocation[]): Promise<State> {
         const contract = await this.creator.createInstance();
 
@@ -35,20 +42,16 @@ export class Executer {
 
         return new State(trace, observations);
     }
-
-    async observe(observers: Invocation[]) {
-        const contract = await this.creator.createInstance();
-        const observation = await observe(contract, observers)
-        return observation;
-    }
 }
 
 async function invoke(contract: Contract, invocation: Invocation, from: string): Promise<void> {
     const { method, inputs } = invocation;
     const { name } = method;
 
-    const tx = contract.methods[name!];
-    const gas = await tx.estimateGas() + 1;
+    const tx = contract.methods[name!](inputs);
+    const gas = await tx.estimateGas() * 10;
+
+    debug(`sending transaction from %o with gas %o`, from, gas);
     return tx.send({ from, gas });
 }
 
@@ -56,13 +59,13 @@ async function invokeReadOnly(contract: Contract, invocation: Invocation): Promi
     const { method, inputs } = invocation;
     const { name } = method;
 
-    const outputs = await contract.methods[name!].call();
-    debug("outputs: %o", outputs);
+    debug(`calling method: %o`, invocation);
+    const outputs = await contract.methods[name!](inputs).call();
 
     const values = valuesOf(outputs);
-    debug("values: %o", values);
-
     const result = new Result(values);
+    debug("result: %o", outputs);
+
     return result;
 }
 
@@ -76,6 +79,3 @@ async function observe(contract: Contract, observers: Invocation[]): Promise<Obs
 
     return new Observation(operations);
 }
-
-
-

@@ -26,7 +26,7 @@ export async function run(parameters: Parameters) {
     const { abi } = metadata;
 
     for await (const state of explorer.explore(abi, limiter)) {
-        console.log(`state: %s`, state);
+        console.log(`state: ${state}`);
     }
 }
 

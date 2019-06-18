@@ -15,8 +15,7 @@ export class Explorer {
     async * explore(abi: Iterable<AbiItem>, limiter: Limiter): AsyncIterable<State> {
         const invGen = new InvocationGenerator(abi);
         const observers = [...invGen.observers()];
-        const initialObservation = await this.executer.observe(observers);
-        const initialState: State = State.initial(initialObservation);
+        const initialState = await this.executer.initial(observers);
         const workList = [ initialState ];
 
         while (true) {
