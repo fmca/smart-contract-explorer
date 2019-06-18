@@ -8,7 +8,7 @@ contract HelloAfrica {
 
     /**
 	 This is Africa */
-	function increment() public {
+	function inc() public {
 		counter ++;
 	}
 
@@ -19,7 +19,7 @@ contract HelloAfrica {
     /**
 	  notice postcondition I am here
 	 */
-	function getCount() public view returns(int) {
+	function get() public view returns(int) {
 		return counter;
 	}
 

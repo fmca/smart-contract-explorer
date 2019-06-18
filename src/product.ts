@@ -6,7 +6,9 @@ import { compile2 } from './frontend';
 import { AbiItem } from 'web3-utils';
 import { InvocationGenerator } from './explore/invocations';
 import { AssertionError } from 'assert';
+import { Debugger } from './debug';
 
+const debug = Debugger(__filename);
 
 export interface Parameters {
     contracts: {
@@ -43,8 +45,14 @@ export async function run(parameters: Parameters) {
   
     for (const [mid, method ] of specAbi.entries()) 
     {   
+        if (method.name !== implAbi[mid].name)
+            throw Error('Spec and Impl methods must have the same signature.');
+
         if(method.inputs !== undefined)
         {   
+            inputs_Type = '';
+            inputs = '';
+
             for (let inpEle = 0; inpEle < method.inputs.length  ;inpEle++)
             {   if(inpEle ==  method.inputs.length - 1)
                 {
@@ -56,11 +64,16 @@ export async function run(parameters: Parameters) {
                     inputs_Type = inputs_Type + method.inputs[inpEle].name + ': ' + method.inputs[inpEle].type + ', '; 
                     inputs = inputs + method.inputs[inpEle].name + ', '; 
                 } 
-                }
+            }
+            debug(`inputs_Type: %O`, inputs_Type);
         }
 
         if(method.outputs !== undefined)
         {   
+            outputs_Type = '';
+            outputs_Spec = '';
+            outputs_Impl = '';
+
             for (let inpEle = 0; inpEle < method.outputs.length  ;inpEle++)
             {  
                 if(inpEle ==  method.outputs.length - 1)
