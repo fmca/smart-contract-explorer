@@ -17,7 +17,9 @@ contract HelloAfrica {
 	}
 
     /**
-	  notice postcondition I am here
+	  @notice postcondition I am here 
+	  @notice postcondition second commnet 
+	  @notice precondition third comment 
 	 */
 	function get() public view returns(int) {
 		return counter;

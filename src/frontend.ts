@@ -42,7 +42,8 @@ export async function compile(filename: string): Promise<Metadata> {
 export interface Metadata2 {
     abi: AbiItem[];
     name: string;
-    userdoc: string;
+    userdoc: object;
+    ast_field_nodes: object;
 }
 
 export async function compile2(filename: string[]): Promise<Metadata2[]> {
@@ -61,10 +62,12 @@ export async function compile2(filename: string[]): Promise<Metadata2[]> {
         debug(`compiling contract: %s`, filename[element]);
         const output = JSON.parse(solc.compile(input));
         
-        debug(`output: %O`, output);
+      
 
-        const {errors, contracts, sources: sources_ast } = output;
-        debug(`sources_c: %O`, sources_ast);
+        const {errors, contracts, sources: sources_ast }= output;
+        const {ast : {nodes}} = sources_ast[filename[element]];
+        const {nodes: ast_field_nodes} = nodes[1];
+
         if (errors !== undefined) {
             const messages = [
                 `could not compile contract ${filename[element]}`,
@@ -72,17 +75,17 @@ export async function compile2(filename: string[]): Promise<Metadata2[]> {
             ]
             throw Error(messages.join('\n'));
         }
-
+        
         const [ [name, contract], ...rest ] = Object.entries(contracts[filename[element]]);
 
         if (rest.length > 0)
             throw Error('Expected single contract.');
 
-        const { abi, userdoc, evm: {assembly, bytecode: { object: bytecode } } } = contract as any;
-        debug(`abi: %O`, abi);
-        //debug(`assambly, %s` , assembly);
-        
-        val.push({abi, userdoc, name });
+        const { abi, userdoc: {methods: userdoc}, evm: {assembly, bytecode: { object: bytecode } } } = contract as any;
+        //debug(`abi: %O`, abi);
+        //debug(`userdoc, %O` , userdoc);
+        //const userdoc = JSON.stringify(Doc);
+        val.push({abi, name, userdoc, ast_field_nodes});
     };
    
     return val;
