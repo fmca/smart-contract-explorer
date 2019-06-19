@@ -7,6 +7,7 @@ import { AbiItem } from 'web3-utils';
 import { InvocationGenerator } from './explore/invocations';
 import { AssertionError } from 'assert';
 import { Debugger } from './debug';
+import { stringify } from 'querystring';
 
 const debug = Debugger(__filename);
 
@@ -146,27 +147,34 @@ export async function run(parameters: Parameters) {
         }
 
     }
-    fs.truncate(simContract, 0, function(){console.log('writing to simulation contract file')});
-    fs.writeFile(simContract, 'contract SimContract is ' + specName + ' , ' + implName + ' {\n')  ;
+
+   
+    console.log('writing to simulation contract file');
+
+    var stdOut : string = '';
+
+    stdOut = `${stdOut} contract SimContract is  ${specName}, ${implName} {\n`  ;
     
     for (const mid in specAbi)
     {
-        fs.appendFile(simContract,  '      /**');
+        stdOut = `${stdOut}      /**`;
         for(const specPrecond of specPreconds[mid])
         {
-            fs.appendFile(simContract,  '      '+ specPrecond + '\n') ;
+            stdOut = `${stdOut}      ${specPrecond} \n` ;
         }
-        fs.appendFile(simContract,  '      */\n');
+        stdOut = `${stdOut}      */\n`;
 
-        fs.appendFile(simContract,  '      ' + method_Sig[mid] +  '{\n');
-        fs.appendFile(simContract,  '            ' + method_Impl[mid] + '\n' );
-        fs.appendFile(simContract,  '            ' + method_Spec[mid] + '\n' );     
+        stdOut = `${stdOut}      ${method_Sig[mid]} {\n`;
+        stdOut = `${stdOut}            ${method_Impl[mid]} \n` ;
+        stdOut = `${stdOut}            ${method_Spec[mid]} \n`;     
         for (let inpEle = 0; inpEle < outputs_assu[mid].length  ;inpEle++)
-            fs.appendFile(simContract,  '            ' + outputs_assu[mid][inpEle] + '\n');
-        fs.appendFile(simContract,  '}\n');
+            stdOut = `${stdOut}            ${outputs_assu[mid][inpEle]} \n`;
+        stdOut = `${stdOut}}\n`;
         
     }
-    fs.appendFile(simContract, '}')
+    stdOut = `${stdOut}}`;
+    console.log(stdOut);
+    fs.writeFile(simContract,stdOut);
 }
 
 
@@ -208,8 +216,8 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
                     result = mdcomment;
                     //debug(`method comment: %s`, mdcomment);
                     for(const field of fieldsNames)
-                    {
-                        let re = new RegExp(field,'g');
+                    {   
+                        let re = new RegExp(`\\b${field}\\b`,'gi');
                         result = result.replace(re, `${specContractName}.${field}`);
                        // debug(`result1 is: %s`, result);
                     }
