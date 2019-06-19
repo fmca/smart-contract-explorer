@@ -6,12 +6,16 @@ contract HelloAfrica {
 	int counter;
 	mapping (address => int) counter3;
 
-    /**
-	 This is Africa */
+	/**
+	  @notice precondition counter3 == counter + 1 
+	*/
 	function inc() public {
 		counter ++;
 	}
 
+	/**
+	  @notice precondition counter == counter - 1 
+	*/
 	function dec() public {
 		counter --;
 	}

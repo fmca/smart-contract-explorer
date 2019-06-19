@@ -207,9 +207,9 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
                 {
                     result = mdcomment;
                     //debug(`method comment: %s`, mdcomment);
-                    for(const field in specFields)
+                    for(const field of fieldsNames)
                     {
-                        let re = new RegExp(field);
+                        let re = new RegExp(field,'g');
                         result = result.replace(re, `${specContractName}.${field}`);
                        // debug(`result1 is: %s`, result);
                     }
@@ -217,8 +217,6 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
                     methodComments[mid][index] = `@notice precondition ${result}`;
                     //debug(`methodComments[mid][index]: %s`, methodComments[mid][index]);
                 }
-               
-
             }
         //debug(`method spec: %s`, methodSpec);
         }
