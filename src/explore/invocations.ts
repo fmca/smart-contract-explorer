@@ -1,9 +1,9 @@
-import { AbiItem } from 'web3-utils';
+import { ABIDefinition } from 'web3/eth/abi';
 
 import { Value, ValueGenerator } from './values';
 
 export class Invocation {
-    constructor(public method: AbiItem, public inputs: Value[]) {}
+    constructor(public method: ABIDefinition, public inputs: Value[]) {}
 
     toString() {
         return `${this.method.name}(${this.inputs.join(', ')})`;
@@ -11,15 +11,15 @@ export class Invocation {
 }
 
 export class InvocationGenerator {
-    abi: Iterable<AbiItem>;
+    abi: Iterable<ABIDefinition>;
     valueGenerator: ValueGenerator;
 
-    constructor(abi: Iterable<AbiItem>) {
+    constructor(abi: Iterable<ABIDefinition>) {
         this.abi = abi;
         this.valueGenerator = new ValueGenerator();
     }
 
-    * invocations(accept: (method: AbiItem) => boolean): Iterable<Invocation> {
+    * invocations(accept: (method: ABIDefinition) => boolean): Iterable<Invocation> {
         for (const method of this.abi) {
             if (!accept(method))
                 continue;
@@ -41,7 +41,7 @@ export class InvocationGenerator {
     }
 }
 
-function isMutator({ stateMutability }: AbiItem): boolean {
+function isMutator({ stateMutability }: ABIDefinition): boolean {
     return stateMutability == undefined
         || !['pure', 'view'].includes(stateMutability);
 }

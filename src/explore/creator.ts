@@ -1,4 +1,4 @@
-import { Contract } from 'web3-eth-contract';
+import Contract from 'web3/eth/contract';
 
 import { Debugger } from '../debug';
 import { Metadata } from '../frontend';
@@ -20,14 +20,13 @@ export class ContractCreator {
     }
 
     async createInstance(): Promise<Contract> {
-        const tx = this.contract.deploy({ data: this.bytecode });
+        const tx = this.contract.deploy({ data: this.bytecode, arguments: [] });
         debug(`tx: %o`, tx);
 
         const gas = await tx.estimateGas() + 1;
         debug(`gas: %o`, gas);
 
         const instance = await tx.send({ from: this.address, gas });
-        debug(`instance: %o`, instance.address);
 
         return instance;
     }

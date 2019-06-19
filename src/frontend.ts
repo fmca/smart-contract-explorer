@@ -1,12 +1,12 @@
 import fs from 'fs-extra';
-import { AbiItem } from 'web3-utils';
+import { ABIDefinition } from 'web3/eth/abi';
 import { Debugger } from './debug';
 
 const debug = Debugger(__filename);
 const solc = require('solc');
 
 export interface Metadata {
-    abi: AbiItem[];
+    abi: ABIDefinition[];
     bytecode: string;
 }
 

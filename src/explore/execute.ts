@@ -1,4 +1,4 @@
-import { Contract } from 'web3-eth-contract';
+import Contract from 'web3/eth/contract';
 
 import { State, Trace, Observation, Operation, Result } from './states';
 import { Invocation } from './invocations';
@@ -48,7 +48,7 @@ async function invoke(contract: Contract, invocation: Invocation, from: string):
     const { method, inputs } = invocation;
     const { name } = method;
 
-    const tx = contract.methods[name!](inputs);
+    const tx = contract.methods[name!](...inputs);
     const gas = await tx.estimateGas() * 10;
 
     debug(`sending transaction from %o with gas %o`, from, gas);
@@ -60,7 +60,7 @@ async function invokeReadOnly(contract: Contract, invocation: Invocation): Promi
     const { name } = method;
 
     debug(`calling method: %o`, invocation);
-    const outputs = await contract.methods[name!](inputs).call();
+    const outputs = await contract.methods[name!](...inputs).call();
 
     const values = valuesOf(outputs);
     const result = new Result(values);
