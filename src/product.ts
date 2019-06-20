@@ -1,31 +1,21 @@
-import Web3 from 'web3';
 import fs from 'fs-extra';
-import { getBlockchainInterface } from './setup';
-import { Contract } from 'web3-eth-contract';
 import { compile, Metadata } from './frontend';
-import { AbiItem } from 'web3-utils';
-import { InvocationGenerator } from './explore/invocations';
-import { AssertionError } from 'assert';
 import { Debugger } from './debug';
-import { stringify } from 'querystring';
 
 const debug = Debugger(__filename);
 
 export interface Parameters {
-    contracts: {
-        spec: string;
-        impl: string;
-        simContract: string;
-    }
+    specFile: string;
+    implFile: string;
+    productFile: string;
 }
 
 export async function run(parameters: Parameters) {
-    const {contracts: {spec, impl, simContract}} = parameters;
-    const specMetadata = await compile(spec);
-    const implMetadata = await compile(impl);
+    const { specFile, implFile, productFile } = parameters;
+    const specMetadata = await compile(specFile);
+    const implMetadata = await compile(implFile);
     const code = getProductCode(specMetadata, implMetadata);
-    console.log(code);
-    fs.writeFile(simContract,code);
+    await fs.writeFile(productFile, code);
 }
 
 function getProductCode(spec: Metadata, impl: Metadata): string {
@@ -148,9 +138,6 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
 
     }
 
-
-    console.log('writing to simulation contract file');
-
     var stdOut : string = '';
 
     stdOut = `${stdOut} contract SimContract is  ${specName}, ${implName} {\n`  ;
@@ -176,9 +163,9 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
     return stdOut;
 }
 
-function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
+function computeConditions({ userdoc, abi, name, members }: Metadata): string[][] {
 
-    //debug(`specFields size: %s`, Object.keys(specFields).length);
+    debug(`specFields size: %s`, Object.keys(members).length);
     var fieldsNames : string[] = [];
     for(const [nodeId, node] of Object.entries(userdoc))
     {
@@ -187,7 +174,7 @@ function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
             fieldsNames.push(node.name);
         }
     }
-    //debug(`number of fields: %s`, fieldsNames.length);
+    debug(`number of fields: %s`, fieldsNames.length);
     const methodComments : string[][] = [];
     for (const [mid, method ] of abi.entries())
     {
@@ -197,7 +184,7 @@ function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
             if(method.name === methodName.substring(0, methodName.indexOf("(") ))
             {
                 const {notice :methodComment} = methodSpec ;
-                //debug(`method comments: %s`, methodComment);
+                debug(`method comments: %s`, methodComment);
                 //Some hacking to get only precondition statements
                 const methodPreComments = methodComment.split(/precondition/);
                 for(const [index, mdcomment] of methodPreComments.entries())
@@ -208,23 +195,23 @@ function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
                     }
                 }
                 var result : string;
-               // debug(`methodComments: %s`, methodComments);
+               debug(`methodComments: %s`, methodComments);
                 for (const [index, mdcomment] of methodComments[mid].entries())
                 {
                     result = mdcomment;
-                    //debug(`method comment: %s`, mdcomment);
+                    debug(`method comment: %s`, mdcomment);
                     for(const field of fieldsNames)
                     {
                         let re = new RegExp(`\\b${field}\\b`,'gi');
                         result = result.replace(re, `${name}.${field}`);
-                       // debug(`result1 is: %s`, result);
+                       debug(`result1 is: %s`, result);
                     }
-                    //debug(`result2 is: %s`, result);
+                    debug(`result2 is: %s`, result);
                     methodComments[mid][index] = `@notice precondition ${result}`;
-                    //debug(`methodComments[mid][index]: %s`, methodComments[mid][index]);
+                    debug(`methodComments[mid][index]: %s`, methodComments[mid][index]);
                 }
             }
-        //debug(`method spec: %s`, methodSpec);
+            debug(`method spec: %o`, methodSpec);
         }
     }
 
