@@ -167,7 +167,7 @@ function computeConditions({ userdoc, abi, name, members }: Metadata): string[][
 
     debug(`specFields size: %s`, Object.keys(members).length);
     var fieldsNames : string[] = [];
-    for(const [nodeId, node] of Object.entries(userdoc))
+    for(const [nodeId, node] of Object.entries(members))
     {
         if(node.nodeType == 'VariableDeclaration' && node.stateVariable == true)
         {
