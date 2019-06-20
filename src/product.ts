@@ -20,18 +20,22 @@ export interface Parameters {
 }
 
 export async function run(parameters: Parameters) {
-
     const {contracts: {spec, impl, simContract}} = parameters;
-
     const specMetadata = await compile(spec);
     const implMetadata = await compile(impl);
-    const { abi: specAbi, name: specName } = specMetadata;
-    const { abi: implAbi, name: implName } = implMetadata;
+    const code = getProductCode(specMetadata, implMetadata);
+    console.log(code);
+    fs.writeFile(simContract,code);
+}
+
+function getProductCode(spec: Metadata, impl: Metadata): string {
+    const { abi: specAbi, name: specName } = spec;
+    const { abi: implAbi, name: implName } = impl;
 
     if (specAbi.length !== implAbi.length)
         throw Error('Expected two contracts with the same methods.');
 
-    const specPreconds = computeConditions(specMetadata);
+    const specPreconds = computeConditions(spec);
 
     var inputs : string = ' ';
 
@@ -169,10 +173,8 @@ export async function run(parameters: Parameters) {
 
     }
     stdOut = `${stdOut}}`;
-    console.log(stdOut);
-    fs.writeFile(simContract,stdOut);
+    return stdOut;
 }
-
 
 function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
 
