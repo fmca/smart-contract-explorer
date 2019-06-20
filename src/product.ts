@@ -2,7 +2,7 @@ import Web3 from 'web3';
 import fs from 'fs-extra';
 import { getBlockchainInterface } from './setup';
 import { Contract } from 'web3-eth-contract';
-import { compile2 } from './frontend';
+import { compile, Metadata } from './frontend';
 import { AbiItem } from 'web3-utils';
 import { InvocationGenerator } from './explore/invocations';
 import { AssertionError } from 'assert';
@@ -22,48 +22,44 @@ export interface Parameters {
 export async function run(parameters: Parameters) {
 
     const {contracts: {spec, impl, simContract}} = parameters;
-    const val  = await compile2([spec, impl]);
 
-    const [ { abi: specAbi }, { abi: implAbi } ] = val;
-    if (val.length !== 2 || specAbi.length !== implAbi.length)
+    const specMetadata = await compile(spec);
+    const implMetadata = await compile(impl);
+    const { abi: specAbi, name: specName } = specMetadata;
+    const { abi: implAbi, name: implName } = implMetadata;
+
+    if (specAbi.length !== implAbi.length)
         throw Error('Expected two contracts with the same methods.');
 
-
-    const [ { userdoc: specDoc, ast_field_nodes: specFields }, ...rest ] = val;
-    //debug(`specDoc, %O)` , specDoc);
-    //debug(`specFields, %O)` , specFields);
-
-    const [ { name: specName }, { name: implName }] = val;
-    
-    const specPreconds = computeConditions(specDoc, specFields, specAbi, specName);
+    const specPreconds = computeConditions(specMetadata);
 
     var inputs : string = ' ';
-   
+
     var inputs_Type : string = '';
     var outputs_Type : string = '';
-   
+
     var outputs_Spec : string = '';
     var outputs_Impl : string = '';
 
-   
+
     const outputs_assu : string[][] = [];
-    
+
     const method_Sig  : string[] = [];
     const method_Impl : string[] = [];
     const method_Spec : string[] = [];
 
 
-  
-    for (const [mid, method ] of specAbi.entries()) 
-    {   
+
+    for (const [mid, method ] of specAbi.entries())
+    {
         if (method.name !== implAbi[mid].name)
             throw Error('Spec and Impl methods must have the same signature.');
 
         inputs_Type = '';
         inputs = '';
-        
+
         if(method.inputs !== undefined)
-        {   
+        {
 
             for (let inpEle = 0; inpEle < method.inputs.length  ;inpEle++)
             {   if(inpEle ==  method.inputs.length - 1)
@@ -73,9 +69,9 @@ export async function run(parameters: Parameters) {
                 }
                 else
                 {
-                    inputs_Type = inputs_Type + method.inputs[inpEle].name + ': ' + method.inputs[inpEle].type + ', '; 
-                    inputs = inputs + method.inputs[inpEle].name + ', '; 
-                } 
+                    inputs_Type = inputs_Type + method.inputs[inpEle].name + ': ' + method.inputs[inpEle].type + ', ';
+                    inputs = inputs + method.inputs[inpEle].name + ', ';
+                }
             }
         }
 
@@ -86,33 +82,33 @@ export async function run(parameters: Parameters) {
         outputs_assu[mid] = [];
 
         if(method.outputs !== undefined)
-        {   
+        {
 
             for (let inpEle = 0; inpEle < method.outputs.length  ;inpEle++)
-            {  
-            
+            {
+
                 if(inpEle ==  method.outputs.length - 1)
                 {
                     if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type ; 
+                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type ;
                     else
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ; 
-                   
-                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ; 
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
+
+                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
                     outputs_Impl = outputs_Impl + 'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
                 }
                 else
                 {
                     if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type + ', '; 
+                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type + ', ';
                     else
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ; 
-                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', '; 
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
+                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
                     outputs_Impl = outputs_Impl + 'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
                 }
-             
+
                 outputs_assu[mid][inpEle] = 'require(spec_' + String(inpEle) + '_' + method.outputs[inpEle].name + ' == ' +
-                                'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name + ', "Outputs of spec and impl differ.");'; 
+                                'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name + ', "Outputs of spec and impl differ.");';
             }
             if(method.outputs.length > 1)
             {
@@ -123,11 +119,11 @@ export async function run(parameters: Parameters) {
             {
                 outputs_Spec = 'var ' + outputs_Spec ;
                 outputs_Impl = 'var ' + outputs_Impl ;
-                
+
             }
-           
+
         }
-        
+
         if(method.name !== undefined)
         {
             method_Sig[mid] =  'function  ' + method.name +  '(' + inputs_Type + ')';
@@ -140,21 +136,21 @@ export async function run(parameters: Parameters) {
             method_Sig[mid] = method_Sig[mid] + ' view' ;
         method_Sig[mid] = method_Sig[mid] + ' public ';
         if(method.outputs !== undefined && outputs_Type !== '')
-        {   
+        {
             method_Sig[mid] =  method_Sig[mid] + 'returns (' +  outputs_Type + ')';
             method_Impl[mid] = outputs_Impl + ' = ' +  method_Impl[mid];
-            method_Spec[mid] = outputs_Spec + ' = ' +  method_Spec[mid];   
+            method_Spec[mid] = outputs_Spec + ' = ' +  method_Spec[mid];
         }
 
     }
 
-   
+
     console.log('writing to simulation contract file');
 
     var stdOut : string = '';
 
     stdOut = `${stdOut} contract SimContract is  ${specName}, ${implName} {\n`  ;
-    
+
     for (const mid in specAbi)
     {
         stdOut = `${stdOut}      /**`;
@@ -166,11 +162,11 @@ export async function run(parameters: Parameters) {
 
         stdOut = `${stdOut}      ${method_Sig[mid]} {\n`;
         stdOut = `${stdOut}            ${method_Impl[mid]} \n` ;
-        stdOut = `${stdOut}            ${method_Spec[mid]} \n`;     
+        stdOut = `${stdOut}            ${method_Spec[mid]} \n`;
         for (let inpEle = 0; inpEle < outputs_assu[mid].length  ;inpEle++)
             stdOut = `${stdOut}            ${outputs_assu[mid][inpEle]} \n`;
         stdOut = `${stdOut}}\n`;
-        
+
     }
     stdOut = `${stdOut}}`;
     console.log(stdOut);
@@ -178,11 +174,11 @@ export async function run(parameters: Parameters) {
 }
 
 
-function computeConditions(specDoc : object, specFields: object, specAbi: AbiItem[], specContractName: string): string[][] {
- 
+function computeConditions({ userdoc, abi, name}: Metadata): string[][] {
+
     //debug(`specFields size: %s`, Object.keys(specFields).length);
     var fieldsNames : string[] = [];
-    for(const [nodeId, node] of Object.entries(specFields))
+    for(const [nodeId, node] of Object.entries(userdoc))
     {
         if(node.nodeType == 'VariableDeclaration' && node.stateVariable == true)
         {
@@ -191,10 +187,10 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
     }
     //debug(`number of fields: %s`, fieldsNames.length);
     const methodComments : string[][] = [];
-    for (const [mid, method ] of specAbi.entries()) 
-    { 
+    for (const [mid, method ] of abi.entries())
+    {
         methodComments[mid] = [];
-        for (const [methodName, methodSpec] of Object.entries(specDoc))
+        for (const [methodName, methodSpec] of Object.entries(userdoc))
         {
             if(method.name === methodName.substring(0, methodName.indexOf("(") ))
             {
@@ -208,7 +204,7 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
                     {   const methodPostComments = mdcomment.split(/postcondition/);
                         methodComments[mid].push(methodPostComments[0]);
                     }
-                }    
+                }
                 var result : string;
                // debug(`methodComments: %s`, methodComments);
                 for (const [index, mdcomment] of methodComments[mid].entries())
@@ -216,9 +212,9 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
                     result = mdcomment;
                     //debug(`method comment: %s`, mdcomment);
                     for(const field of fieldsNames)
-                    {   
+                    {
                         let re = new RegExp(`\\b${field}\\b`,'gi');
-                        result = result.replace(re, `${specContractName}.${field}`);
+                        result = result.replace(re, `${name}.${field}`);
                        // debug(`result1 is: %s`, result);
                     }
                     //debug(`result2 is: %s`, result);
@@ -244,9 +240,9 @@ function computeConditions(specDoc : object, specFields: object, specAbi: AbiIte
 function getCheck(ethod: AbiItem, methodID: number): string {
 
     if(method.outputs !== undefined)
-    {   
+    {
         for (let inpEle = 0; inpEle < method.outputs.length  ;inpEle++)
-        { 
+        {
 
-} 
+}
 */
