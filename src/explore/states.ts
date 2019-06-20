@@ -1,5 +1,6 @@
-import { Value } from './values';
+import { Value, Values } from './values';
 import { Invocation } from './invocations';
+import { Metadata } from '../frontend';
 
 export class Result {
     constructor(public values: Value[]) {}
@@ -14,6 +15,10 @@ export class Result {
             return `(${this.values.join(', ')})`
         }
     }
+
+    equals(that: Result): boolean {
+        return Values.equals(this.values, that.values);
+    }
 };
 
 export class Operation {
@@ -24,6 +29,11 @@ export class Operation {
             ? `${this.invocation}`
             : `${this.invocation} => ${this.result}`;
     }
+
+    equals(that: Operation): boolean {
+        return this.invocation.equals(that.invocation)
+            && this.result.equals(that.result);
+    }
 }
 
 export class Trace {
@@ -33,6 +43,11 @@ export class Trace {
         return this.operations.length > 0
             ? this.operations.join("; ")
             : `@empty`;
+    }
+
+    equals(that: Trace): boolean {
+        return this.operations.length === that.operations.length
+            && this.operations.every((o1,i) => o1.equals(that.operations[i]));
     }
 
     static empty(): Trace {
@@ -46,16 +61,26 @@ export class Observation {
     toString() {
         return this.operations.join(', ');
     }
+
+    equals(that: Observation): boolean {
+        return this.operations.length === that.operations.length
+            && this.operations.every((o1,i) => o1.equals(that.operations[i]));
+    }
 }
 
 export class State {
-    constructor(public trace: Trace, public observation: Observation) {}
+    constructor(public metadata: Metadata, public address: string,
+        public trace: Trace, public observation: Observation) {}
 
     toString() {
         return `[[ ${this.trace} : ${this.observation} ]]`;
     }
 
-    static initial(observation: Observation): State {
-        return new State(Trace.empty(), observation);
+    obsEqual(that: State) {
+        return this.observation.equals(that.observation);
+    }
+
+    static initial(metadata: Metadata, address: string, observation: Observation): State {
+        return new State(metadata, address, Trace.empty(), observation);
     }
 }

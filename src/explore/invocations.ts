@@ -1,26 +1,30 @@
 import { ABIDefinition } from 'web3/eth/abi';
-
-import { Value, ValueGenerator } from './values';
+import { Method, Metadata } from '../frontend';
+import { Value, Values, ValueGenerator, valuesOf } from './values';
 
 export class Invocation {
-    constructor(public method: ABIDefinition, public inputs: Value[]) {}
+    constructor(public method: Method, public inputs: Value[]) {}
 
     toString() {
         return `${this.method.name}(${this.inputs.join(', ')})`;
     }
+
+    equals(that: Invocation): boolean {
+        return Method.equals(this.method, that.method)
+            && Values.equals(this.inputs, that.inputs);
+    }
 }
 
 export class InvocationGenerator {
-    abi: Iterable<ABIDefinition>;
     valueGenerator: ValueGenerator;
 
-    constructor(abi: Iterable<ABIDefinition>) {
-        this.abi = abi;
+    constructor(public metadata: Metadata) {
         this.valueGenerator = new ValueGenerator();
     }
 
     * invocations(accept: (method: ABIDefinition) => boolean): Iterable<Invocation> {
-        for (const method of this.abi) {
+        const { abi } = this.metadata;
+        for (const method of abi) {
             if (!accept(method))
                 continue;
 

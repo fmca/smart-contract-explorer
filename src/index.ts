@@ -1,33 +1,43 @@
 import { compile } from './frontend';
 
-import { getBlockchainInterface } from './setup';
+import { getBlockchainInterface, BlockchainInterface } from './setup';
 import { Debugger } from './debug';
 import { Executer } from './explore/execute';
-import { Explorer } from './explore/explorer';
-import { Limiter } from './explore/limiter';
+import { Examples } from './explore/examples';
+import { StateCountLimiterFactory } from './explore/limiter';
 import { ContractCreator } from './explore/creator';
 
 const debug = Debugger(__filename);
 
 interface Parameters {
-    filename: string;
+    sourceFilename: string;
+    targetFilename: string;
 }
 
 export async function run(parameters: Parameters) {
-    const { filename } = parameters;
-    const metadata = await compile(filename);
+    const { sourceFilename, targetFilename } = parameters;
+    const chain = await getBlockchainInterface();
+    const [ address ] = await chain.web3.eth.getAccounts();
 
-    const { web3 } = await getBlockchainInterface();
-    const [ account ] = await web3.eth.getAccounts();
-    const creator = new ContractCreator(web3, metadata, account);
-    const executer = new Executer(creator, account);
-    const explorer = new Explorer(executer);
-    const limiter = new Limiter(5);
-    const { abi } = metadata;
+    const source = await compile(sourceFilename);
+    const target = await compile(targetFilename);
 
-    for await (const state of explorer.explore(abi, limiter)) {
-        console.log(`state: ${state}`);
+    const creator = new ContractCreator(chain);
+    const executer = new Executer(creator);
+    const examples = new Examples(executer);
+    const limiters = new StateCountLimiterFactory(5);
+
+    for await (const { source: s, target: t } of examples.simulationExamples({ source, target, address, limiters })) {
+        console.log(`source: ${s}`);
+        console.log(`target: ${t}`);
     }
+}
+
+async function getExecuter(filename: string, chain: BlockchainInterface, account: string) {
+    const metadata = await compile(filename);
+    const creator = new ContractCreator(chain);
+    const executer = new Executer(creator);
+    return executer;
 }
 
 // async function doSomething(harness: Harness, action: string, obs: string) {

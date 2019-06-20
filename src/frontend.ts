@@ -5,9 +5,17 @@ import { Debugger } from './debug';
 const debug = Debugger(__filename);
 const solc = require('solc');
 
+export type Method = ABIDefinition;
+
+export namespace Method {
+    export function equals(m1: Method, m2: Method): boolean {
+        return JSON.stringify(m1) === JSON.stringify(m2);
+    }
+}
+
 export interface Metadata {
     name: string;
-    abi: ABIDefinition[];
+    abi: Method[];
     bytecode: string;
     userdoc: object;
     members: object;

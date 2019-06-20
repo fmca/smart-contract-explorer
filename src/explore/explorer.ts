@@ -1,21 +1,23 @@
-import { ABIDefinition } from 'web3/eth/abi';
-
 import { State } from './states';
 import { Executer } from './execute';
-import { Limiter } from './limiter';
+import { StateLimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
+import { Metadata } from '../frontend';
+
+interface Parameters {
+    metadata: Metadata;
+    address: string;
+    limiters: StateLimiterFactory;
+};
 
 export class Explorer {
-    executer: Executer;
+    constructor(public executer: Executer) { }
 
-    constructor(executer: Executer) {
-        this.executer = executer;
-    }
-
-    async * explore(abi: Iterable<ABIDefinition>, limiter: Limiter): AsyncIterable<State> {
-        const invGen = new InvocationGenerator(abi);
-        const observers = [...invGen.observers()];
-        const initialState = await this.executer.initial(observers);
+    async * forward(params: Parameters): AsyncIterable<State> {
+        const { metadata, address, limiters } = params;
+        const limiter = limiters.get();
+        const invGen = new InvocationGenerator(metadata);
+        const initialState = await this.executer.initial(metadata, address);
         const workList = [ initialState ];
 
         while (true) {
@@ -30,7 +32,7 @@ export class Explorer {
             yield state;
 
             for (const invocation of invGen.mutators()) {
-                const nextState = await this.executer.execute(state, invocation, observers);
+                const nextState = await this.executer.execute(state, invocation);
 
                 workList.push(nextState);
             }

@@ -1,6 +1,19 @@
 
 export type Value = number;
 
+export namespace Value {
+    export function equals(v1: Value, v2: Value) {
+        return v1 === v2;
+    }
+}
+
+export namespace Values {
+    export function equals(vs1: Value[], vs2: Value[]) {
+        return vs1.length === vs2.length
+            && vs1.every((v1,i) => Value.equals(v1, vs2[i]))
+    }
+}
+
 export function valuesOf(x: any): Value[] {
     const intVal = parseInt(x);
     if (intVal !== undefined)

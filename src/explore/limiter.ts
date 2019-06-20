@@ -1,11 +1,23 @@
 import { State } from './states';
 
-export class Limiter {
-    stateCount: number;
+export interface StateLimiter {
+    accept(state: State): boolean;
+}
 
-    constructor(stateCount: number) {
-        this.stateCount = stateCount;
+export interface StateLimiterFactory {
+    get(): StateLimiter;
+}
+
+export class StateCountLimiterFactory {
+    constructor(public stateCount: number) { }
+
+    get(): StateLimiter {
+        return new StateCountLimiter(this.stateCount);
     }
+}
+
+export class StateCountLimiter {
+    constructor(public stateCount: number) { }
 
     accept(state: State): boolean {
         if (this.stateCount <= 0)
