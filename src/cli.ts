@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+require('source-map-support').install();
+
 import { run } from './index';
 
 const [ filename, ...rest ] = process.argv.slice(2);

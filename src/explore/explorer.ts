@@ -1,4 +1,4 @@
-import { AbiItem } from 'web3-utils';
+import { ABIDefinition } from 'web3/eth/abi';
 
 import { State } from './states';
 import { Executer } from './execute';
@@ -12,7 +12,7 @@ export class Explorer {
         this.executer = executer;
     }
 
-    async * explore(abi: Iterable<AbiItem>, limiter: Limiter): AsyncIterable<State> {
+    async * explore(abi: Iterable<ABIDefinition>, limiter: Limiter): AsyncIterable<State> {
         const invGen = new InvocationGenerator(abi);
         const observers = [...invGen.observers()];
         const initialState = await this.executer.initial(observers);

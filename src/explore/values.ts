@@ -2,8 +2,9 @@
 export type Value = number;
 
 export function valuesOf(x: any): Value[] {
-    if (x !== undefined && x._hex !== undefined)
-        return [parseInt(x._hex)];
+    const intVal = parseInt(x);
+    if (intVal !== undefined)
+        return [intVal];
 
     throw Error(`Unexpected value: ${x}`);
 }
