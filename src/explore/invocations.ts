@@ -1,7 +1,5 @@
-import { ABIDefinition } from 'web3/eth/abi';
-import { Method } from '../frontend/metadata';
-import { Metadata } from '../frontend/metadata';
-import { Value, Values, ValueGenerator, valuesOf } from './values';
+import { Method, Metadata } from '../frontend/metadata';
+import { Value, Values, ValueGenerator } from './values';
 
 export class Invocation {
     constructor(public method: Method, public inputs: Value[]) {}
@@ -23,7 +21,7 @@ export class InvocationGenerator {
         this.valueGenerator = new ValueGenerator();
     }
 
-    * invocations(accept: (method: ABIDefinition) => boolean): Iterable<Invocation> {
+    * invocations(accept: (method: Method) => boolean): Iterable<Invocation> {
         const { abi } = this.metadata;
         for (const method of abi) {
             if (!accept(method))
@@ -46,7 +44,7 @@ export class InvocationGenerator {
     }
 }
 
-function isMutator({ stateMutability }: ABIDefinition): boolean {
+function isMutator({ stateMutability }: Method): boolean {
     return stateMutability == undefined
         || !['pure', 'view'].includes(stateMutability);
 }
