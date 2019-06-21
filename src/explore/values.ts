@@ -23,6 +23,8 @@ export function valuesOf(x: any): Value[] {
 }
 
 export class ValueGenerator {
+    constructor() { }
+
     * valuesOfType(type: string): Iterable<Value> {
 
         if (type.match(/int\d*/)) {
@@ -35,6 +37,11 @@ export class ValueGenerator {
     }
 
     * valuesOfTypes(types: string[]): Iterable<Value[]> {
+        if (types.length === 0) {
+            yield [];
+            return;
+        }
+
         if (types.length !== 1)
             throw Error(`unexpected arity: ${types.length}`);
 
