@@ -27,17 +27,14 @@ export async function run(parameters: Parameters) {
     const examples = new Examples(executer);
     const limiters = new StateCountLimiterFactory(5);
 
-    for await (const { source: s, target: t } of examples.simulationExamples({ source, target, address, limiters })) {
-        console.log(`source: ${s}`);
-        console.log(`target: ${t}`);
+    for await (const example of examples.simulationExamples({ source, target, address, limiters })) {
+        const { source, target, kind } = example;
+        console.log(`${kind} example:`);
+        console.log(`---`);
+        console.log(source.toString());
+        console.log(target.toString());
+        console.log(`---`);
     }
-}
-
-async function getExecuter(filename: string, chain: BlockchainInterface, account: string) {
-    const metadata = await compile(filename);
-    const creator = new ContractCreator(chain);
-    const executer = new Executer(creator);
-    return executer;
 }
 
 // async function doSomething(harness: Harness, action: string, obs: string) {
