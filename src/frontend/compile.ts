@@ -15,34 +15,44 @@ export async function fromString(filename: string, content: string): Promise<Met
     const sources = { [filename]: { content } };
     const settings = { outputSelection: { '*': { '*': [ '*' ], '': ['ast'] } } };
     const input = { language, sources, settings };
-    return fromSolcInput(filename, input);
+    return fromSolcInput(input);
 }
 
-async function fromSolcInput(filename: string, input: Solc.Input): Promise<Metadata> {
+async function fromSolcInput(input: Solc.Input): Promise<Metadata> {
     const output = Solc.compile(input);
-    handleErrors(filename, output);
-    const metadata = toMetadata(filename, output);
+    handleErrors(output);
+    const metadata = toMetadata(output);
     return metadata;
 }
 
-function handleErrors(filename: string, output: Solc.Output): void {
-    const { errors } = output;
+function handleErrors(output: Solc.Output): void {
+    const { sources, errors } = output;
+
     if (errors !== undefined) {
+        const filenames = Object.keys(sources);
         const messages = [
-            `could not compile contract ${filename}`,
+            `could not compile contracts from ${filenames.join(', ')}`,
             ...errors.map(({ formattedMessage: msg }: any) => msg)
         ]
         throw Error(messages.join('\n'));
     }
 }
 
-function toMetadata(filename: string, output: Solc.Output) {
-    const { contracts, sources: {[filename]: nodes} } = output;
-    const { ast: { nodes: [ , { nodes: members }] } } = nodes;
-    const [ [name, contract], ...rest ] = Object.entries(contracts[filename]);
+function toMetadata(output: Solc.Output) {
+    const { contracts, sources} = output;
+    const sourceEntries = Object.entries(sources);
 
-    if (rest.length > 0)
-        throw Error('Expected single contract.');
+    if (sourceEntries.length != 1)
+        throw Error(`expected single source`);
+
+    const [ [sourceName, nodes] ] = sourceEntries;
+    const { ast: { nodes: [ , { nodes: members }] } } = nodes;
+    const contractEntries = Object.entries(contracts[sourceName]);
+
+    if (contractEntries.length != 1)
+        throw Error('expected single contract');
+
+    const [ [name, contract] ] = contractEntries;
 
     const { abi, userdoc: { methods: userdoc }, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
