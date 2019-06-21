@@ -1,4 +1,4 @@
-import { compile } from './frontend';
+import * as Compile from './frontend/compile';
 
 import { getBlockchainInterface, BlockchainInterface } from './setup';
 import { Debugger } from './debug';
@@ -19,8 +19,8 @@ export async function run(parameters: Parameters) {
     const chain = await getBlockchainInterface();
     const [ address ] = await chain.web3.eth.getAccounts();
 
-    const source = await compile(sourceFilename);
-    const target = await compile(targetFilename);
+    const source = await Compile.fromFile(sourceFilename);
+    const target = await Compile.fromFile(targetFilename);
 
     const creator = new ContractCreator(chain);
     const executer = new Executer(creator);

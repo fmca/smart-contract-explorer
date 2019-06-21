@@ -1,5 +1,6 @@
 import { ABIDefinition } from 'web3/eth/abi';
-import { Method, Metadata } from '../frontend';
+import { Method } from '../frontend/metadata';
+import { Metadata } from '../frontend/metadata';
 import { Value, Values, ValueGenerator, valuesOf } from './values';
 
 export class Invocation {

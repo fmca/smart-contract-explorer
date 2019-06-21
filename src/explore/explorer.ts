@@ -2,7 +2,7 @@ import { State, Operation } from './states';
 import { Executer } from './execute';
 import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
-import { Metadata } from '../frontend';
+import { Metadata } from '../frontend/metadata';
 
 interface Parameters {
     metadata: Metadata;

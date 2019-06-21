@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
-import { compile, Metadata } from './frontend';
+import { Metadata } from './frontend/metadata';
+import * as Compile from './frontend/compile';
 import { Debugger } from './debug';
 
 const debug = Debugger(__filename);
@@ -12,8 +13,8 @@ export interface Parameters {
 
 export async function run(parameters: Parameters) {
     const { specFile, implFile, productFile } = parameters;
-    const specMetadata = await compile(specFile);
-    const implMetadata = await compile(implFile);
+    const specMetadata = await Compile.fromFile(specFile);
+    const implMetadata = await Compile.fromFile(implFile);
     const code = getProductCode(specMetadata, implMetadata);
     await fs.writeFile(productFile, code);
 }

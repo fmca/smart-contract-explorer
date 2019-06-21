@@ -1,6 +1,6 @@
 import { Value, Values } from './values';
 import { Invocation } from './invocations';
-import { Metadata } from '../frontend';
+import { Metadata } from '../frontend/metadata';
 
 export class Result {
     constructor(public values: Value[]) {}

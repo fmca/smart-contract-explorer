@@ -1,7 +1,7 @@
 import Contract from 'web3/eth/contract';
 
 import { Debugger } from '../debug';
-import { Metadata } from '../frontend';
+import { Metadata } from '../frontend/metadata';
 import { BlockchainInterface } from '../setup';
 
 const debug = Debugger(__filename);

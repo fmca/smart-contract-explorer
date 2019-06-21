@@ -5,7 +5,7 @@ import { Invocation, InvocationGenerator } from './invocations';
 import { valuesOf } from './values';
 import { ContractCreator } from './creator';
 import { Debugger } from '../debug';
-import { Metadata } from '../frontend';
+import { Metadata } from '../frontend/metadata';
 
 const debug = Debugger(__filename);
 
