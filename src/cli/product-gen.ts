@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { run } from './product';
+import { run } from '../product';
 
 const [ specFile, implFile, productFile, ...rest ] = process.argv.slice(2);
 

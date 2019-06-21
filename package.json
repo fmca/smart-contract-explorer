@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "bin": {
-    "sc-examples": "dist/cli-sim-examples.js",
-    "sc-product": "dist/cli-product-gen.js"
+    "sc-examples": "dist/cli/sim-examples.js",
+    "sc-product": "dist/cli/product-gen.js"
   },
   "scripts": {
     "build": "tsc",

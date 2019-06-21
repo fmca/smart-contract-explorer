@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import { Debugger } from '../debug';
+import { Debugger } from '../utils/debug';
 import * as Solc from './solc';
 import { Metadata } from './metadata';
 

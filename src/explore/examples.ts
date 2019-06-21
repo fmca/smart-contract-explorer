@@ -1,9 +1,9 @@
-import { State, Operation } from './states';
+import { State } from './states';
 import { Executer } from './execute';
 import { LimiterFactory } from './limiter';
 import { Explorer, Transition } from './explorer';
 import { Metadata } from '../frontend/metadata';
-import { Debugger } from '../debug';
+import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
 

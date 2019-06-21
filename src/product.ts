@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import { Metadata } from './frontend/metadata';
 import * as Compile from './frontend/compile';
-import { Debugger } from './debug';
+import { Debugger } from './utils/debug';
 
 const debug = Debugger(__filename);
 

@@ -4,7 +4,7 @@ import { State, Trace, Observation, Operation, Result } from './states';
 import { Invocation, InvocationGenerator } from './invocations';
 import { valuesOf } from './values';
 import { ContractCreator } from './creator';
-import { Debugger } from '../debug';
+import { Debugger } from '../utils/debug';
 import { Metadata } from '../frontend/metadata';
 
 const debug = Debugger(__filename);
