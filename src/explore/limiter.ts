@@ -1,25 +1,26 @@
 import { State } from './states';
+import { Invocation } from './invocations';
 
-export interface StateLimiter {
-    accept(state: State): boolean;
+export interface Limiter {
+    accept(state: State, invocation: Invocation): boolean;
 }
 
-export interface StateLimiterFactory {
-    get(): StateLimiter;
+export interface LimiterFactory {
+    get(): Limiter;
 }
 
-export class StateCountLimiterFactory {
+export class StateCountLimiterFactory implements LimiterFactory {
     constructor(public stateCount: number) { }
 
-    get(): StateLimiter {
+    get(): Limiter {
         return new StateCountLimiter(this.stateCount);
     }
 }
 
-export class StateCountLimiter {
+export class StateCountLimiter implements Limiter {
     constructor(public stateCount: number) { }
 
-    accept(state: State): boolean {
+    accept(state: State, invocation: Invocation): boolean {
         if (this.stateCount <= 0)
             return false;
 

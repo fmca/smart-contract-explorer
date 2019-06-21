@@ -9,6 +9,11 @@ import { Metadata } from '../frontend';
 
 const debug = Debugger(__filename);
 
+type Effect = {
+    operation: Operation;
+    state: State;
+};
+
 export class Executer {
     constructor(public creator: ContractCreator) { }
 
@@ -20,7 +25,7 @@ export class Executer {
         return new State(metadata, address, trace, observations);
     }
 
-    async execute(state: State, invocation: Invocation): Promise<State> {
+    async execute(state: State, invocation: Invocation): Promise<Effect> {
         const { metadata, address } = state;
         const contract = await this.creator.create(metadata, address);
         const observers = new InvocationGenerator(metadata).observers();
@@ -37,8 +42,8 @@ export class Executer {
         const trace = new Trace(actions);
 
         const observations = await observe(contract, observers);
-
-        return new State(metadata, address, trace, observations);
+        const nextState = new State(metadata, address, trace, observations);
+        return { operation, state: nextState };
     }
 }
 

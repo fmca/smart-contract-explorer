@@ -1,41 +1,55 @@
-import { State } from './states';
+import { State, Operation } from './states';
 import { Executer } from './execute';
-import { StateLimiterFactory } from './limiter';
+import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
 import { Metadata } from '../frontend';
 
 interface Parameters {
     metadata: Metadata;
     address: string;
-    limiters: StateLimiterFactory;
+    limiters: LimiterFactory;
+};
+
+export type Transition = {
+    pre?: State;
+    operation?: Operation;
+    post: State;
 };
 
 export class Explorer {
     constructor(public executer: Executer) { }
 
-    async * forward(params: Parameters): AsyncIterable<State> {
-        const { metadata, address, limiters } = params;
+    async * states(params: Parameters): AsyncIterable<State> {
+        for await (const { post } of this.transitions(params))
+            yield post;
+    }
+
+    async * transitions(params: Parameters): AsyncIterable<Transition> {
+        const { metadata, limiters } = params;
         const limiter = limiters.get();
         const invGen = new InvocationGenerator(metadata);
-        const initialState = await this.executer.initial(metadata, address);
-        const workList = [ initialState ];
+        const initial = await this.initial(params);
+        const workList = [ initial ];
+        yield { post: initial };
 
-        while (true) {
-            const state = workList.shift();
-
-            if (state === undefined)
-                break;
-
-            if (!limiter.accept(state))
-                continue;
-
-            yield state;
+        while (workList.length > 0) {
+            const pre = workList.shift()!;
 
             for (const invocation of invGen.mutators()) {
-                const nextState = await this.executer.execute(state, invocation);
+                if (!limiter.accept(pre, invocation))
+                    continue;
 
-                workList.push(nextState);
+                const { operation, state: post } = await this.executer.execute(pre, invocation);
+                const transition = { pre, operation, post };
+                yield transition;
+                workList.push(post);
             }
         }
+    }
+
+    async initial(params: Parameters): Promise<State> {
+        const { metadata, address } = params;
+        const state = await this.executer.initial(metadata, address);
+        return state;
     }
 }
