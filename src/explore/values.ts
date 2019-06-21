@@ -1,3 +1,4 @@
+import { ContractCreator } from "./creator";
 
 export type Value = number;
 
@@ -23,9 +24,9 @@ export function valuesOf(x: any): Value[] {
 }
 
 export class ValueGenerator {
-    constructor() { }
+    constructor(public creator: ContractCreator) { }
 
-    * valuesOfType(type: string): Iterable<Value> {
+    async * valuesOfType(type: string): AsyncIterable<Value> {
 
         if (type.match(/int\d*/)) {
             for (const v of [0,1,2])
@@ -33,10 +34,18 @@ export class ValueGenerator {
             return;
         }
 
+        if (type === 'address') {
+            const accounts = await this.creator.getAccounts();
+            for (const account of accounts.slice(0, 2))
+                /* yield account */ ;
+
+            throw Error(`TODO generate address values`);
+        }
+
         throw Error(`unexpected type: ${type}`);
     }
 
-    * valuesOfTypes(types: string[]): Iterable<Value[]> {
+    async * valuesOfTypes(types: string[]): AsyncIterable<Value[]> {
         if (types.length === 0) {
             yield [];
             return;
@@ -47,7 +56,7 @@ export class ValueGenerator {
 
         const [ type ] = types;
 
-        for (const value of this.valuesOfType(type))
+        for await (const value of this.valuesOfType(type))
             yield [value];
     }
 }

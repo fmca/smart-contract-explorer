@@ -9,6 +9,11 @@ const debug = Debugger(__filename);
 export class ContractCreator {
     constructor(public chain: BlockchainInterface) { }
 
+    async getAccounts(): Promise<string[]> {
+        const accounts = await this.chain.web3.eth.getAccounts();
+        return accounts;
+    }
+
     async create(metadata: Metadata, address: string): Promise<Contract> {
         const { bytecode } = metadata;
         const contract = this.getContract(metadata);

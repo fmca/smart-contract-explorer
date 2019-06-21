@@ -19,7 +19,7 @@ export class Executer {
 
     async initial(metadata: Metadata, address: string): Promise<State> {
         const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata).observers();
+        const observers = new InvocationGenerator(metadata, this.creator).observers();
         const observations = await observe(contract, observers);
         const trace = new Trace([]);
         return new State(metadata, address, trace, observations);
@@ -28,7 +28,7 @@ export class Executer {
     async execute(state: State, invocation: Invocation): Promise<Effect> {
         const { metadata, address } = state;
         const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata).observers();
+        const observers = new InvocationGenerator(metadata, this.creator).observers();
 
         for (const { invocation } of state.trace.operations) {
             invoke(contract, invocation, address);
@@ -72,10 +72,10 @@ async function invokeReadOnly(contract: Contract, invocation: Invocation): Promi
     return result;
 }
 
-async function observe(contract: Contract, observers: Iterable<Invocation>): Promise<Observation> {
+async function observe(contract: Contract, observers: AsyncIterable<Invocation>): Promise<Observation> {
     const operations: Operation[] = [];
 
-    for (const invocation of observers) {
+    for await (const invocation of observers) {
         const result = await invokeReadOnly(contract, invocation);
         operations.push(new Operation(invocation, result));
     }

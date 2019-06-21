@@ -1,5 +1,6 @@
 import { Method, Metadata } from '../frontend/metadata';
 import { Value, Values, ValueGenerator } from './values';
+import { ContractCreator } from './creator';
 
 export class Invocation {
     constructor(public method: Method, public inputs: Value[]) {}
@@ -17,30 +18,34 @@ export class Invocation {
 export class InvocationGenerator {
     valueGenerator: ValueGenerator;
 
-    constructor(public metadata: Metadata) {
-        this.valueGenerator = new ValueGenerator();
+    constructor(public metadata: Metadata, public creator: ContractCreator) {
+        this.valueGenerator = new ValueGenerator(creator);
     }
 
-    * invocations(accept: (method: Method) => boolean): Iterable<Invocation> {
+    async * invocationsWith(accept: (method: Method) => boolean): AsyncIterable<Invocation> {
         const { abi } = this.metadata;
         for (const method of abi) {
             if (!accept(method))
                 continue;
 
             const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
-            for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
+            for await (const inputs of this.valueGenerator.valuesOfTypes(types)) {
                 const invocation = new Invocation(method, inputs);
                 yield invocation;
             }
         }
     }
 
-    mutators(): Iterable<Invocation> {
-        return this.invocations(isMutator);
+    invocations(): AsyncIterable<Invocation> {
+        return this.invocationsWith(() => true);
     }
 
-    observers(): Iterable<Invocation> {
-        return this.invocations(m => !isMutator(m));
+    mutators(): AsyncIterable<Invocation> {
+        return this.invocationsWith(isMutator);
+    }
+
+    observers(): AsyncIterable<Invocation> {
+        return this.invocationsWith(m => !isMutator(m));
     }
 }
 

@@ -27,7 +27,7 @@ export class Explorer {
     async * transitions(params: Parameters): AsyncIterable<Transition> {
         const { metadata, limiters } = params;
         const limiter = limiters.get();
-        const invGen = new InvocationGenerator(metadata);
+        const invGen = new InvocationGenerator(metadata, this.executer.creator);
         const initial = await this.initial(params);
         const workList = [ initial ];
         yield { post: initial };
@@ -35,7 +35,7 @@ export class Explorer {
         while (workList.length > 0) {
             const pre = workList.shift()!;
 
-            for (const invocation of invGen.mutators()) {
+            for await (const invocation of invGen.mutators()) {
                 if (!limiter.accept(pre, invocation))
                     continue;
 
