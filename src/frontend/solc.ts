@@ -5,7 +5,7 @@ const solc = require('solc');
 export interface Input {
     language: string;
     sources: {
-        [filename: string]: {
+        [name: string]: {
             content: string;
         }
     };
@@ -20,14 +20,14 @@ export interface Input {
 
 export interface Output {
     sources: {
-        [filename: string]: {
+        [name: string]: {
             ast: {
                 nodes: { nodes: object }[]
             }
         }
     };
     contracts: {
-        [filename: string]: {
+        [name: string]: {
             name: string;
             abi: Method[];
             userdoc: {

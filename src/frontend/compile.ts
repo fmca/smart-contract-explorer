@@ -6,13 +6,13 @@ import { Metadata } from './metadata';
 const debug = Debugger(__filename);
 
 export async function fromFile(filename: string): Promise<Metadata> {
-    const content = await fs.readFile(filename, "utf8");
-    return fromString(filename, content);
+    const code = await fs.readFile(filename, "utf8");
+    return fromString(filename, code);
 }
 
-export async function fromString(filename: string, content: string): Promise<Metadata> {
+export async function fromString(sourceName: string, sourceCode: string): Promise<Metadata> {
     const language = "Solidity";
-    const sources = { [filename]: { content } };
+    const sources = { [sourceName]: { content: sourceCode } };
     const settings = { outputSelection: { '*': { '*': [ '*' ], '': ['ast'] } } };
     const input = { language, sources, settings };
     return fromSolcInput(input);
