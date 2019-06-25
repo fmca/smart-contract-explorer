@@ -64,24 +64,24 @@ export function toContract(node: Node): string {
     return new NodeToContract().visit(node);
 }
 
-function unimplemented(node: Node): string {
+function unimplemented<T>(node: Node): T {
     throw Error(`unexpected ${node.nodeType} node`);
 }
 
-class NodeToString {
+class NodeVisitor<T> {
 
-    fromIdentifier(node: Identifier): string {
+    fromIdentifier(node: Identifier): T {
         return unimplemented(node);
     };
-    fromIndexAccess(node: IndexAccess): string {
+    fromIndexAccess(node: IndexAccess): T {
         return unimplemented(node);
     }
 
-    fromReturn(node: Return): string {
+    fromReturn(node: Return): T {
         return unimplemented(node);
     }
 
-    visit(node: Node): string {
+    visit(node: Node): T {
         const { nodeType } = node;
         switch (nodeType) {
             case 'Return':
@@ -96,7 +96,7 @@ class NodeToString {
     }
 };
 
-class NodeToSExpr extends NodeToString {
+class NodeToSExpr extends NodeVisitor<string> {
 
     fromIdentifier(node: Identifier) {
         return node.name;
@@ -109,7 +109,7 @@ class NodeToSExpr extends NodeToString {
     }
 }
 
-class NodeToContract extends NodeToString {
+class NodeToContract extends NodeVisitor<string> {
 
     fromIdentifier(node: Identifier) {
         return node.name;
