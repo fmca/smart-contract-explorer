@@ -11,6 +11,7 @@ export namespace Method {
 
 export interface Metadata {
     name: string;
+    source: string;
     abi: Method[];
     bytecode: string;
     userdoc: object;

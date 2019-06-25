@@ -11,18 +11,22 @@ export async function fromFile(filename: string): Promise<Metadata> {
     return fromString(filename, code);
 }
 
-export async function fromString(sourceName: string, sourceCode: string): Promise<Metadata> {
+export async function fromString(sourceName: string, source: string): Promise<Metadata> {
     const language = "Solidity";
-    const sources = { [sourceName]: { content: sourceCode } };
+    const sources = { [sourceName]: { content: source } };
     const settings = { outputSelection: { '*': { '*': [ '*' ], '': ['ast'] } } };
     const input = { language, sources, settings };
     return fromSolcInput(input);
 }
 
 async function fromSolcInput(input: Solc.Input): Promise<Metadata> {
+    const [ sourceName ] = Object.keys(input.sources);
+    const { sources: { [sourceName]: { content: source }} } = input;
     const output = Solc.compile(input);
     handleErrors(output);
-    const metadata = toMetadata(output);
+    debug(`output: %O`, output);
+    const metadata = toMetadata(output, source);
+    debug(`metadata: %O`, metadata);
     return metadata;
 }
 
@@ -39,7 +43,7 @@ function handleErrors(output: Solc.Output): void {
     }
 }
 
-function toMetadata(output: Solc.Output): Metadata {
+function toMetadata(output: Solc.Output, source: string): Metadata {
     const { contracts, sources } = output;
     const sourceEntries = Object.entries(sources);
 
@@ -59,6 +63,6 @@ function toMetadata(output: Solc.Output): Metadata {
     const { abi, userdoc: { methods: userdoc }, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
 
-    const metadata = { abi, name, bytecode, userdoc, ast, members };
+    const metadata = { abi, name, source, bytecode, userdoc, ast, members };
     return metadata;
 }
