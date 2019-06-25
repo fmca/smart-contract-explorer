@@ -3,17 +3,19 @@ import { Node, IndexAccess, Identifier } from './ast';
 interface App extends Array<Expr> { }
 export type Expr = App | string;
 
-export function parse(s: string): Expr {
-    const json = s
-        .replace(/(\w+)/g, '"$1"')
-        .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
-        .replace(/[(]/g, '[')
-        .replace(/[)]/g, ']');
-    return JSON.parse(json);
-}
+export namespace Expr {
+    export function parse(s: string): Expr {
+        const json = s
+            .replace(/(\w+)/g, '"$1"')
+            .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
+            .replace(/[(]/g, '[')
+            .replace(/[)]/g, ']');
+        return JSON.parse(json);
+    }
 
-export function toNode(expr: Expr): Node {
-    return new ExprToNode().visit(expr);
+    export function toNode(expr: Expr): Node {
+        return new ExprToNode().visit(expr);
+    }
 }
 
 function unimplemented<T>(expr: Expr): T {

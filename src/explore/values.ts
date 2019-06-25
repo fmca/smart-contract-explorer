@@ -1,6 +1,6 @@
 import { ContractCreator } from "./creator";
 
-export type Value = number;
+export type Value = number | boolean;
 
 export namespace Value {
     export function equals(v1: Value, v2: Value) {

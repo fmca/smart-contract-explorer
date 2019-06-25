@@ -2,17 +2,15 @@
 
 require('source-map-support').install();
 
-import { listen } from '../evaluate';
+import { Evaluator } from '../evaluate';
 
 
 async function main() {
     if (process.argv.length != 2)
-        throw Error(`Expected exactly two filename arguments`);
-
-    const [ contractFile ] = process.argv.slice(2);
+        throw Error(`Expected zero arguments`);
 
     try {
-        await listen({ contractFile });
+        await Evaluator.listen({});
 
     } catch (e) {
         console.error(e);

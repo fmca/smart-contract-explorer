@@ -83,4 +83,13 @@ export class State {
     static initial(metadata: Metadata, address: string, observation: Observation): State {
         return new State(metadata, address, Trace.empty(), observation);
     }
+
+    // static fromObject(object: object): State {
+    //     const { metadata, address, trace, observation } = object;
+    //     return new State(
+    //         Metadata.fromObject(metadata),
+    //         address,
+    //         Trace.fromObject(trace),
+    //         Observation.fromObject(observation));
+    // }
 }
