@@ -13,6 +13,11 @@ export class Invocation {
         return Method.equals(this.method, that.method)
             && Values.equals(this.inputs, that.inputs);
     }
+
+    static deserialize(obj: { [K in keyof Invocation]: Invocation[K] }): Invocation {
+        const { method, inputs } = obj;
+        return new Invocation(method, inputs);
+    }
 }
 
 export class InvocationGenerator {

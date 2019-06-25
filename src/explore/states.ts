@@ -19,6 +19,11 @@ export class Result {
     equals(that: Result): boolean {
         return Values.equals(this.values, that.values);
     }
+
+    static deserialize(obj: { [K in keyof Result]: Result[K] }): Result {
+        const { values } = obj;
+        return new Result(values);
+    }
 };
 
 export class Operation {
@@ -33,6 +38,13 @@ export class Operation {
     equals(that: Operation): boolean {
         return this.invocation.equals(that.invocation)
             && this.result.equals(that.result);
+    }
+
+    static deserialize(obj: { [K in keyof Operation]: Operation[K] }): Operation {
+        const { invocation: i, result: r } = obj;
+        const invocation = Invocation.deserialize(i);
+        const result = Result.deserialize(r);
+        return new Operation(invocation, result);
     }
 }
 
@@ -53,6 +65,12 @@ export class Trace {
     static empty(): Trace {
         return new Trace([]);
     }
+
+    static deserialize(obj: { [K in keyof Trace]: Trace[K] }): Trace {
+        const { operations: ops } = obj;
+        const operations = ops.map(Operation.deserialize);
+        return new Trace(operations);
+    }
 }
 
 export class Observation {
@@ -65,6 +83,12 @@ export class Observation {
     equals(that: Observation): boolean {
         return this.operations.length === that.operations.length
             && this.operations.every((o1,i) => o1.equals(that.operations[i]));
+    }
+
+    static deserialize(obj: { [K in keyof Observation]: Observation[K] }): Observation {
+        const { operations: ops } = obj;
+        const operations = ops.map(Operation.deserialize);
+        return new Observation(operations);
     }
 }
 
@@ -84,12 +108,10 @@ export class State {
         return new State(metadata, address, Trace.empty(), observation);
     }
 
-    // static fromObject(object: object): State {
-    //     const { metadata, address, trace, observation } = object;
-    //     return new State(
-    //         Metadata.fromObject(metadata),
-    //         address,
-    //         Trace.fromObject(trace),
-    //         Observation.fromObject(observation));
-    // }
+    static deserialize(obj: { [K in keyof State]: State[K] }): State {
+        const { metadata, address, trace: t, observation: o } = obj;
+        const trace = Trace.deserialize(t);
+        const observation = Observation.deserialize(o);
+        return new State(metadata, address, trace, observation);
+    }
 }

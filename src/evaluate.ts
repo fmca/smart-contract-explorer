@@ -10,18 +10,32 @@ import * as Chain from './utils/chain';
 
 const debug = Debugger(__filename);
 
-export interface Parameters { }
+interface Request {
+    state: State;
+    expression: Expr;
+}
 
+interface Response {
+    result: boolean;
+}
 
 export class Evaluator {
     static DELIMITER = "@";
 
-    constructor(public chain: Chain.BlockchainInterface) { }
+    executer: Executer;
 
-    async listen(params: Parameters) {
+    constructor(public chain: Chain.BlockchainInterface) {
+        const creator = new ContractCreator(this.chain);
+        this.executer = new Executer(creator);
+    }
+
+    async listen() {
         for await (const line of lines(process.stdin)) {
+            debug(`line: %s`, line);
             const request = this.parseRequest(line);
+            debug(`request: %o`, request);
             const result = await this.processRequest(request);
+            debug(`result: %o`, result);
             console.log(`${result}`);
         }
     }
@@ -29,9 +43,7 @@ export class Evaluator {
     async processRequest(request: Request): Promise<Response> {
         const { state, expression } = request;
         const invocation = this.invocationOfExpr(expression);
-        const creator = new ContractCreator(this.chain);
-        const executer = new Executer(creator);
-        const { operation } = await executer.execute(state, invocation);
+        const { operation } = await this.executer.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
 
         if (typeof(result) !== 'boolean')
@@ -51,25 +63,17 @@ export class Evaluator {
             throw new Error(`unexpected request: ${line}`);
 
         const [ stateString, exprString ] = split;
-        const state = JSON.parse(stateString);
+        const object = JSON.parse(stateString);
+        const state = State.deserialize(object);
         const expression = Expr.parse(exprString);
         return { state, expression };
     }
 
-    static async listen(params: Parameters) {
+    static async listen() {
         const chain = await Chain.get();
         const evaluator = new Evaluator(chain);
-        await evaluator.listen(params);
+        await evaluator.listen();
     }
-}
-
-interface Request {
-    state: State;
-    expression: Expr;
-}
-
-interface Response {
-    result: boolean;
 }
 
 function lines(input: stream.Readable): AsyncIterable<string> {
