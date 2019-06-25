@@ -1,7 +1,7 @@
 import { Node, IndexAccess, Identifier } from './ast';
 
 interface App extends Array<Expr> { }
-type Expr = App | string;
+export type Expr = App | string;
 
 export function parse(s: string): Expr {
     const json = s
