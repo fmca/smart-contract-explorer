@@ -10,7 +10,7 @@ async function main() {
         throw Error(`Expected zero arguments`);
 
     try {
-        await Evaluator.listen({});
+        await Evaluator.listen();
 
     } catch (e) {
         console.error(e);
