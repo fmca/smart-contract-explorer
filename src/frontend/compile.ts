@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import { Debugger } from '../utils/debug';
 import * as Solc from './solc';
 import { Metadata } from './metadata';
+import { SourceUnit } from './ast';
 
 const debug = Debugger(__filename);
 
@@ -38,15 +39,16 @@ function handleErrors(output: Solc.Output): void {
     }
 }
 
-function toMetadata(output: Solc.Output) {
-    const { contracts, sources} = output;
+function toMetadata(output: Solc.Output): Metadata {
+    const { contracts, sources } = output;
     const sourceEntries = Object.entries(sources);
 
     if (sourceEntries.length != 1)
         throw Error(`expected single source`);
 
     const [ [sourceName, nodes] ] = sourceEntries;
-    const { ast: { nodes: [ , { nodes: members }] } } = nodes;
+    const { ast } = nodes;
+    const { nodes: [ , { nodes: members }] } = ast as any;
     const contractEntries = Object.entries(contracts[sourceName]);
 
     if (contractEntries.length != 1)
@@ -57,6 +59,6 @@ function toMetadata(output: Solc.Output) {
     const { abi, userdoc: { methods: userdoc }, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
 
-    const metadata = { abi, name, bytecode, userdoc, members };
+    const metadata = { abi, name, bytecode, userdoc, ast, members };
     return metadata;
 }

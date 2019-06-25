@@ -1,4 +1,5 @@
 import { ABIDefinition } from 'web3/eth/abi';
+import { SourceUnit, ContractMember } from './ast';
 
 export type Method = ABIDefinition;
 
@@ -13,5 +14,6 @@ export interface Metadata {
     abi: Method[];
     bytecode: string;
     userdoc: object;
-    members: object;
+    ast: SourceUnit;
+    members: ContractMember[];
 }

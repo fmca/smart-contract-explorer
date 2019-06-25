@@ -1,4 +1,5 @@
 import { Method } from './metadata';
+import { SourceUnit } from './ast';
 
 const solc = require('solc');
 
@@ -21,9 +22,7 @@ export interface Input {
 export interface Output {
     sources: {
         [name: string]: {
-            ast: {
-                nodes: { nodes: object }[]
-            }
+            ast: SourceUnit
         }
     };
     contracts: {
