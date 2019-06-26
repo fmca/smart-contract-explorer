@@ -3,11 +3,12 @@ import * as readline from 'readline';
 import stream from 'stream';
 import { Expr } from './frontend/sexpr';
 import { State } from './explore/states';
+import * as Compile from './frontend/compile';
 import { ExecutorFactory } from './explore/execute';
 import { Invocation } from './explore/invocations';
 import { ContractCreator } from './explore/creator';
 import * as Chain from './utils/chain';
-import { Address } from './frontend/metadata';
+import { Address, Metadata } from './frontend/metadata';
 
 const debug = Debugger(__filename);
 
@@ -23,6 +24,8 @@ interface Response {
 export class Evaluator {
     static DELIMITER = "@";
 
+    metadataCache = new Map<string, Metadata>();
+
     constructor(public executorFactory: ExecutorFactory, public account: Address) { }
 
     async listen() {
@@ -37,10 +40,11 @@ export class Evaluator {
     }
 
     async processRequest(request: Request): Promise<Response> {
-        const { state: s, expression } = request;
-        const [ state, invocation ] = await getInvocation(s, expression);
-        const { metadata } = state;
-        const executor = this.executorFactory.getExecutor(metadata, this.account);
+        const { state, expression } = request;
+        const { contractId } = state;
+        const metadata = await this.getMetadata(contractId);
+        const [ extension, invocation ] = await getExtension(metadata, expression);
+        const executor = this.executorFactory.getExecutor(extension, this.account);
         const { operation } = await executor.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
 
@@ -63,6 +67,14 @@ export class Evaluator {
         return { state, expression };
     }
 
+    async getMetadata(contractId: string): Promise<Metadata> {
+        if (!this.metadataCache.has(contractId)) {
+            const metadata = await Compile.fromFile(contractId);
+            this.metadataCache.set(contractId, metadata);
+        }
+        return this.metadataCache.get(contractId)!;
+    }
+
     static async listen() {
         const chain = await Chain.get();
         const creator = new ContractCreator(chain);
@@ -73,7 +85,7 @@ export class Evaluator {
     }
 }
 
-async function getInvocation(state: State, expr: Expr): Promise<[State,Invocation]> {
+async function getExtension(metadata: Metadata, expr: Expr): Promise<[Metadata, Invocation]> {
     throw Error(`TODO implement me`);
 }
 

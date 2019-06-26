@@ -28,13 +28,13 @@ export class Executor {
     async initial(address: Address): Promise<State> {
         const context = await this.createContext(address);
         const observation = await this.getObservation(context);
+        const { source: { path: contractId }} = this.metadata;
         const trace = new Trace([]);
-        return new State(this.metadata, address, trace, observation);
+        return new State(contractId, address, trace, observation);
     }
 
     async execute(state: State, invocation: Invocation): Promise<Effect> {
-        // TODO use this.metadata or state.metadata?
-        const { metadata, address, trace: t } = state;
+        const { contractId, address, trace: t } = state;
         const context = await this.createContext(address);
 
         context.replayTrace(t);
@@ -46,15 +46,16 @@ export class Executor {
         const trace = new Trace(actions);
 
         const observation = await this.getObservation(context);
-        const nextState = new State(metadata, address, trace, observation);
+        const nextState = new State(contractId, address, trace, observation);
         return { operation, state: nextState };
     }
 
     async executeTrace(trace: Trace, address: Address): Promise<State> {
+        const { source: { path: contractId }} = this.metadata;
         const context = await this.createContext(address);
         await context.replayTrace(trace);
         const observation = await this.getObservation(context);
-        return new State(this.metadata, address, trace, observation);
+        return new State(contractId, address, trace, observation);
     }
 
     async getObservation(context: Context): Promise<Observation> {
