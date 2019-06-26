@@ -5,7 +5,7 @@ import { Invocation, InvocationGenerator } from './invocations';
 import { valuesOf } from './values';
 import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
-import { Metadata } from '../frontend/metadata';
+import { Address, Metadata } from '../frontend/metadata';
 
 const debug = Debugger(__filename);
 
@@ -14,71 +14,111 @@ type Effect = {
     state: State;
 };
 
-export class Executer {
+export class ExecutorFactory {
     constructor(public creator: ContractCreator) { }
 
-    async initial(metadata: Metadata, address: string): Promise<State> {
-        const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata, this.creator).observers();
-        const observations = await observe(contract, observers);
+    getExecutor(metadata: Metadata, account: Address): Executor {
+        return new Executor(this.creator, metadata, account);
+    }
+}
+
+export class Executor {
+    constructor(public creator: ContractCreator, public metadata: Metadata, public account: Address) { }
+
+    async initial(address: Address): Promise<State> {
+        const context = await this.createContext(address);
+        const observation = await this.getObservation(context);
         const trace = new Trace([]);
-        return new State(metadata, address, trace, observations);
+        return new State(this.metadata, address, trace, observation);
     }
 
     async execute(state: State, invocation: Invocation): Promise<Effect> {
-        const { metadata, address } = state;
-        const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata, this.creator).observers();
+        // TODO use this.metadata or state.metadata?
+        const { metadata, address, trace: t } = state;
+        const context = await this.createContext(address);
 
-        for (const { invocation } of state.trace.operations) {
-            invoke(contract, invocation, address);
-        }
-
-        await invoke(contract, invocation, address);
+        context.replayTrace(t);
+        await context.invoke(invocation);
 
         const result = new Result([]);
         const operation = new Operation(invocation, result);
         const actions = [...state.trace.operations, operation];
         const trace = new Trace(actions);
 
-        const observations = await observe(contract, observers);
-        const nextState = new State(metadata, address, trace, observations);
+        const observation = await this.getObservation(context);
+        const nextState = new State(metadata, address, trace, observation);
         return { operation, state: nextState };
     }
-}
 
-async function invoke(contract: Contract, invocation: Invocation, from: string): Promise<void> {
-    const { method, inputs } = invocation;
-    const { name } = method;
-
-    const tx = contract.methods[name!](...inputs);
-    const gas = await tx.estimateGas() * 10;
-
-    debug(`sending transaction from %o with gas %o`, from, gas);
-    return tx.send({ from, gas });
-}
-
-async function invokeReadOnly(contract: Contract, invocation: Invocation): Promise<Result> {
-    const { method, inputs } = invocation;
-    const { name } = method;
-
-    debug(`calling method: %o`, invocation);
-    const outputs = await contract.methods[name!](...inputs).call();
-
-    const values = valuesOf(outputs);
-    const result = new Result(values);
-    debug("result: %o", outputs);
-
-    return result;
-}
-
-async function observe(contract: Contract, observers: AsyncIterable<Invocation>): Promise<Observation> {
-    const operations: Operation[] = [];
-
-    for await (const invocation of observers) {
-        const result = await invokeReadOnly(contract, invocation);
-        operations.push(new Operation(invocation, result));
+    async executeTrace(trace: Trace, address: Address): Promise<State> {
+        const context = await this.createContext(address);
+        await context.replayTrace(trace);
+        const observation = await this.getObservation(context);
+        return new State(this.metadata, address, trace, observation);
     }
 
-    return new Observation(operations);
+    async getObservation(context: Context): Promise<Observation> {
+        const observers = new InvocationGenerator(this.metadata, this.creator).observers();
+        const observation = await context.observe(observers);
+        return observation;
+    }
+
+    async createContext(address: Address): Promise<Context> {
+        const contract = await this.creator.create(this.metadata, address);
+        return new Context(contract, this.account);
+    }
+}
+
+class Context {
+    constructor(public contract: Contract, public account: Address) { }
+
+    async replayTrace(trace: Trace): Promise<void> {
+        const { operations } = trace;
+        const invocations = operations.map(({ invocation }) => invocation);
+        return this.invokeSequence(invocations);
+    }
+
+    async invokeSequence(invocations: Invocation[]): Promise<void> {
+        let promise = new Promise<void>(_ => {});
+        for (const invocation of invocations)
+            promise = this.invoke(invocation);
+        return promise;
+    }
+
+    async invoke(invocation: Invocation): Promise<void> {
+        const { method, inputs } = invocation;
+        const { name } = method;
+        const from = this.account;
+
+        const tx = this.contract.methods[name!](...inputs);
+        const gas = await tx.estimateGas() * 10;
+
+        debug(`sending transaction from %o with gas %o`, from, gas);
+        return tx.send({ from, gas });
+    }
+
+    async invokeReadOnly(invocation: Invocation): Promise<Result> {
+        const { method, inputs } = invocation;
+        const { name } = method;
+
+        debug(`calling method: %o`, invocation);
+        const outputs = await this.contract.methods[name!](...inputs).call();
+
+        const values = valuesOf(outputs);
+        const result = new Result(values);
+        debug("result: %o", outputs);
+
+        return result;
+    }
+
+    async observe(observers: AsyncIterable<Invocation>): Promise<Observation> {
+        const operations: Operation[] = [];
+
+        for await (const invocation of observers) {
+            const result = await this.invokeReadOnly(invocation);
+            operations.push(new Operation(invocation, result));
+        }
+
+        return new Observation(operations);
+    }
 }

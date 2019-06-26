@@ -1,6 +1,7 @@
 import { ABIDefinition } from 'web3/eth/abi';
 import { SourceUnit, ContractMember } from './ast';
 
+export type Address = string;
 export type Method = ABIDefinition;
 
 export namespace Method {
