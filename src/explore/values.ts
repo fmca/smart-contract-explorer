@@ -1,6 +1,6 @@
 import { Address } from "../frontend/metadata";
 
-export type Value = number | boolean;
+export type Value = number | boolean | Address;
 
 export namespace Value {
     export function equals(v1: Value, v2: Value) {
@@ -26,28 +26,30 @@ export function valuesOf(x: any): Value[] {
 export class ValueGenerator {
     constructor(public accounts: Address[]) { }
 
-    async * valuesOfType(type: string): AsyncIterable<Value> {
+    * intValues(): Iterable<Value> {
+        for (const v of [0,1,2])
+            yield v;
+    }
 
-        if (type.match(/int\d*/)) {
-            for (const v of [0,1,2])
-                yield v;
-            return;
-        }
+    * addressValues(): Iterable<Value> {
+        // TODO: consider which accounts
 
-        if (type === 'address') {
+        for (const account of this.accounts.slice(0, 2))
+            yield account;
+    }
 
-            // TODO: consider which accounts
+    valuesOfType(type: string): Iterable<Value> {
 
-            for (const account of this.accounts.slice(0, 2))
-                /* yield account */ ;
+        if (type.match(/int\d*/))
+            return this.intValues();
 
-            throw Error(`TODO generate address values`);
-        }
+        if (type === 'address')
+            return this.addressValues();
 
         throw Error(`unexpected type: ${type}`);
     }
 
-    async * valuesOfTypes(types: string[]): AsyncIterable<Value[]> {
+    * valuesOfTypes(types: string[]): Iterable<Value[]> {
         if (types.length === 0) {
             yield [];
             return;
@@ -58,7 +60,7 @@ export class ValueGenerator {
 
         const [ type ] = types;
 
-        for await (const value of this.valuesOfType(type))
+        for (const value of this.valuesOfType(type))
             yield [value];
     }
 }

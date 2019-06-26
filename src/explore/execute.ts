@@ -123,7 +123,7 @@ class Context {
         return result;
     }
 
-    async observe(observers: AsyncIterable<Invocation>): Promise<Observation> {
+    async observe(observers: Iterable<Invocation>): Promise<Observation> {
         const operations: Operation[] = [];
 
         for await (const invocation of observers) {

@@ -37,29 +37,29 @@ export class InvocationGenerator {
         this.valueGenerator = new ValueGenerator(accounts);
     }
 
-    async * invocationsWith(accept: (method: Method) => boolean): AsyncIterable<Invocation> {
+    * invocationsWith(accept: (method: Method) => boolean): Iterable<Invocation> {
         const { abi } = this.metadata;
         for (const method of abi) {
             if (!accept(method))
                 continue;
 
             const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
-            for await (const inputs of this.valueGenerator.valuesOfTypes(types)) {
+            for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
                 const invocation = new Invocation(method, ...inputs);
                 yield invocation;
             }
         }
     }
 
-    invocations(): AsyncIterable<Invocation> {
+    invocations(): Iterable<Invocation> {
         return this.invocationsWith(() => true);
     }
 
-    mutators(): AsyncIterable<Invocation> {
+    mutators(): Iterable<Invocation> {
         return this.invocationsWith(isMutator);
     }
 
-    observers(): AsyncIterable<Invocation> {
+    observers(): Iterable<Invocation> {
         return this.invocationsWith(m => !isMutator(m));
     }
 }

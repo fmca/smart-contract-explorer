@@ -55,7 +55,7 @@ describe('invocation generation', function() {
         }`;
         const generator = await getGenerator(contract, accounts);
         const invocations = [];
-        for await (const invocation of generator.invocations())
+        for (const invocation of generator.invocations())
             invocations.push(invocation);
         assert.ok(invocations.some(({ method: { name } }) => name === 'get'));
     });
