@@ -2,7 +2,7 @@ import { State } from './states';
 import { ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { Explorer, Transition } from './explorer';
-import { Metadata } from '../frontend/metadata';
+import { Address, Metadata } from '../frontend/metadata';
 import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
@@ -10,7 +10,7 @@ const debug = Debugger(__filename);
 interface Parameters {
     source: Metadata;
     target: Metadata;
-    address: string;
+    address: Address;
     limiters: LimiterFactory;
 };
 
@@ -25,8 +25,8 @@ type SimulationExample = {
 export class Examples {
     explorer: Explorer;
 
-    constructor(public factory: ExecutorFactory) {
-        this.explorer = new Explorer(factory);
+    constructor(public factory: ExecutorFactory, public account: Address) {
+        this.explorer = new Explorer(factory, account);
     }
 
     async * simulationExamples(params: Parameters): AsyncIterable<SimulationExample> {

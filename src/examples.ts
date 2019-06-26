@@ -13,14 +13,14 @@ interface Parameters {
 export async function run(parameters: Parameters) {
     const { sourceFilename, targetFilename } = parameters;
     const chain = await Chain.get();
-    const [ address ] = await chain.web3.eth.getAccounts();
+    const [ address, account ] = await chain.web3.eth.getAccounts();
 
     const source = await Compile.fromFile(sourceFilename);
     const target = await Compile.fromFile(targetFilename);
 
     const creator = new ContractCreator(chain);
     const factory = new ExecutorFactory(creator)
-    const examples = new Examples(factory);
+    const examples = new Examples(factory, account);
     const limiters = new StateCountLimiterFactory(5);
 
     for await (const example of examples.simulationExamples({ source, target, address, limiters })) {
