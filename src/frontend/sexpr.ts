@@ -1,4 +1,4 @@
-import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Assignment, Literal } from './ast';
+import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Assignment, Literal, Conditional } from './ast';
 
 interface App extends Array<Expr> { }
 export type Expr = App | string;
@@ -7,8 +7,10 @@ type Uoperators = '-' | '!' | '--' | '++';
 
 export namespace Expr {
     export function parse(s: string): Expr {
+        //const alphabet = /[\w\-+\|\/\*\!\=\<\>\&]/;
+       // const alphabet = '[\w\-\+\/\*\!\=\<\>\_]+';
         const json = s
-            .replace(/([\w\-+\|\/\*\!\=\<\>\&]+)/g, '"$1"')
+            .replace(/([\w\-\+\/\*\!\=\<\>\_]+)/g, '"$1"')
             .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
             .replace(/[(]/g, '[')
             .replace(/[)]/g, ']');
@@ -50,18 +52,30 @@ class Visitor<T> {
                 checkArity(args, 2);
                 const [ base, index ] = args;
                 return this.visitIndex(base, index);
-            case '+': case '-': case '*': case '/': case '||': case '&&': case '==': case '!=': case '<': case '<=': case '>=': case '>':
+            case '+': case '-': case '*': case '/': case '<': case '<=': case '>=': case '>':
                     checkArity(args, 2);
                     const [bleft, bright] = args;
                     return this.visitBinaryOperation(head, bleft, bright);
-            case '-': case '!': case '--': case '++':
-                    checkArity(args, 1);
-                    const [usub] = args;
-                    return this.visitUnaryOperation(head, usub);
             case '=':
                     checkArity(args, 2);
-                    const [lhs,rhs] = args;
-                    return this.visitAssignment(lhs,rhs);
+                    const [eleft, eright] = args;
+                    return this.visitBinaryOperation('==', eleft, eright);
+            case 'or':
+                    checkArity(args, 2);
+                    const [orleft, orright] = args;
+                    return this.visitBinaryOperation('||', orleft, orright);
+            case 'not':
+                    checkArity(args, 1);
+                    const [usub] = args;
+                    return this.visitUnaryOperation('!', usub);
+            case 'and':
+                    if (args.length < 2)
+                        throw Error(`expected arity should be => 2, got ${args.length}`);
+                    return this.visitAndOperation(args);
+            case 'ite':
+                    checkArity(args, 3);
+                    const [itecond, itetrue, itefalse] = args;
+                    return this.visitIteOperation(itecond, itetrue, itefalse);
             default:
                 return unimplemented(expr);
         }
@@ -75,12 +89,16 @@ class Visitor<T> {
         return unimplemented([ head, bleft, bright ]);
     }
 
-    visitUnaryOperation(head: Uoperators, usub: Expr): T {
-        return unimplemented([ head, usub]);
+    visitAndOperation(args: Expr[]): T {
+        return unimplemented(args);
     }
 
-    visitAssignment(lhs: Expr, rhs: Expr): T {
-        return unimplemented([ '=', lhs, rhs ]);
+    visitIteOperation(itecond: Expr, itetrue: Expr, itefalse: Expr): T {
+        return unimplemented([itecond, itetrue, itefalse ]);
+    }
+    
+    visitUnaryOperation(head: Uoperators, usub: Expr): T {
+        return unimplemented([ head, usub]);
     }
 
     visitIdentifier(name: string): T {
@@ -113,6 +131,31 @@ class ExprToNode extends Visitor<Node> {
         return { id, src, nodeType, operator, leftExpression, rightExpression };
     }
 
+    visitAndOperation(args: Expr): BinaryOperation {
+        const [lExpr, ...rargs] = args;
+        const id = 0;
+        const src = "";
+        const nodeType = 'BinaryOperation';
+        const operator = '&&';
+        var rightExpression;
+        if (rargs.length > 1)
+            rightExpression = this.visitAndOperation(rargs);
+        else
+            rightExpression = this.visit(rargs);
+        const leftExpression = this.visit(lExpr);
+        return { id, src, nodeType, operator, leftExpression, rightExpression };
+    }
+
+    visitIteOperation(itecond: Expr, itetrue: Expr, itefalse: Expr): Conditional {
+        const id = 0;
+        const src = "";
+        const nodeType = 'Conditional';
+        const condition = this.visit(itecond);
+        const falseExpression = this.visit(itefalse);
+        const trueExpression = this.visit(itetrue);
+        return { id, src, nodeType, condition, falseExpression, trueExpression };
+    }
+
     visitUnaryOperation(uoperator: Uoperators, usub: Expr): UnaryOperation {
         const id = 0;
         const src = "";
@@ -121,16 +164,6 @@ class ExprToNode extends Visitor<Node> {
         const operator = uoperator;
         const subExpression = this.visit(usub);
         return { id, src, nodeType, prefix, operator, subExpression};
-    }
-
-    visitAssignment(lhs: Expr, rhs: Expr): Assignment {
-        const id = 0;
-        const src = "";
-        const nodeType = 'Assignment';
-        const operator = '=';
-        const leftHandSide = this.visit(lhs);
-        const rightHandSide = this.visit(rhs);
-        return { id, src, nodeType, operator, rightHandSide, leftHandSide };
     }
 
     visitIdentifier(name: string): Identifier {

@@ -249,7 +249,7 @@ const ASTcondition =
 
     it('generate s-expression from ast condition', async function() {
         const expr = toSExpr(ASTcondition);
-        assert.deepEqual(expr, `(== k 1)`);
+        assert.deepEqual(expr, `(= k 1)`);
     });
 
     it('generate s-expression from ast of false', async function() {
@@ -264,7 +264,7 @@ const ASTcondition =
 
     it('generate s-expression from ast', async function() {
       const expr = toSExpr(ast);
-      assert.deepEqual(expr, `(= (index counters i) (if (== k 1) (+ (index counters i) (* 2 k)) (+ (index counters i) k)))`);
+      assert.deepEqual(expr, `(= (index counters i) (ite (= k 1) (+ (index counters i) (* 2 k)) (+ (index counters i) k)))`);
     });
 
     it('generate solidity expression from ast', async function() {

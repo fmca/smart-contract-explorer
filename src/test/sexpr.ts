@@ -20,9 +20,14 @@ describe('sexpr', function() {
         assert.deepEqual(expr, [">=", "a", "b"]);
     });
 
+    it('parses boolean sexpressions with values', async function() {
+        const expr = Expr.parse("(>= 1 0)");
+        assert.deepEqual(expr, [">=", "1", "0"]);
+    });
+
     it('parses logical sexpressions', async function() {
-        const expr = Expr.parse("(&& a b)");
-        assert.deepEqual(expr, ["&&", "a", "b"]);
+        const expr = Expr.parse("(and a_a b)");
+        assert.deepEqual(expr, ["and", "a_a", "b"]);
     });
 
     it('parses nested sexpressions', async function() {

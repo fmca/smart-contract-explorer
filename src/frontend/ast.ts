@@ -185,15 +185,30 @@ class NodeToSExpr extends NodeVisitor<string> {
     visitBinaryOperation(node: BinaryOperation) {
         const right = this.visit(node.rightExpression);
         const left = this.visit(node.leftExpression);
-        return `(${node.operator} ${left} ${right})`;
+        switch (node.operator) {
+            case '+': case '-': case '*': case '/': case '<': case '<=': case '>=': case '>':
+                return `(${node.operator} ${left} ${right})`;
+            case '==':
+                return `(= ${left} ${right})`;
+            case '||':
+                return `(or ${left} ${right})`;
+            case '&&':
+                return `(and ${left} ${right})`;
+            default:
+                throw Error(`unexpected node operator: ${node.operator}`);
+        }
     }
 
     visitUnaryOperation(node: UnaryOperation) {
         const sub = this.visit(node.subExpression);
-        if(node.prefix)
-            return `(${node.operator} ${sub})`;
-        else 
-            return `(${sub} ${node.operator})`;
+        switch (node.operator) {
+                case '!': 
+                    return `(not ${sub})`;
+                case '-':
+                    return `(-${sub})`;
+                default:
+                    throw Error(`unexpected node operator: ${node.operator}`);
+        }
     }
 
     visitConditional(node: Conditional) {
@@ -201,7 +216,7 @@ class NodeToSExpr extends NodeVisitor<string> {
         const trueE = this.visit(node.trueExpression);
         const falseE = this.visit(node.falseExpression);
 
-        return `(if ${condition} ${trueE} ${falseE})`;
+        return `(ite ${condition} ${trueE} ${falseE})`;
     }
 }
 
