@@ -35,9 +35,9 @@ export class Evaluator {
             debug(`line: %s`, line);
             const request = this.parseRequest(line);
             debug(`request: %o`, request);
-            const result = await this.processRequest(request);
-            debug(`result: %o`, result);
-            console.log(`${result}`);
+            const response = await this.processRequest(request);
+            debug(`response: %o`, response);
+            console.log(`${response}`);
         }
     }
 
