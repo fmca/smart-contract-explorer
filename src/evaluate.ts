@@ -43,7 +43,8 @@ export class Evaluator {
         const { state, expression } = request;
         const { contractId } = state;
         const metadata = await this.getMetadata(contractId);
-        const [ extension, invocation ] = await getExtension(metadata, expression);
+        const [ extension, methodName ] = await getExtension(metadata, expression);
+        const invocation = await getInvocation(extension, methodName);
         const executor = this.executorFactory.getExecutor(extension, this.account);
         const { operation } = await executor.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
@@ -85,8 +86,15 @@ export class Evaluator {
     }
 }
 
-async function getExtension(metadata: Metadata, expr: Expr): Promise<[Metadata, Invocation]> {
+async function getExtension(metadata: Metadata, expr: Expr): Promise<[Metadata,string]> {
     throw Error(`TODO implement me`);
+}
+
+function getInvocation({ abi }: Metadata, methodName: string): Invocation {
+    const method = abi.find(({ name }) => name === methodName);
+    if (method === undefined)
+        throw Error(`method ${methodName} not found`);
+    return new Invocation(method);
 }
 
 function lines(input: stream.Readable): AsyncIterable<string> {

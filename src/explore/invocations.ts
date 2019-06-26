@@ -3,7 +3,14 @@ import { Value, Values, ValueGenerator } from './values';
 import { ContractCreator } from './creator';
 
 export class Invocation {
-    constructor(public method: Method, public inputs: Value[]) {}
+    public inputs: Value[];
+    constructor(public method: Method, ...args: Value[]) {
+        const { name, inputs } = method;
+        const count = inputs === undefined ? 0 : inputs.length;
+        if (args.length !== count)
+            throw Error(`method ${name} requires ${count} parameters`);
+        this.inputs = args;
+    }
 
     toString() {
         return `${this.method.name}(${this.inputs.join(', ')})`;
@@ -16,7 +23,7 @@ export class Invocation {
 
     static deserialize(obj: { [K in keyof Invocation]: Invocation[K] }): Invocation {
         const { method, inputs } = obj;
-        return new Invocation(method, inputs);
+        return new Invocation(method, ...inputs);
     }
 }
 
@@ -35,7 +42,7 @@ export class InvocationGenerator {
 
             const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
             for await (const inputs of this.valueGenerator.valuesOfTypes(types)) {
-                const invocation = new Invocation(method, inputs);
+                const invocation = new Invocation(method, ...inputs);
                 yield invocation;
             }
         }
