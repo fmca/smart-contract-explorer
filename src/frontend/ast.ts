@@ -1,4 +1,3 @@
-
 export interface Node {
     id: number;
     src: string;
@@ -50,10 +49,43 @@ export interface Identifier extends Expression {
     name: string;
 }
 
+export interface Literal extends Expression {
+    nodeType: 'Literal';
+    value : string;
+}
+
 export interface IndexAccess extends Expression {
     nodeType: 'IndexAccess';
     baseExpression: Expression;
     indexExpression: Expression;
+}
+
+export interface Assignment extends Expression {
+    nodeType: 'Assignment';
+    operator: '=';
+    rightHandSide: Expression;
+    leftHandSide: Expression;
+}
+
+export interface BinaryOperation extends Expression {
+    nodeType: 'BinaryOperation';
+    operator: '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>' ;
+    leftExpression: Expression;
+    rightExpression: Expression;
+}
+
+export interface UnaryOperation extends Expression {
+    nodeType: 'UnaryOperation';
+    prefix : boolean;
+    operator: '-' | '!' | '--' | '++' ;
+    subExpression: Expression;
+}
+
+export interface Conditional extends Expression {
+    nodeType: 'Conditional';
+    condition: Expression;
+    falseExpression: Expression;
+    trueExpression: Expression;
 }
 
 export function toSExpr(node: Node): string {
@@ -70,26 +102,58 @@ function unimplemented<T>(node: Node): T {
 
 class NodeVisitor<T> {
 
-    fromIdentifier(node: Identifier): T {
-        return unimplemented(node);
-    };
-    fromIndexAccess(node: IndexAccess): T {
+    visitIdentifier(node: Identifier): T {
         return unimplemented(node);
     }
 
-    fromReturn(node: Return): T {
+    visitLiteral(node: Literal): T {
+        return unimplemented(node);
+    }
+
+    visitIndexAccess(node: IndexAccess): T {
+        return unimplemented(node);
+    }
+
+    visitReturn(node: Return): T {
+        return unimplemented(node);
+    }
+
+    visitAssignment(node: Assignment): T {
+        return unimplemented(node);
+    }
+
+    visitBinaryOperation(node: BinaryOperation): T {
+        return unimplemented(node);
+    }
+
+    visitUnaryOperation(node: UnaryOperation): T {
+        return unimplemented(node);
+    }
+
+    visitConditional(node: Conditional): T {
         return unimplemented(node);
     }
 
     visit(node: Node): T {
+        // throw Error(`expression is : %${JSON.stringify(node)}`);
         const { nodeType } = node;
         switch (nodeType) {
             case 'Return':
-                return this.fromReturn(node as Return);
+                return this.visitReturn(node as Return);
             case 'Identifier':
-                return this.fromIdentifier(node as Identifier);
+                return this.visitIdentifier(node as Identifier);
             case 'IndexAccess':
-                return this.fromIndexAccess(node as IndexAccess);
+                return this.visitIndexAccess(node as IndexAccess);
+            case 'Assignment':
+                return this.visitAssignment(node as Assignment);
+            case 'BinaryOperation':
+                return this.visitBinaryOperation(node as BinaryOperation);   
+            case 'UnaryOperation':
+                return this.visitUnaryOperation(node as UnaryOperation);   
+            case 'Conditional':
+                return this.visitConditional(node as Conditional);
+            case 'Literal':
+                return this.visitLiteral(node as Literal);
             default:
                 throw Error(`unexpected node type: ${nodeType}`);
         }
@@ -98,26 +162,90 @@ class NodeVisitor<T> {
 
 class NodeToSExpr extends NodeVisitor<string> {
 
-    fromIdentifier(node: Identifier) {
+    visitIdentifier(node: Identifier) {
         return node.name;
     }
 
-    fromIndexAccess(node: IndexAccess) {
+    visitLiteral(node: Literal) {
+        return node.value;
+    }
+
+    visitIndexAccess(node: IndexAccess) {
         const base = this.visit(node.baseExpression);
         const index = this.visit(node.indexExpression);
         return `(index ${base} ${index})`;
+    }
+
+    visitAssignment(node: Assignment) {
+        const right = this.visit(node.rightHandSide);
+        const left = this.visit(node.leftHandSide);
+        return `(= ${left} ${right})`;
+    }
+
+    visitBinaryOperation(node: BinaryOperation) {
+        const right = this.visit(node.rightExpression);
+        const left = this.visit(node.leftExpression);
+        return `(${node.operator} ${left} ${right})`;
+    }
+
+    visitUnaryOperation(node: UnaryOperation) {
+        const sub = this.visit(node.subExpression);
+        if(node.prefix)
+            return `(${node.operator} ${sub})`;
+        else 
+            return `(${sub} ${node.operator})`;
+    }
+
+    visitConditional(node: Conditional) {
+        const condition = this.visit(node.condition);
+        const trueE = this.visit(node.trueExpression);
+        const falseE = this.visit(node.falseExpression);
+
+        return `(if ${condition} ${trueE} ${falseE})`;
     }
 }
 
 class NodeToContract extends NodeVisitor<string> {
 
-    fromIdentifier(node: Identifier) {
+    visitIdentifier(node: Identifier) {
         return node.name;
     }
 
-    fromIndexAccess(node: IndexAccess) {
+    visitLiteral(node: Literal) {
+        return node.value;
+    }
+
+    visitIndexAccess(node: IndexAccess) {
         const base = this.visit(node.baseExpression);
         const index = this.visit(node.indexExpression);
         return `${base}[${index}]`;
+    }
+
+    visitAssignment(node: Assignment) {
+        const rightHandSide = this.visit(node.rightHandSide);
+        const leftHandSide = this.visit(node.leftHandSide);
+        return `${leftHandSide} = ${rightHandSide}`;
+    }
+
+    visitBinaryOperation(node: BinaryOperation) {
+        const right = this.visit(node.rightExpression);
+        const left = this.visit(node.leftExpression);
+        return `${left} ${node.operator} ${right}`;
+    }
+
+    visitUnaryOperation(node: UnaryOperation) {
+        const sub = this.visit(node.subExpression);
+        if(node.prefix)
+            return `${node.operator}${sub}`;
+        else
+            return `${sub}${node.operator}`;
+    }
+
+    visitConditional(node: Conditional) {
+        const condition = this.visit(node.condition);
+        const trueE = this.visit(node.trueExpression);
+        const falseE = this.visit(node.falseExpression);
+
+        return `${condition}? ${trueE}: ${falseE}`;
     }
 }
