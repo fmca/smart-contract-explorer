@@ -2,8 +2,9 @@ import { State } from './states';
 import { ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { Explorer, Transition } from './explorer';
-import { Address, Metadata } from '../frontend/metadata';
+import { Metadata } from '../frontend/metadata';
 import { Debugger } from '../utils/debug';
+import { BlockchainInterface } from '../utils/chain';
 
 const debug = Debugger(__filename);
 
@@ -24,7 +25,9 @@ type SimulationExample = {
 export class Examples {
     explorer: Explorer;
 
-    constructor(public factory: ExecutorFactory, public accounts: Address[]) {
+    constructor(chain: BlockchainInterface) {
+        const { accounts } = chain;
+        const factory = new ExecutorFactory(chain);
         this.explorer = new Explorer(factory, accounts);
     }
 

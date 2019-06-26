@@ -4,6 +4,7 @@ import { valuesOf } from './values';
 import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
 import { Address, Contract, Metadata } from '../frontend/metadata';
+import { BlockchainInterface } from '../utils/chain';
 
 const debug = Debugger(__filename);
 
@@ -13,7 +14,13 @@ type Effect = {
 };
 
 export class ExecutorFactory {
-    constructor(public creator: ContractCreator, public accounts: Address[]) { }
+    public creator: ContractCreator;
+    public accounts: Address[];
+
+    constructor(chain: BlockchainInterface) {
+        this.creator = new ContractCreator(chain);
+        this.accounts = chain.accounts;
+     }
 
     getExecutor(metadata: Metadata): Executor {
         const [ account ] = this.accounts;

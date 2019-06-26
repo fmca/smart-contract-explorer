@@ -6,7 +6,6 @@ import { State } from './explore/states';
 import * as Compile from './frontend/compile';
 import { ExecutorFactory } from './explore/execute';
 import { Invocation } from './explore/invocations';
-import { ContractCreator } from './explore/creator';
 import * as Chain from './utils/chain';
 import { Metadata } from './frontend/metadata';
 
@@ -24,9 +23,12 @@ interface Response {
 export class Evaluator {
     static DELIMITER = "@";
 
+    public executorFactory: ExecutorFactory
     metadataCache = new Map<string, Metadata>();
 
-    constructor(public executorFactory: ExecutorFactory) { }
+    constructor(chain: Chain.BlockchainInterface) {
+        this.executorFactory = new ExecutorFactory(chain);
+    }
 
     async listen() {
         for await (const line of lines(process.stdin)) {
@@ -78,10 +80,7 @@ export class Evaluator {
 
     static async listen() {
         const chain = await Chain.get();
-        const { accounts } = chain;
-        const creator = new ContractCreator(chain);
-        const factory = new ExecutorFactory(creator, accounts);
-        const evaluator = new Evaluator(factory);
+        const evaluator = new Evaluator(chain);
         await evaluator.listen();
     }
 }
