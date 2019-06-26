@@ -14,26 +14,30 @@ type Effect = {
     state: State;
 };
 
-export class Executer {
+export class ExecutorFactory {
     constructor(public creator: ContractCreator) { }
 
-    async initial(metadata: Metadata, address: string): Promise<State> {
-        const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata, this.creator).observers();
-        const observations = await observe(contract, observers);
+    getExecutor(metadata: Metadata): Executor {
+        return new Executor(this.creator, metadata);
+    }
+}
+
+export class Executor {
+    constructor(public creator: ContractCreator, public metadata: Metadata) { }
+
+    async initial(address: string): Promise<State> {
+        const contract = await this.createContract(address);
+        const observation = await this.getObservation(contract);
         const trace = new Trace([]);
-        return new State(metadata, address, trace, observations);
+        return new State(this.metadata, address, trace, observation);
     }
 
     async execute(state: State, invocation: Invocation): Promise<Effect> {
-        const { metadata, address } = state;
-        const contract = await this.creator.create(metadata, address);
-        const observers = new InvocationGenerator(metadata, this.creator).observers();
+        // TODO use this.metadata or state.metadata?
+        const { metadata, address, trace: t } = state;
+        const contract = await this.createContract(address);
 
-        for (const { invocation } of state.trace.operations) {
-            invoke(contract, invocation, address);
-        }
-
+        replayTrace(contract, t, address);
         await invoke(contract, invocation, address);
 
         const result = new Result([]);
@@ -41,10 +45,40 @@ export class Executer {
         const actions = [...state.trace.operations, operation];
         const trace = new Trace(actions);
 
-        const observations = await observe(contract, observers);
-        const nextState = new State(metadata, address, trace, observations);
+        const observation = await this.getObservation(contract);
+        const nextState = new State(metadata, address, trace, observation);
         return { operation, state: nextState };
     }
+
+    async executeTrace(trace: Trace, address: string): Promise<State> {
+        const contract = await this.createContract(address);
+        await replayTrace(contract, trace, address);
+        const observation = await this.getObservation(contract);
+        return new State(this.metadata, address, trace, observation);
+    }
+
+    async createContract(address: string): Promise<Contract> {
+        return this.creator.create(this.metadata, address);
+    }
+
+    async getObservation(contract: Contract): Promise<Observation> {
+        const observers = new InvocationGenerator(this.metadata, this.creator).observers();
+        const observation = await observe(contract, observers);
+        return observation;
+    }
+}
+
+async function replayTrace(contract: Contract, trace: Trace, from: string): Promise<void> {
+    const { operations } = trace;
+    const invocations = operations.map(({ invocation }) => invocation);
+    return invokeSequence(contract, invocations, from);
+}
+
+async function invokeSequence(contract: Contract, invocations: Invocation[], from: string): Promise<void> {
+    let promise = new Promise<void>(_ => {});
+    for (const invocation of invocations)
+        promise = invoke(contract, invocation, from);
+    return promise;
 }
 
 async function invoke(contract: Contract, invocation: Invocation, from: string): Promise<void> {

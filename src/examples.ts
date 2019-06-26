@@ -1,6 +1,6 @@
 import * as Compile from './frontend/compile';
 import * as Chain from './utils/chain';
-import { Executer } from './explore/execute';
+import { Executor, ExecutorFactory } from './explore/execute';
 import { Examples } from './explore/examples';
 import { StateCountLimiterFactory } from './explore/limiter';
 import { ContractCreator } from './explore/creator';
@@ -19,8 +19,8 @@ export async function run(parameters: Parameters) {
     const target = await Compile.fromFile(targetFilename);
 
     const creator = new ContractCreator(chain);
-    const executer = new Executer(creator);
-    const examples = new Examples(executer);
+    const factory = new ExecutorFactory(creator)
+    const examples = new Examples(factory);
     const limiters = new StateCountLimiterFactory(5);
 
     for await (const example of examples.simulationExamples({ source, target, address, limiters })) {

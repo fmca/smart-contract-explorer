@@ -1,5 +1,5 @@
 import { State, Operation } from './states';
-import { Executer } from './execute';
+import { Executor, ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
 import { Metadata } from '../frontend/metadata';
@@ -17,7 +17,7 @@ export type Transition = {
 };
 
 export class Explorer {
-    constructor(public executer: Executer) { }
+    constructor(public executorFactory: ExecutorFactory) { }
 
     async * states(params: Parameters): AsyncIterable<State> {
         for await (const { post } of this.transitions(params))
@@ -27,7 +27,8 @@ export class Explorer {
     async * transitions(params: Parameters): AsyncIterable<Transition> {
         const { metadata, limiters } = params;
         const limiter = limiters.get();
-        const invGen = new InvocationGenerator(metadata, this.executer.creator);
+        const executer = this.executorFactory.getExecutor(metadata);
+        const invGen = new InvocationGenerator(metadata, this.executorFactory.creator);
         const initial = await this.initial(params);
         const workList = [ initial ];
         yield { post: initial };
@@ -39,7 +40,7 @@ export class Explorer {
                 if (!limiter.accept(pre, invocation))
                     continue;
 
-                const { operation, state: post } = await this.executer.execute(pre, invocation);
+                const { operation, state: post } = await executer.execute(pre, invocation);
                 const transition = { pre, operation, post };
                 yield transition;
                 workList.push(post);
@@ -49,7 +50,8 @@ export class Explorer {
 
     async initial(params: Parameters): Promise<State> {
         const { metadata, address } = params;
-        const state = await this.executer.initial(metadata, address);
+        const executer = this.executorFactory.getExecutor(metadata);
+        const state = await executer.initial(address);
         return state;
     }
 }

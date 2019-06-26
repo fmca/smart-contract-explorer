@@ -1,5 +1,5 @@
 import { State } from './states';
-import { Executer } from './execute';
+import { ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { Explorer, Transition } from './explorer';
 import { Metadata } from '../frontend/metadata';
@@ -25,8 +25,8 @@ type SimulationExample = {
 export class Examples {
     explorer: Explorer;
 
-    constructor(public executer: Executer) {
-        this.explorer = new Explorer(executer);
+    constructor(public factory: ExecutorFactory) {
+        this.explorer = new Explorer(factory);
     }
 
     async * simulationExamples(params: Parameters): AsyncIterable<SimulationExample> {
