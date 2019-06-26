@@ -9,9 +9,14 @@ export namespace Method {
     }
 }
 
+export interface SourceInfo {
+    path: string;
+    content: string;
+}
+
 export interface Metadata {
     name: string;
-    source: string;
+    source: SourceInfo;
     abi: Method[];
     bytecode: string;
     userdoc: object;

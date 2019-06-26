@@ -1,5 +1,9 @@
 import { Method } from './metadata';
 import { SourceUnit } from './ast';
+import fs from 'fs-extra';
+import { Debugger } from './../utils/debug';
+
+const debug = Debugger(__filename);
 
 const solc = require('solc');
 
@@ -21,29 +25,39 @@ export interface Input {
 
 export interface Output {
     sources: {
-        [name: string]: {
+        [sourcePath: string]: {
             ast: SourceUnit
         }
     };
     contracts: {
-        [name: string]: {
-            name: string;
-            abi: Method[];
-            userdoc: {
-                methods: object;
-            }
-            evm: {
-                bytecode: {
-                    object: string;
+        [sourcePath: string]: {
+            [contractName: string]: {
+                name: string;
+                abi: Method[];
+                userdoc: {
+                    methods: object;
+                }
+                evm: {
+                    bytecode: {
+                        object: string;
+                    }
                 }
             }
-        }[]
+        }
     };
     errors?: { formattedMessage: string }[];
 };
 
 export function compile(input: Input): Output {
     const json = JSON.stringify(input);
-    const output = JSON.parse(solc.compile(json));
+    const [ sourceName ] = Object.keys(input.sources);
+    const { sources: { [sourceName]: { content }} } = input;
+    const output = JSON.parse(solc.compile(json, findImports));
     return output;
+}
+
+
+function findImports (path: string) {
+    debug(`file name is: %s`, path);
+    return  {contents: fs.readFileSync(path, "utf8")};
 }
