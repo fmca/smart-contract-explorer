@@ -44,12 +44,10 @@ export class Executor {
         const context = await this.createContext();
 
         context.replayTrace(t);
-        await context.invoke(invocation);
-
-        const result = new Result([]);
+        const result = await context.invoke(invocation);
         const operation = new Operation(invocation, result);
-        const actions = [...state.trace.operations, operation];
-        const trace = new Trace(actions);
+        const operations = [...t.operations, operation];
+        const trace = new Trace(operations);
 
         const observation = await this.getObservation(context);
         const nextState = new State(contractId, trace, observation);
@@ -79,20 +77,26 @@ export class Executor {
 class Context {
     constructor(public contract: Contract, public account: Address) { }
 
-    async replayTrace(trace: Trace): Promise<void> {
+    async replayTrace(trace: Trace): Promise<Result> {
         const { operations } = trace;
         const invocations = operations.map(({ invocation }) => invocation);
         return this.invokeSequence(invocations);
     }
 
-    async invokeSequence(invocations: Invocation[]): Promise<void> {
-        let promise = new Promise<void>(_ => {});
+    async invokeSequence(invocations: Invocation[]): Promise<Result> {
+        let result = new Promise<Result>(_ => {});
         for (const invocation of invocations)
-            promise = this.invoke(invocation);
-        return promise;
+            result = this.invoke(invocation);
+        return result;
     }
 
-    async invoke(invocation: Invocation): Promise<void> {
+    async invoke(invocation: Invocation): Promise<Result> {
+        return invocation.isMutator()
+            ? this.invokeMutator(invocation)
+            : this.invokeReadOnly(invocation);
+    }
+
+    async invokeMutator(invocation: Invocation): Promise<Result> {
         const { method, inputs } = invocation;
         const { name } = method;
         const from = this.account;
@@ -101,7 +105,8 @@ class Context {
         const gas = await tx.estimateGas() * 10;
 
         debug(`sending transaction from %o with gas %o`, from, gas);
-        return tx.send({ from, gas });
+        await tx.send({ from, gas });
+        return new Result();
     }
 
     async invokeReadOnly(invocation: Invocation): Promise<Result> {
@@ -112,7 +117,7 @@ class Context {
         const outputs = await this.contract.methods[name!](...inputs).call();
 
         const values = valuesOf(outputs);
-        const result = new Result(values);
+        const result = new Result(...values);
         debug("result: %o", outputs);
 
         return result;

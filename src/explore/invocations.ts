@@ -20,6 +20,10 @@ export class Invocation {
             && Values.equals(this.inputs, that.inputs);
     }
 
+    isMutator(): boolean {
+        return isMutator(this.method);
+    }
+
     static deserialize(obj: { [K in keyof Invocation]: Invocation[K] }): Invocation {
         const { method, inputs } = obj;
         return new Invocation(method, ...inputs);

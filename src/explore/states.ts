@@ -3,7 +3,11 @@ import { Invocation } from './invocations';
 import { Metadata } from '../frontend/metadata';
 
 export class Result {
-    constructor(public values: Value[]) {}
+    public values: Value[];
+
+    constructor(...values: Value[]) {
+        this.values = values;
+    }
 
     toString() {
         switch (this.values.length) {
@@ -22,7 +26,7 @@ export class Result {
 
     static deserialize(obj: { [K in keyof Result]: Result[K] }): Result {
         const { values } = obj;
-        return new Result(values);
+        return new Result(...values);
     }
 };
 
