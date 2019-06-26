@@ -6,7 +6,6 @@ import { Address, Metadata } from '../frontend/metadata';
 
 interface Parameters {
     metadata: Metadata;
-    address: Address;
     limiters: LimiterFactory;
 };
 
@@ -17,7 +16,7 @@ export type Transition = {
 };
 
 export class Explorer {
-    constructor(public executorFactory: ExecutorFactory, public account: Address) { }
+    constructor(public executorFactory: ExecutorFactory, public accounts: Address[]) { }
 
     async * states(params: Parameters): AsyncIterable<State> {
         for await (const { post } of this.transitions(params))
@@ -27,8 +26,8 @@ export class Explorer {
     async * transitions(params: Parameters): AsyncIterable<Transition> {
         const { metadata, limiters } = params;
         const limiter = limiters.get();
-        const executer = this.executorFactory.getExecutor(metadata, this.account);
-        const invGen = new InvocationGenerator(metadata, this.executorFactory.creator);
+        const executer = this.executorFactory.getExecutor(metadata);
+        const invGen = new InvocationGenerator(metadata, this.accounts);
         const initial = await this.initial(params);
         const workList = [ initial ];
         yield { post: initial };
@@ -49,9 +48,9 @@ export class Explorer {
     }
 
     async initial(params: Parameters): Promise<State> {
-        const { metadata, address } = params;
-        const executer = this.executorFactory.getExecutor(metadata, this.account);
-        const state = await executer.initial(address);
+        const { metadata } = params;
+        const executer = this.executorFactory.getExecutor(metadata);
+        const state = await executer.initial();
         return state;
     }
 }

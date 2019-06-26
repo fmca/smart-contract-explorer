@@ -1,7 +1,5 @@
-import Contract from 'web3/eth/contract';
-
 import { Debugger } from '../utils/debug';
-import { Metadata } from '../frontend/metadata';
+import { Contract, Metadata } from '../frontend/metadata';
 import { BlockchainInterface } from '../utils/chain';
 
 const debug = Debugger(__filename);
@@ -9,33 +7,28 @@ const debug = Debugger(__filename);
 export class ContractCreator {
     constructor(public chain: BlockchainInterface) { }
 
-    async getAccounts(): Promise<string[]> {
-        const accounts = await this.chain.web3.eth.getAccounts();
-        return accounts;
-    }
-
-    async create(metadata: Metadata, address: string): Promise<Contract> {
-        const { bytecode } = metadata;
+    async create(metadata: Metadata): Promise<Contract> {
         const contract = this.getContract(metadata);
-        const instance = await this.instantiate(contract, metadata, address);
+        const instance = await this.instantiate(contract, metadata);
         return instance;
     }
 
-    async instantiate(contract: Contract, metadata: Metadata, address: string) {
+    async instantiate(contract: Contract, metadata: Metadata) {
         const { bytecode: data } = metadata;
         const tx = contract.deploy({ data, arguments: [] });
         debug(`tx: %o`, tx);
 
+        const { accounts: [ from ] } = this.chain;
         const gas = await tx.estimateGas() + 1;
         debug(`gas: %o`, gas);
 
-        const instance = await tx.send({ from: address, gas });
+        const instance = await tx.send({ from, gas });
         return instance;
     }
 
     getContract(metadata: Metadata): Contract {
         const { abi } = metadata;
-        const contract = new this.chain.web3.eth.Contract(abi);
+        const contract = this.chain.create(abi);
         (contract as any).transactionConfirmationBlocks = 1;
         return contract;
     }

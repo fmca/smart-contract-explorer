@@ -8,7 +8,7 @@ import { ExecutorFactory } from './explore/execute';
 import { Invocation } from './explore/invocations';
 import { ContractCreator } from './explore/creator';
 import * as Chain from './utils/chain';
-import { Address, Metadata } from './frontend/metadata';
+import { Metadata } from './frontend/metadata';
 
 const debug = Debugger(__filename);
 
@@ -26,7 +26,7 @@ export class Evaluator {
 
     metadataCache = new Map<string, Metadata>();
 
-    constructor(public executorFactory: ExecutorFactory, public account: Address) { }
+    constructor(public executorFactory: ExecutorFactory) { }
 
     async listen() {
         for await (const line of lines(process.stdin)) {
@@ -44,8 +44,8 @@ export class Evaluator {
         const { contractId } = state;
         const metadata = await this.getMetadata(contractId);
         const [ extension, methodName ] = await getExtension(metadata, expression);
-        const invocation = await getInvocation(extension, methodName);
-        const executor = this.executorFactory.getExecutor(extension, this.account);
+        const executor = this.executorFactory.getExecutor(extension);
+        const invocation = getInvocation(extension, methodName);
         const { operation } = await executor.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
 
@@ -78,10 +78,10 @@ export class Evaluator {
 
     static async listen() {
         const chain = await Chain.get();
+        const { accounts } = chain;
         const creator = new ContractCreator(chain);
-        const factory = new ExecutorFactory(creator);
-        const [ account ] = await creator.getAccounts();
-        const evaluator = new Evaluator(factory, account);
+        const factory = new ExecutorFactory(creator, accounts);
+        const evaluator = new Evaluator(factory);
         await evaluator.listen();
     }
 }

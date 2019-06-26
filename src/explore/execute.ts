@@ -1,11 +1,9 @@
-import Contract from 'web3/eth/contract';
-
 import { State, Trace, Observation, Operation, Result } from './states';
 import { Invocation, InvocationGenerator } from './invocations';
 import { valuesOf } from './values';
 import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
-import { Address, Metadata } from '../frontend/metadata';
+import { Address, Contract, Metadata } from '../frontend/metadata';
 
 const debug = Debugger(__filename);
 
@@ -15,27 +13,28 @@ type Effect = {
 };
 
 export class ExecutorFactory {
-    constructor(public creator: ContractCreator) { }
+    constructor(public creator: ContractCreator, public accounts: Address[]) { }
 
-    getExecutor(metadata: Metadata, account: Address): Executor {
-        return new Executor(this.creator, metadata, account);
+    getExecutor(metadata: Metadata): Executor {
+        const [ account ] = this.accounts;
+        return new Executor(this.creator, this.accounts, metadata, account);
     }
 }
 
 export class Executor {
-    constructor(public creator: ContractCreator, public metadata: Metadata, public account: Address) { }
+    constructor(public creator: ContractCreator, public accounts: Address[], public metadata: Metadata, public account: Address) { }
 
-    async initial(address: Address): Promise<State> {
-        const context = await this.createContext(address);
+    async initial(): Promise<State> {
+        const context = await this.createContext();
         const observation = await this.getObservation(context);
         const { source: { path: contractId }} = this.metadata;
         const trace = new Trace([]);
-        return new State(contractId, address, trace, observation);
+        return new State(contractId, trace, observation);
     }
 
     async execute(state: State, invocation: Invocation): Promise<Effect> {
-        const { contractId, address, trace: t } = state;
-        const context = await this.createContext(address);
+        const { contractId, trace: t } = state;
+        const context = await this.createContext();
 
         context.replayTrace(t);
         await context.invoke(invocation);
@@ -46,26 +45,26 @@ export class Executor {
         const trace = new Trace(actions);
 
         const observation = await this.getObservation(context);
-        const nextState = new State(contractId, address, trace, observation);
+        const nextState = new State(contractId, trace, observation);
         return { operation, state: nextState };
     }
 
-    async executeTrace(trace: Trace, address: Address): Promise<State> {
+    async executeTrace(trace: Trace): Promise<State> {
         const { source: { path: contractId }} = this.metadata;
-        const context = await this.createContext(address);
+        const context = await this.createContext();
         await context.replayTrace(trace);
         const observation = await this.getObservation(context);
-        return new State(contractId, address, trace, observation);
+        return new State(contractId, trace, observation);
     }
 
     async getObservation(context: Context): Promise<Observation> {
-        const observers = new InvocationGenerator(this.metadata, this.creator).observers();
+        const observers = new InvocationGenerator(this.metadata, this.accounts).observers();
         const observation = await context.observe(observers);
         return observation;
     }
 
-    async createContext(address: Address): Promise<Context> {
-        const contract = await this.creator.create(this.metadata, address);
+    async createContext(): Promise<Context> {
+        const contract = await this.creator.create(this.metadata);
         return new Context(contract, this.account);
     }
 }

@@ -1,6 +1,5 @@
-import { Method, Metadata } from '../frontend/metadata';
+import { Method, Metadata, Address } from '../frontend/metadata';
 import { Value, Values, ValueGenerator } from './values';
-import { ContractCreator } from './creator';
 
 export class Invocation {
     public inputs: Value[];
@@ -30,8 +29,8 @@ export class Invocation {
 export class InvocationGenerator {
     valueGenerator: ValueGenerator;
 
-    constructor(public metadata: Metadata, public creator: ContractCreator) {
-        this.valueGenerator = new ValueGenerator(creator);
+    constructor(public metadata: Metadata, public accounts: Address[]) {
+        this.valueGenerator = new ValueGenerator(accounts);
     }
 
     async * invocationsWith(accept: (method: Method) => boolean): AsyncIterable<Invocation> {

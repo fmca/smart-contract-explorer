@@ -3,16 +3,17 @@ import * as Chain from '../utils/chain';
 import assert from 'assert';
 import { InvocationGenerator } from '../explore/invocations';
 import { ContractCreator } from '../explore/creator';
+import { Address } from '../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
 describe('invocation generation', function() {
-    let creator: ContractCreator;
+    let accounts: Address[];
     let generator: InvocationGenerator;
 
     this.beforeAll(async function() {
         const chain = await Chain.get();
-        creator = new ContractCreator(chain);
+        accounts = chain.accounts;
 
         const contract = `${pragmas} contract C {
             int x;
@@ -20,7 +21,7 @@ describe('invocation generation', function() {
             function get() public view returns (int) { return getP(); }
             function getP() private view returns (int) { return x; }
         }`;
-        generator = await getGenerator(contract, creator);
+        generator = await getGenerator(contract, accounts);
     });
 
     it (`includes only public members`, async function() {
@@ -52,7 +53,7 @@ describe('invocation generation', function() {
             mapping (address => int) x;
             function get(address i) public view returns (int) { return x[i]; }
         }`;
-        const generator = await getGenerator(contract, creator);
+        const generator = await getGenerator(contract, accounts);
         const invocations = [];
         for await (const invocation of generator.invocations())
             invocations.push(invocation);
@@ -60,9 +61,9 @@ describe('invocation generation', function() {
     });
 });
 
-async function getGenerator(contract: string, creator: ContractCreator) {
+async function getGenerator(contract: string, accounts: Address[]) {
     const sourceName = `c.sol`;
     const metadata = await Compile.fromString(sourceName, contract);
-    const generator = new InvocationGenerator(metadata, creator);
+    const generator = new InvocationGenerator(metadata, accounts);
     return generator;
 }

@@ -93,8 +93,8 @@ export class Observation {
 }
 
 export class State {
-    constructor(public contractId: string, public address: string,
-        public trace: Trace, public observation: Observation) {}
+    constructor(public contractId: string, public trace: Trace,
+        public observation: Observation) { }
 
     toString() {
         return `[[ ${this.trace} : ${this.observation} ]]`;
@@ -104,14 +104,14 @@ export class State {
         return this.observation.equals(that.observation);
     }
 
-    static initial(contractId: string, address: string, observation: Observation): State {
-        return new State(contractId, address, Trace.empty(), observation);
+    static initial(contractId: string, observation: Observation): State {
+        return new State(contractId, Trace.empty(), observation);
     }
 
     static deserialize(obj: { [K in keyof State]: State[K] }): State {
-        const { contractId, address, trace: t, observation: o } = obj;
+        const { contractId, trace: t, observation: o } = obj;
         const trace = Trace.deserialize(t);
         const observation = Observation.deserialize(o);
-        return new State(contractId, address, trace, observation);
+        return new State(contractId, trace, observation);
     }
 }

@@ -10,7 +10,6 @@ const debug = Debugger(__filename);
 interface Parameters {
     source: Metadata;
     target: Metadata;
-    address: Address;
     limiters: LimiterFactory;
 };
 
@@ -25,24 +24,24 @@ type SimulationExample = {
 export class Examples {
     explorer: Explorer;
 
-    constructor(public factory: ExecutorFactory, public account: Address) {
-        this.explorer = new Explorer(factory, account);
+    constructor(public factory: ExecutorFactory, public accounts: Address[]) {
+        this.explorer = new Explorer(factory, accounts);
     }
 
     async * simulationExamples(params: Parameters): AsyncIterable<SimulationExample> {
-        const { source, target, address, limiters } = params;
+        const { source, target, limiters } = params;
         const context = new Context();
         const workList: SimulationExample[] = [];
 
         debug(`exploring source states`);
 
-        for await (const transition of this.explorer.transitions({ metadata: source, address, limiters })) {
+        for await (const transition of this.explorer.transitions({ metadata: source, limiters })) {
             context.addSource(transition);
         }
 
         debug(`exploring target states`);
 
-        for await (const transition of this.explorer.transitions({ metadata: target, address, limiters })) {
+        for await (const transition of this.explorer.transitions({ metadata: target, limiters })) {
             const { post: t } = transition;
             context.addTarget(transition);
 

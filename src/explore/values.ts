@@ -1,4 +1,4 @@
-import { ContractCreator } from "./creator";
+import { Address } from "../frontend/metadata";
 
 export type Value = number | boolean;
 
@@ -24,7 +24,7 @@ export function valuesOf(x: any): Value[] {
 }
 
 export class ValueGenerator {
-    constructor(public creator: ContractCreator) { }
+    constructor(public accounts: Address[]) { }
 
     async * valuesOfType(type: string): AsyncIterable<Value> {
 
@@ -35,8 +35,10 @@ export class ValueGenerator {
         }
 
         if (type === 'address') {
-            const accounts = await this.creator.getAccounts();
-            for (const account of accounts.slice(0, 2))
+
+            // TODO: consider which accounts
+
+            for (const account of this.accounts.slice(0, 2))
                 /* yield account */ ;
 
             throw Error(`TODO generate address values`);
