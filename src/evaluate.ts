@@ -23,7 +23,7 @@ interface Response {
 export class Evaluator {
     static DELIMITER = "@";
 
-    public executorFactory: ExecutorFactory
+    executorFactory: ExecutorFactory
     metadataCache = new Map<string, Metadata>();
 
     constructor(chain: Chain.BlockchainInterface) {
