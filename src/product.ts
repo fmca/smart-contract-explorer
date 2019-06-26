@@ -1,5 +1,7 @@
 import fs from 'fs-extra';
 import { Metadata } from './frontend/metadata';
+import { Expr } from './frontend/sexpr';
+import { toContract } from './frontend/ast';
 import * as Compile from './frontend/compile';
 import { Debugger } from './utils/debug';
 
@@ -11,22 +13,37 @@ export interface Parameters {
     productFile: string;
 }
 
-export async function run(parameters: Parameters) {
+
+export async function run(parameters: Parameters, product: Product) {
+
     const { specFile, implFile, productFile } = parameters;
+   
     const specMetadata = await Compile.fromFile(specFile);
     const implMetadata = await Compile.fromFile(implFile);
-    const code = getProductCode(specMetadata, implMetadata);
-    await fs.writeFile(productFile, code);
+
+    const productMetadata = product.getProductCode(parameters, specMetadata, implMetadata);
+    debug(`product is: %O`, productMetadata);
+    await fs.writeFile(productFile, productMetadata.source);
+
+    const procContract = new ProcContract();
+
+    const [newproductMetadata, featuresNames] = await procContract.extendWithFeatures(productMetadata,[`HelloAfrica.counter==HelloAmerica.counter`]);
+    debug(`newproductMetadata is: %s`, newproductMetadata.source.content);
 }
 
-function getProductCode(spec: Metadata, impl: Metadata): string {
+export class Product 
+{
+
+    getProductCode(parameters: Parameters, spec: Metadata, impl: Metadata): Metadata {
+
+    const { specFile, implFile, productFile } = parameters;
     const { abi: specAbi, name: specName } = spec;
     const { abi: implAbi, name: implName } = impl;
 
     if (specAbi.length !== implAbi.length)
         throw Error('Expected two contracts with the same methods.');
 
-    const specPreconds = computeConditions(spec);
+    const specPreconds = this.computePrePostConditions(spec);
 
     var inputs : string = ' ';
 
@@ -59,12 +76,12 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
             for (let inpEle = 0; inpEle < method.inputs.length  ;inpEle++)
             {   if(inpEle ==  method.inputs.length - 1)
                 {
-                    inputs_Type = inputs_Type + method.inputs[inpEle].name + ': ' + method.inputs[inpEle].type ;
+                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name  ;
                     inputs = inputs + method.inputs[inpEle].name ;
                 }
                 else
                 {
-                    inputs_Type = inputs_Type + method.inputs[inpEle].name + ': ' + method.inputs[inpEle].type + ', ';
+                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name +  ', ';
                     inputs = inputs + method.inputs[inpEle].name + ', ';
                 }
             }
@@ -85,21 +102,21 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
                 if(inpEle ==  method.outputs.length - 1)
                 {
                     if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type ;
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name  ;
                     else
                         outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
 
-                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
-                    outputs_Impl = outputs_Impl + 'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
+                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
+                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
                 }
                 else
                 {
                     if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type + method.outputs[inpEle].name + ': ' + method.outputs[inpEle].type + ', ';
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name + ', ';
                     else
                         outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
-                    outputs_Spec = outputs_Spec + 'spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
-                    outputs_Impl = outputs_Impl + 'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
+                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
+                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
                 }
 
                 outputs_assu[mid][inpEle] = 'require(spec_' + String(inpEle) + '_' + method.outputs[inpEle].name + ' == ' +
@@ -107,14 +124,8 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
             }
             if(method.outputs.length > 1)
             {
-                outputs_Spec = 'var (' + outputs_Spec + ')';
-                outputs_Impl = 'var (' + outputs_Impl + ')';
-            }
-            else if(method.outputs.length == 1)
-            {
-                outputs_Spec = 'var ' + outputs_Spec ;
-                outputs_Impl = 'var ' + outputs_Impl ;
-
+                outputs_Spec = '(' + outputs_Spec + ')';
+                outputs_Impl = '(' + outputs_Impl + ')';
             }
 
         }
@@ -127,9 +138,9 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
         }
         if(method.payable)
             method_Sig[mid] = method_Sig[mid] +  ' payable' ;
+        method_Sig[mid] = method_Sig[mid] + ' public '; //
         if(method.stateMutability == 'view')
-            method_Sig[mid] = method_Sig[mid] + ' view' ;
-        method_Sig[mid] = method_Sig[mid] + ' public ';
+            method_Sig[mid] = method_Sig[mid] + 'view ' ;
         if(method.outputs !== undefined && outputs_Type !== '')
         {
             method_Sig[mid] =  method_Sig[mid] + 'returns (' +  outputs_Type + ')';
@@ -141,7 +152,12 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
 
     var stdOut : string = '';
 
-    stdOut = `${stdOut} contract SimContract is  ${specName}, ${implName} {\n`  ;
+    stdOut = `${stdOut}pragma solidity ^0.5.9; \n`;
+
+    stdOut = `${stdOut}import "${specFile}"; \n`;
+    stdOut = `${stdOut}import "${implFile}"; \n`;
+
+    stdOut = `${stdOut}contract SimContract is  ${specName}, ${implName} {\n`  ;
 
     for (const mid in specAbi)
     {
@@ -160,11 +176,13 @@ function getProductCode(spec: Metadata, impl: Metadata): string {
         stdOut = `${stdOut}}\n`;
 
     }
+
     stdOut = `${stdOut}}`;
-    return stdOut;
+    const productMetadata = Compile.fromString(productFile, stdOut);
+    return productMetadata;
 }
 
-function computeConditions({ userdoc, abi, name, members }: Metadata): string[][] {
+    computePrePostConditions({ userdoc, abi, name, members }: Metadata): string[][] {
 
     debug(`specFields size: %s`, Object.keys(members).length);
     var fieldsNames : string[] = [];
@@ -215,10 +233,60 @@ function computeConditions({ userdoc, abi, name, members }: Metadata): string[][
             debug(`method spec: %o`, methodSpec);
         }
     }
-
-
     return methodComments;
 }
+
+
+
+ 
+ }
+
+ export class ProcContract
+{
+
+    async extendWithPredicate(contract: Metadata, feature:Expr): Promise<[Metadata, string]> {
+        const nodeAst = Expr.toNode(feature);
+        const strFeature = toContract(nodeAst);
+        const [newContract, funNames] = await this.extendWithFeatures(contract,[strFeature]);
+
+        if (funNames.length != 1)
+            throw Error('expected single function to be added');
+
+        return [newContract, funNames[0]];
+
+    }
+
+
+    async extendWithFeatures(contract: Metadata, features: string[]): Promise<[Metadata, string[]]> {
+
+        debug(`creating a product file to test features`);
+     
+        debug(`number of features: %s`, features.length);
+     
+
+        const featuresNames: string[] = [];
+        var stdOut: string =  contract.source.content;
+        stdOut = stdOut.replace(/}([^}]*)$/,'$1');
+        stdOut = `${stdOut}\n`;
+     
+        for (const [index, feature] of features.entries())
+        {
+             stdOut = `${stdOut}      function feature_${String(index)}() public pure returns (bool) {\n`;
+             featuresNames.push(`feature_${String(index)}`);
+             stdOut = `${stdOut}            return ${feature};\n`;
+             stdOut = `${stdOut}      }\n`;
+        }
+        stdOut = `${stdOut}}`;
+        debug(`stdOut: %s`, stdOut);
+        debug(`contract.source.path: %s`, contract.source.path);
+        const resultMetadata = await Compile.fromString(contract.source.path, stdOut);
+        
+        return [resultMetadata,featuresNames];
+     }
+
+}
+
+
 /**function getMethod(method: AbiItem, methodID: number): string {
     const signature = getSignature(method);
     const implCall = getCall(method, methodID, _);
