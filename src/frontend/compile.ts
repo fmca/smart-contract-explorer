@@ -7,14 +7,15 @@ import { SourceUnit } from './ast';
 const debug = Debugger(__filename);
 
 
-export async function fromFile(filename: string): Promise<Metadata> {
-    const code = await fs.readFile(filename, "utf8");
-    return fromString(filename, code);
+export async function fromFile(path: string): Promise<Metadata> {
+    const content = await fs.readFile(path, "utf8");
+    return fromString({ path, content });
 }
 
-export function fromString(sourceName: string, source: string): Metadata {
+export function fromString(source: SourceInfo): Metadata {
+    const { path, content } = source;
     const language = "Solidity";
-    const sources = { [sourceName]: { content: source } };
+    const sources = { [path]: { content } };
     const settings = { outputSelection: { '*': { '*': [ '*' ], '': ['ast'] } } };
     const input = { language, sources, settings };
     return fromSolcInput(input);
@@ -47,7 +48,7 @@ function handleErrors(output: Solc.Output): void {
 function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
     const { contracts, sources } = output;
     debug(`ts: %O`, contracts);
-    
+
     const { path } = source;
     const { ast } = sources[path];
     const { nodes: [ , { nodes: members }] } = ast as any;

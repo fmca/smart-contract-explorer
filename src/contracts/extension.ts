@@ -18,12 +18,14 @@ export async function extendWithPredicate(contract: Metadata, feature: Expr): Pr
 }
 
 export async function extendWithFeatures(contract: Metadata, features: string[]): Promise<[Metadata, string[]]> {
+    const { source: { path, content } } = contract;
+
     debug(`creating a product file to test features`);
 
     debug(`number of features: %s`, features.length);
 
     const featuresNames: string[] = [];
-    var stdOut: string =  contract.source.content;
+    var stdOut: string =  content;
     stdOut = stdOut.replace(/}([^}]*)$/,'$1');
     stdOut = `${stdOut}\n`;
 
@@ -36,8 +38,8 @@ export async function extendWithFeatures(contract: Metadata, features: string[])
     }
     stdOut = `${stdOut}}`;
     debug(`stdOut: %s`, stdOut);
-    debug(`contract.source.path: %s`, contract.source.path);
-    const resultMetadata = await Compile.fromString(contract.source.path, stdOut);
+    debug(`contract.source.path: %s`, path);
+    const resultMetadata = await Compile.fromString({ path, content: stdOut });
 
     return [resultMetadata,featuresNames];
 }

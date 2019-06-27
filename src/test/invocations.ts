@@ -2,7 +2,6 @@ import * as Compile from '../frontend/compile';
 import * as Chain from '../utils/chain';
 import assert from 'assert';
 import { InvocationGenerator } from '../explore/invocations';
-import { ContractCreator } from '../explore/creator';
 import { Address } from '../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
@@ -61,9 +60,9 @@ describe('invocation generation', function() {
     });
 });
 
-async function getGenerator(contract: string, accounts: Address[]) {
-    const sourceName = `c.sol`;
-    const metadata = await Compile.fromString(sourceName, contract);
+async function getGenerator(content: string, accounts: Address[]) {
+    const path = `c.sol`;
+    const metadata = await Compile.fromString({ path, content });
     const generator = new InvocationGenerator(metadata, accounts);
     return generator;
 }

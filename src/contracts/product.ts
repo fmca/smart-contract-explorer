@@ -146,7 +146,7 @@ export function getProductCode(spec: Metadata, impl: Metadata, productFile: stri
     }
 
     stdOut = `${stdOut}}`;
-    const productMetadata = Compile.fromString(productFile, stdOut);
+    const productMetadata = Compile.fromString({ path: productFile, content: stdOut });
     return productMetadata;
 }
 
