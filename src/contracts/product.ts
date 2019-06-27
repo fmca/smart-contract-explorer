@@ -1,5 +1,7 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
+import { Expr } from '../frontend/sexpr';
+import { addPrefixToNode, FunctionDefinition, Return, toSExpr, ContractMember } from '../frontend/ast';
 import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
@@ -150,18 +152,12 @@ export function getProductCode(spec: Metadata, impl: Metadata, productFile: stri
     return productMetadata;
 }
 
+
+
 function computePrePostConditions({ userdoc, abi, name, members }: Metadata): string[][] {
 
-    debug(`specFields size: %s`, Object.keys(members).length);
-    var fieldsNames : string[] = [];
-    for (const node of members as any[])
-    {
-        if(node.nodeType == 'VariableDeclaration' && node.stateVariable == true)
-        {
-            fieldsNames.push(node.name);
-        }
-    }
-    debug(`number of fields: %s`, fieldsNames.length);
+    const fieldsNames = extractContractFields(members);
+
     const methodComments : string[][] = [];
     for (const [mid, method ] of abi.entries())
     {
@@ -202,4 +198,81 @@ function computePrePostConditions({ userdoc, abi, name, members }: Metadata): st
         }
     }
     return methodComments;
+}
+
+
+function extractContractFields(members: ContractMember[]): string[]
+{
+    debug(`specFields size: %s`, Object.keys(members).length);
+    const fieldsNames : string[] = [];
+    for (const node of members as any[])
+    {
+        if(node.nodeType == 'VariableDeclaration' && node.stateVariable == true)
+        {
+            fieldsNames.push(node.name);
+        }
+    }
+    debug(`number of fields: %s`, fieldsNames.length);
+    return fieldsNames;
+}
+
+export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {
+
+    const spec_contractMembers = spec.members;
+    const impl_contractMembers = impl.members;
+
+    const spec_fieldsNames = extractContractFields(spec_contractMembers);
+    const impl_fieldsNames = extractContractFields(impl_contractMembers);
+
+    const spec_contractName = spec.name;
+    const impl_contractName = impl.name;
+
+
+    const seed_features : [string,string][] = [];
+
+    for (const spec_node of spec_contractMembers)
+    {
+        if(spec_node.nodeType === 'FunctionDefinition')
+        {  
+            const spec_func = spec_node as FunctionDefinition;
+
+            if(spec_func.visibility === 'public' && spec_func.stateMutability === 'view')
+            {   
+                for (const impl_node of impl_contractMembers)
+                {
+                    if(impl_node.nodeType === 'FunctionDefinition')
+                    { 
+                        const impl_func = impl_node as FunctionDefinition;
+
+                        if(impl_func.name === spec_func.name && impl_func.visibility === 'public' && impl_func.stateMutability === 'view')
+                        {  
+                            if(spec_func.body.statements.length != 1 || spec_func.body.statements.length != impl_func.body.statements.length)
+                                throw Error('expected single statement in observation function');
+                            
+                            const spec_statement = spec_func.body.statements[0];
+                            const impl_statement = impl_func.body.statements[0];
+
+                            if(spec_statement.nodeType != 'Return' || impl_statement.nodeType != 'Return')
+                                throw Error('expected return statement');
+
+                            const return_spec = spec_statement as Return;
+                            const return_impl = impl_statement as Return;
+
+                            const spec_expression = addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
+                            const impl_expression = addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
+                            
+                            const spec_exper = toSExpr(spec_expression);
+                            const impl_exper = toSExpr(impl_expression);
+
+                            const seed_feature = `(= ${spec_exper} ${impl_exper})`;
+
+                            seed_features.push([seed_feature,spec_func.name]);
+                        }
+                    }  
+                }
+            }
+        }
+    }
+
+    return seed_features;
 }
