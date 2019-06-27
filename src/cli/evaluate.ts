@@ -7,7 +7,7 @@ import { Evaluator } from '../contracts/evaluate';
 
 yargs.usage(`usage: $0`)
     .strict()
-    .check(argv => argv._.length === 0)
+    .check(({ _: { length }}) => length === 0)
     .help('help')
     .argv;
 
