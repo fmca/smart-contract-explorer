@@ -12,10 +12,14 @@ async function main() {
     const [ sourceFilename, targetFilename ] = process.argv.slice(2);
 
     try {
-        const { metadata, examples } = await Examples.generate({ sourceFilename, targetFilename });
+        const { metadata, examples: { positive, negative } } = await Examples.generate({ sourceFilename, targetFilename });
         const { source: { content } } = metadata;
         console.log(content);
-        console.log(JSON.stringify(examples, null, 2));
+
+        for (const example of positive)
+            console.log(JSON.stringify(example));
+        for (const example of negative)
+            console.log(JSON.stringify(example));
 
     } catch (e) {
         console.error(e);
