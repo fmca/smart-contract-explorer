@@ -1,4 +1,4 @@
-import { State } from '../explore/states';
+import { State, Operation } from '../explore/states';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
 import { Explorer, Transition } from '../explore/explorer';
@@ -12,6 +12,11 @@ const debug = Debugger(__filename);
 interface Parameters {
     sourceFilename: string;
     targetFilename: string;
+}
+
+interface Result {
+    metadata: Metadata;
+    names: string[];
 }
 
 type Kind = 'positive' | 'negative';
@@ -67,23 +72,21 @@ export class Examples {
         debug(`generated negative examples`);
     }
 
-    static async simulationExamples(parameters: Parameters) {
+    static async generate(parameters: Parameters): Promise<Result> {
         const { sourceFilename, targetFilename } = parameters;
-        const chain = await Chain.get();
         const source = await Compile.fromFile(sourceFilename);
         const target = await Compile.fromFile(targetFilename);
+        const contract = new Contract(source, target);
+        const result = await contract.get();
+        return result;
+    }
 
+    static async * getExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
+        const chain = await Chain.get();
         const examples = new Examples(chain);
         const limiters = new StateCountLimiterFactory(5);
-
-        for await (const example of examples.simulationExamples(source, target, limiters)) {
-            const { source, target, kind } = example;
-            console.log(`${kind} example:`);
-            console.log(`---`);
-            console.log(source.toString());
-            console.log(target.toString());
-            console.log(`---`);
-        }
+        for await (const example of examples.simulationExamples(source, target, limiters))
+            yield example;
     }
 }
 
@@ -185,3 +188,54 @@ class Context {
     }
 
 }
+
+class Contract {
+    constructor(public source: Metadata, public target: Metadata) { }
+
+    async get(): Promise<Result> {
+        const methods: { name: string, content: string }[] = [];
+
+        for await (const example of Examples.getExamples(this.source, this.target)) {
+            const { kind } = example;
+            const name = `${kind}Example${methods.length}`;
+            const content = this.methodForExample(example, name);
+            methods.push({ name, content });
+        }
+
+        const path = 'blah.sol';
+        const header = [
+            `pragma solidity ^0.5.0;`,
+            `import "${this.source.source.path}";`,
+            `import "${this.target.source.path}";`,
+            `contract Examples is ${this.source.name}, ${this.target.name}`
+        ];
+        const content = `${header.join(`\n`)} {
+    ${methods.map(({ content }) => content).join('\n    ')}
+}`;
+        const metadata = Compile.fromString({ path, content });
+        const names = methods.map(({ name }) => name);
+        return { metadata, names };
+    }
+
+    methodForExample(example: SimulationExample, name: string): string {
+        const { source: { trace: { operations: sOps }},
+                target: { trace: { operations: tOps }} } = example;
+
+        const invocations = [
+            ...sOps.map(Contract.ofOperation(this.source)),
+            ...tOps.map(Contract.ofOperation(this.target))
+        ];
+
+        return `function ${name}() public {
+        ${invocations.join('\n        ')}
+    }`;
+    }
+
+    static ofOperation({ name }: Metadata) {
+        return function (operation: Operation) {
+            const { invocation: { method, inputs } } = operation;
+            return `${name}.${method.name}(${inputs.join(', ')});`;
+        }
+    }
+}
+
