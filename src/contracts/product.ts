@@ -4,17 +4,9 @@ import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
 
-export interface Parameters {
-    specFile: string;
-    implFile: string;
-    productFile: string;
-}
-
-export function getProductCode(parameters: Parameters, spec: Metadata, impl: Metadata): Metadata {
-
-    const { specFile, implFile, productFile } = parameters;
-    const { abi: specAbi, name: specName } = spec;
-    const { abi: implAbi, name: implName } = impl;
+export function getProductCode(spec: Metadata, impl: Metadata, productFile: string): Metadata {
+    const { abi: specAbi, name: specName, source: { path: specFile } } = spec;
+    const { abi: implAbi, name: implName, source: { path: implFile } } = impl;
 
     if (specAbi.length !== implAbi.length)
         throw Error('Expected two contracts with the same methods.');
