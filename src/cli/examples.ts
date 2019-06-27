@@ -7,6 +7,8 @@ import { Examples } from '../contracts/examples';
 import fs from 'fs-extra';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
+    .strict()
+    .check(argv => argv._.length === 0)
     .option('source', {
         demandOption: true,
         describe: 'source smart contract',
