@@ -10,8 +10,10 @@ import * as Chain from '../utils/chain';
 const debug = Debugger(__filename);
 
 interface Parameters {
-    sourceFilename: string;
-    targetFilename: string;
+    paths: {
+        source: string;
+        target: string;
+    }
 }
 
 interface Result {
@@ -83,9 +85,9 @@ export class Examples {
     }
 
     static async generate(parameters: Parameters): Promise<Result> {
-        const { sourceFilename, targetFilename } = parameters;
-        const source = await Compile.fromFile(sourceFilename);
-        const target = await Compile.fromFile(targetFilename);
+        const { paths } = parameters;
+        const source = await Compile.fromFile(paths.source);
+        const target = await Compile.fromFile(paths.target);
         const contract = new Contract(source, target);
         const result = await contract.get();
         return result;
@@ -203,7 +205,7 @@ class Contract {
     constructor(public source: Metadata, public target: Metadata) { }
 
     async get(): Promise<Result> {
-        const path = 'blah.sol';
+        const path = 'Examples.sol';
         const methods: { content: string }[] = [];
         const positive: AbstractExample[] = [];
         const negative: AbstractExample[] = [];

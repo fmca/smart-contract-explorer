@@ -44,8 +44,11 @@ export class Executor {
         const context = await this.createContext();
 
         context.replayTrace(t);
+        debug(`M: %o`, invocation.isMutator());
         const result = await context.invoke(invocation);
+        debug(`R: %o`, result);
         const operation = new Operation(invocation, result);
+        debug(`O: %o`, operation);
         const operations = [...t.operations, operation];
         const trace = new Trace(operations);
 
@@ -117,6 +120,7 @@ class Context {
         const outputs = await this.contract.methods[name!](...inputs).call();
 
         const values = valuesOf(outputs);
+        debug("values: %o", values);
         const result = new Result(...values);
         debug("result: %o", outputs);
 

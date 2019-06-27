@@ -2,24 +2,37 @@
 
 require('source-map-support').install();
 
+import yargs from 'yargs';
 import { Examples } from '../contracts/examples';
+import fs from 'fs-extra';
+
+const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
+    .option('source', {
+        demandOption: true,
+        describe: 'source smart contract',
+        type: 'string',
+        requiresArg: true
+    })
+    .option('target', {
+        demandOption: true,
+        describe: 'target smart contract',
+        type: 'string',
+        requiresArg: true
+    })
+    .help('help')
+    .argv;
 
 async function main() {
 
-    if (process.argv.length != 4)
-        throw Error(`Expected exactly two filename arguments`);
-
-    const [ sourceFilename, targetFilename ] = process.argv.slice(2);
-
     try {
-        const { metadata, examples: { positive, negative } } = await Examples.generate({ sourceFilename, targetFilename });
-        const { source: { content } } = metadata;
-        console.log(content);
+        const { source, target } = args;
+        const paths = { source, target };
+        const { metadata, examples: { positive, negative } } = await Examples.generate({ paths });
+        const { source: { path, content } } = metadata;
 
-        for (const example of positive)
-            console.log(JSON.stringify(example));
-        for (const example of negative)
-            console.log(JSON.stringify(example));
+        await fs.writeFile(path, content);
+        await fs.writeFile(`positive-examples.txt`, positive.map(JSON.stringify as any).join(`\n`));
+        await fs.writeFile(`negative-examples.txt`, negative.map(JSON.stringify as any).join(`\n`));
 
     } catch (e) {
         console.error(e);

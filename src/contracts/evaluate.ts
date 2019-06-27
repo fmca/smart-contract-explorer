@@ -39,7 +39,8 @@ export class Evaluator {
             debug(`request: %o`, request);
             const response = await this.processRequest(request);
             debug(`response: %o`, response);
-            console.log(`${response}`);
+            const { result } = response;
+            console.log(`${result}`);
         }
     }
 
@@ -53,6 +54,8 @@ export class Evaluator {
         const invocation = getInvocation(extension, predicateMethod);
         const { operation } = await executor.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
+
+        debug(`result: %o`, result);
 
         if (typeof(result) !== 'boolean')
             throw Error(`Expected Boolean-valued expression`);

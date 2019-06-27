@@ -17,8 +17,11 @@ export namespace Values {
 
 export function valuesOf(x: any): Value[] {
     const intVal = parseInt(x);
-    if (intVal !== undefined)
+    if (Number.isInteger(intVal))
         return [intVal];
+
+    if (x === true || x === false)
+        return [x];
 
     throw Error(`Unexpected value: ${x}`);
 }
