@@ -2,8 +2,7 @@
 
 require('source-map-support').install();
 
-import { Evaluator } from '../evaluate';
-
+import { Evaluator } from '../contracts/evaluate';
 
 async function main() {
     if (process.argv.length != 2)

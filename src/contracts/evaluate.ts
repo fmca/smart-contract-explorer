@@ -1,13 +1,13 @@
-import { Debugger } from './utils/debug';
+import { Debugger } from '../utils/debug';
 import * as readline from 'readline';
 import stream from 'stream';
-import { Expr } from './frontend/sexpr';
-import { State } from './explore/states';
-import * as Compile from './frontend/compile';
-import { ExecutorFactory } from './explore/execute';
-import { Invocation } from './explore/invocations';
-import * as Chain from './utils/chain';
-import { Metadata } from './frontend/metadata';
+import { Expr } from '../frontend/sexpr';
+import { State } from '../explore/states';
+import * as Compile from '../frontend/compile';
+import { ExecutorFactory } from '../explore/execute';
+import { Invocation } from '../explore/invocations';
+import * as Chain from '../utils/chain';
+import { Metadata } from '../frontend/metadata';
 
 const debug = Debugger(__filename);
 
