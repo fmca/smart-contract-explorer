@@ -34,50 +34,67 @@ function checkArity<T>(args: T[], arity: number) {
 
 class Visitor<T> {
     visit(expr: Expr): T {
-        const [hExpr, ...args] = expr;
 
-        if (Array.isArray(hExpr))
-            throw Error(`expected string head identifier`);
+        if (Array.isArray(expr))
+        {   
+            const [hExpr, ...args] = expr;
 
-        const head = hExpr;
+            if (Array.isArray(hExpr))
+                throw Error(`expected string head identifier`);
 
-        if (args.length === 0)
-            if(/^\d+$/.test(head))
-                return this.visitIdentifier(head);
+            const head = hExpr;
+        
+
+        
+            switch (head) {
+                case 'index':
+                    checkArity(args, 2);
+                    const [ base, index ] = args;
+                    return this.visitIndex(base, index);
+                case '+': case '-': case '*': case '/': case '<': case '<=': case '>=': case '>':
+                        checkArity(args, 2);
+                        const [bleft, bright] = args;
+                        return this.visitBinaryOperation(head, bleft, bright);
+                case '=':
+                        checkArity(args, 2);
+                        const [eleft, eright] = args;
+                        return this.visitBinaryOperation('==', eleft, eright);
+                case 'or':
+                        checkArity(args, 2);
+                        const [orleft, orright] = args;
+                        return this.visitBinaryOperation('||', orleft, orright);
+                case 'not':
+                        checkArity(args, 1);
+                        const [usub] = args;
+                        return this.visitUnaryOperation('!', usub);
+                case 'and':
+                        if (args.length < 2)
+                            throw Error(`expected arity should be => 2, got ${args.length}`);
+                        return this.visitAndOperation(args);
+                case 'ite':
+                        checkArity(args, 3);
+                        const [itecond, itetrue, itefalse] = args;
+                        return this.visitIteOperation(itecond, itetrue, itefalse);
+                default:
+                    return unimplemented(expr);
+            }
+
+        }
+
+        else
+        {            
+            if (expr.charAt(0) === '-')
+            {   
+                const usub = expr.substr(1);;
+                return this.visitUnaryOperation('-', usub);
+            }
             else 
-                return this.visitLiteral(head);
+            {   if(/^\d+$/.test(expr))
+                    return this.visitLiteral(expr);
+                else 
+                    return this.visitIdentifier(expr);
+            }
 
-        switch (head) {
-            case 'index':
-                checkArity(args, 2);
-                const [ base, index ] = args;
-                return this.visitIndex(base, index);
-            case '+': case '-': case '*': case '/': case '<': case '<=': case '>=': case '>':
-                    checkArity(args, 2);
-                    const [bleft, bright] = args;
-                    return this.visitBinaryOperation(head, bleft, bright);
-            case '=':
-                    checkArity(args, 2);
-                    const [eleft, eright] = args;
-                    return this.visitBinaryOperation('==', eleft, eright);
-            case 'or':
-                    checkArity(args, 2);
-                    const [orleft, orright] = args;
-                    return this.visitBinaryOperation('||', orleft, orright);
-            case 'not':
-                    checkArity(args, 1);
-                    const [usub] = args;
-                    return this.visitUnaryOperation('!', usub);
-            case 'and':
-                    if (args.length < 2)
-                        throw Error(`expected arity should be => 2, got ${args.length}`);
-                    return this.visitAndOperation(args);
-            case 'ite':
-                    checkArity(args, 3);
-                    const [itecond, itetrue, itefalse] = args;
-                    return this.visitIteOperation(itecond, itetrue, itefalse);
-            default:
-                return unimplemented(expr);
         }
     }
 
@@ -141,7 +158,8 @@ class ExprToNode extends Visitor<Node> {
         if (rargs.length > 1)
             rightExpression = this.visitAndOperation(rargs);
         else
-            rightExpression = this.visit(rargs);
+            rightExpression = this.visit(rargs[0]);
+            
         const leftExpression = this.visit(lExpr);
         return { id, src, nodeType, operator, leftExpression, rightExpression };
     }
