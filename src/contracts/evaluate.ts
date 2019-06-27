@@ -2,18 +2,19 @@ import { Debugger } from '../utils/debug';
 import * as readline from 'readline';
 import stream from 'stream';
 import { Expr } from '../frontend/sexpr';
-import { State } from '../explore/states';
+import { State, Operation, Result, Trace, Observation } from '../explore/states';
 import * as Compile from '../frontend/compile';
 import { ExecutorFactory } from '../explore/execute';
 import { Invocation } from '../explore/invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate } from './extension';
+import { AbstractExample } from './examples';
 
 const debug = Debugger(__filename);
 
 interface Request {
-    state: State;
+    example: AbstractExample;
     expression: Expr;
 }
 
@@ -43,12 +44,13 @@ export class Evaluator {
     }
 
     async processRequest(request: Request): Promise<Response> {
-        const { state, expression } = request;
-        const { contractId } = state;
-        const metadata = await this.getMetadata(contractId);
-        const [ extension, methodName ] = await extendWithPredicate(metadata, expression);
+        const { example, expression } = request;
+        const { id: { contract, method: stateMethod } } = example;
+        const metadata = await this.getMetadata(contract);
+        const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
         const executor = this.executorFactory.getExecutor(extension);
-        const invocation = getInvocation(extension, methodName);
+        const state = getState(extension, stateMethod);
+        const invocation = getInvocation(extension, predicateMethod);
         const { operation } = await executor.execute(state, invocation);
         const { result: { values: [ result ] } } = operation;
 
@@ -64,11 +66,10 @@ export class Evaluator {
         if (split.length !== 2)
             throw new Error(`unexpected request: ${line}`);
 
-        const [ stateString, exprString ] = split;
-        const object = JSON.parse(stateString);
-        const state = State.deserialize(object);
+        const [ exampleString, exprString ] = split;
+        const example: AbstractExample = JSON.parse(exampleString);
         const expression = Expr.parse(exprString);
-        return { state, expression };
+        return { example, expression };
     }
 
     async getMetadata(contractId: string): Promise<Metadata> {
@@ -84,6 +85,15 @@ export class Evaluator {
         const evaluator = new Evaluator(chain);
         await evaluator.listen();
     }
+}
+
+function getState(metadata: Metadata, methodName: string): State {
+    const invocation = getInvocation(metadata, methodName);
+    const operation = new Operation(invocation, new Result());
+    const trace = new Trace([operation]);
+    const observation = new Observation([]);
+    const state = new State('', trace, observation);
+    return state;
 }
 
 function getInvocation({ abi }: Metadata, methodName: string): Invocation {

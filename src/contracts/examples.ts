@@ -24,7 +24,7 @@ interface Result {
 
 type Kind = 'positive' | 'negative';
 
-type AbstractExample = {
+export type AbstractExample = {
     id: {
         contract: string;
         method: string;
