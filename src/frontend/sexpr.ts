@@ -10,7 +10,7 @@ export namespace Expr {
         //const alphabet = /[\w\-+\|\/\*\!\=\<\>\&]/;
        // const alphabet = '[\w\-\+\/\*\!\=\<\>\_]+';
         const json = s
-            .replace(/([\w\-\+\/\*\!\=\<\>\_]+)/g, '"$1"')
+            .replace(/([\w\-\+\/\*\!\=\<\>\_.]+)/g, '"$1"')
             .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
             .replace(/[(]/g, '[')
             .replace(/[)]/g, ']');
@@ -36,16 +36,16 @@ class Visitor<T> {
     visit(expr: Expr): T {
 
         if (Array.isArray(expr))
-        {   
+        {
             const [hExpr, ...args] = expr;
 
             if (Array.isArray(hExpr))
                 throw Error(`expected string head identifier`);
 
             const head = hExpr;
-        
 
-        
+
+
             switch (head) {
                 case 'index':
                     checkArity(args, 2);
@@ -82,16 +82,16 @@ class Visitor<T> {
         }
 
         else
-        {            
+        {
             if (expr.charAt(0) === '-')
-            {   
+            {
                 const usub = expr.substr(1);;
                 return this.visitUnaryOperation('-', usub);
             }
-            else 
+            else
             {   if(/^\d+$/.test(expr))
                     return this.visitLiteral(expr);
-                else 
+                else
                     return this.visitIdentifier(expr);
             }
 
@@ -113,7 +113,7 @@ class Visitor<T> {
     visitIteOperation(itecond: Expr, itetrue: Expr, itefalse: Expr): T {
         return unimplemented([itecond, itetrue, itefalse ]);
     }
-    
+
     visitUnaryOperation(head: Uoperators, usub: Expr): T {
         return unimplemented([ head, usub]);
     }
@@ -159,7 +159,7 @@ class ExprToNode extends Visitor<Node> {
             rightExpression = this.visitAndOperation(rargs);
         else
             rightExpression = this.visit(rargs[0]);
-            
+
         const leftExpression = this.visit(lExpr);
         return { id, src, nodeType, operator, leftExpression, rightExpression };
     }
