@@ -25,14 +25,36 @@ export interface ContractMember extends Node {
 
 export interface FunctionDefinition extends ContractMember {
     nodeType: 'FunctionDefinition';
+
+    kind: string;
+    stateMutability: string;
+    visibility: string;
+
+    name: string;
+    body: Body;
+    parameters: Parameters;
+    returnParameters: ReturnParameters;
+    documentation: string;
 }
 
 export interface VariableDeclaration extends ContractMember {
     nodeType: 'VariableDeclaration';
 }
 
+export interface Parameters extends Node {
+    parameters: VariableDeclaration[];
+}
+
+export interface ReturnParameters extends Node {
+    parameters: VariableDeclaration[];
+}
+
 export interface Statement extends Node {
 
+}
+
+export interface Body extends Node {
+    statements: Statement[];
 }
 
 export interface Return extends Statement {
@@ -91,6 +113,12 @@ export interface Conditional extends Expression {
 export function toSExpr(node: Node): string {
     return new NodeToSExpr().visit(node);
 }
+
+
+export function addPrefixToNode(node: Node, contractName: string, contractFields: string[]): Node {
+    return new AddPrefixToNode(contractName, contractFields).visit(node);
+}
+
 
 export function toContract(node: Node): string {
     return new NodeToContract().visit(node);
@@ -262,5 +290,70 @@ class NodeToContract extends NodeVisitor<string> {
         const falseE = this.visit(node.falseExpression);
 
         return `${condition}? ${trueE}: ${falseE}`;
+    }
+}
+
+class AddPrefixToNode extends NodeVisitor<Node> {
+
+    contractFields: string[];
+    contractName: string;
+
+    constructor (contractName: string, contractFields: string[]) 
+    {
+        super();
+        this.contractFields = contractFields;
+        this.contractName = contractName;
+    }
+
+    visitIdentifier(node: Identifier) {
+
+        if(this.contractFields.includes(node.name))
+        {   const newNode = node;
+            newNode.name = `${this.contractName}.${newNode.name}`
+            return newNode;
+        }
+
+        return node;
+    }
+
+    visitLiteral(node: Literal) {
+        return node;
+    }
+
+    visitIndexAccess(node: IndexAccess) {
+        const newNode = node;
+        newNode.baseExpression = this.visit(newNode.baseExpression);
+        newNode.indexExpression = this.visit(newNode.indexExpression);
+        return newNode;
+    }
+
+    visitAssignment(node: Assignment) {
+        const newNode = node;
+        newNode.rightHandSide = this.visit(newNode.rightHandSide);
+        newNode.leftHandSide = this.visit(newNode.leftHandSide);
+        return newNode;
+    }
+
+    visitBinaryOperation(node: BinaryOperation) {
+        const newNode = node;
+        newNode.rightExpression = this.visit(newNode.rightExpression);
+        newNode.leftExpression = this.visit(newNode.leftExpression);
+        return newNode;
+
+    }
+
+    visitUnaryOperation(node: UnaryOperation) {
+        const newNode = node;
+        newNode.subExpression = this.visit(newNode.subExpression);
+        return newNode;
+    }
+
+    visitConditional(node: Conditional) {
+        const newNode = node;
+        newNode.condition = this.visit(newNode.condition);
+        newNode.trueExpression = this.visit(newNode.trueExpression);
+        newNode.falseExpression = this.visit(newNode.falseExpression);
+
+        return newNode;
     }
 }
