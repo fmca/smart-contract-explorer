@@ -8,6 +8,7 @@ import { ExecutorFactory } from '../explore/execute';
 import { Invocation } from '../explore/invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
+import { extendWithPredicate } from './extension';
 
 const debug = Debugger(__filename);
 
@@ -45,7 +46,7 @@ export class Evaluator {
         const { state, expression } = request;
         const { contractId } = state;
         const metadata = await this.getMetadata(contractId);
-        const [ extension, methodName ] = await getExtension(metadata, expression);
+        const [ extension, methodName ] = await extendWithPredicate(metadata, expression);
         const executor = this.executorFactory.getExecutor(extension);
         const invocation = getInvocation(extension, methodName);
         const { operation } = await executor.execute(state, invocation);
@@ -83,10 +84,6 @@ export class Evaluator {
         const evaluator = new Evaluator(chain);
         await evaluator.listen();
     }
-}
-
-async function getExtension(metadata: Metadata, expr: Expr): Promise<[Metadata,string]> {
-    throw Error(`TODO implement me`);
 }
 
 function getInvocation({ abi }: Metadata, methodName: string): Invocation {
