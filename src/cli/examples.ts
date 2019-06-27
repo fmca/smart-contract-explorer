@@ -12,9 +12,10 @@ async function main() {
     const [ sourceFilename, targetFilename ] = process.argv.slice(2);
 
     try {
-        const { metadata } = await Examples.generate({ sourceFilename, targetFilename });
+        const { metadata, examples } = await Examples.generate({ sourceFilename, targetFilename });
         const { source: { content } } = metadata;
         console.log(content);
+        console.log(JSON.stringify(examples, null, 2));
 
     } catch (e) {
         console.error(e);

@@ -16,10 +16,20 @@ interface Parameters {
 
 interface Result {
     metadata: Metadata;
-    names: string[];
+    examples: {
+        positive: AbstractExample[];
+        negative: AbstractExample[];
+    }
 }
 
 type Kind = 'positive' | 'negative';
+
+type AbstractExample = {
+    id: {
+        contract: string;
+        method: string;
+    }
+}
 
 type SimulationExample = {
     source: State;
@@ -193,16 +203,19 @@ class Contract {
     constructor(public source: Metadata, public target: Metadata) { }
 
     async get(): Promise<Result> {
-        const methods: { name: string, content: string }[] = [];
+        const path = 'blah.sol';
+        const methods: { content: string }[] = [];
+        const positive: AbstractExample[] = [];
+        const negative: AbstractExample[] = [];
 
         for await (const example of Examples.getExamples(this.source, this.target)) {
             const { kind } = example;
-            const name = `${kind}Example${methods.length}`;
-            const content = this.methodForExample(example, name);
-            methods.push({ name, content });
+            const method = `${kind}Example${methods.length}`;
+            const content = this.methodForExample(example, method);
+            methods.push({ content });
+            (kind === 'positive' ? positive : negative).push({ id: { contract: path, method }});
         }
 
-        const path = 'blah.sol';
         const header = [
             `pragma solidity ^0.5.0;`,
             `import "${this.source.source.path}";`,
@@ -213,8 +226,7 @@ class Contract {
     ${methods.map(({ content }) => content).join('\n    ')}
 }`;
         const metadata = Compile.fromString({ path, content });
-        const names = methods.map(({ name }) => name);
-        return { metadata, names };
+        return { metadata, examples: { negative, positive } };
     }
 
     methodForExample(example: SimulationExample, name: string): string {
