@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "bin": {
-    "sc-examples": "dist/cli/sim-examples.js",
+    "sc-examples": "dist/cli/examples.js",
     "sc-product": "dist/cli/product-gen.js",
     "sc-evaluate": "dist/cli/evaluate.js"
   },

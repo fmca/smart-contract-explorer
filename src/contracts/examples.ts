@@ -1,18 +1,18 @@
-import { State } from './states';
-import { ExecutorFactory } from './execute';
-import { LimiterFactory } from './limiter';
-import { Explorer, Transition } from './explorer';
+import { State } from '../explore/states';
+import { ExecutorFactory } from '../explore/execute';
+import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
+import { Explorer, Transition } from '../explore/explorer';
 import { Metadata } from '../frontend/metadata';
+import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { BlockchainInterface } from '../utils/chain';
+import * as Chain from '../utils/chain';
 
 const debug = Debugger(__filename);
 
 interface Parameters {
-    source: Metadata;
-    target: Metadata;
-    limiters: LimiterFactory;
-};
+    sourceFilename: string;
+    targetFilename: string;
+}
 
 type Kind = 'positive' | 'negative';
 
@@ -25,14 +25,13 @@ type SimulationExample = {
 export class Examples {
     explorer: Explorer;
 
-    constructor(chain: BlockchainInterface) {
+    constructor(chain: Chain.BlockchainInterface) {
         const { accounts } = chain;
         const factory = new ExecutorFactory(chain);
         this.explorer = new Explorer(factory, accounts);
     }
 
-    async * simulationExamples(params: Parameters): AsyncIterable<SimulationExample> {
-        const { source, target, limiters } = params;
+    async * simulationExamples(source: Metadata, target: Metadata, limiters: LimiterFactory): AsyncIterable<SimulationExample> {
         const context = new Context();
         const workList: SimulationExample[] = [];
 
@@ -66,6 +65,25 @@ export class Examples {
         }
 
         debug(`generated negative examples`);
+    }
+
+    static async simulationExamples(parameters: Parameters) {
+        const { sourceFilename, targetFilename } = parameters;
+        const chain = await Chain.get();
+        const source = await Compile.fromFile(sourceFilename);
+        const target = await Compile.fromFile(targetFilename);
+
+        const examples = new Examples(chain);
+        const limiters = new StateCountLimiterFactory(5);
+
+        for await (const example of examples.simulationExamples(source, target, limiters)) {
+            const { source, target, kind } = example;
+            console.log(`${kind} example:`);
+            console.log(`---`);
+            console.log(source.toString());
+            console.log(target.toString());
+            console.log(`---`);
+        }
     }
 }
 
