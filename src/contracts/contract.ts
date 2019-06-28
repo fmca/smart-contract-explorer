@@ -174,6 +174,7 @@ export class SimulationCheckingContract extends ProductContract {
             `/**`,
             ...preconditions.map(p => ` * @notice precondition ${p}`),
             ...postconditions.map(p => ` * @notice postcondition ${p}`),
+            ` * TODO: add simulation relation`,
             ` */`,
             `${Contract.signatureOfMethod(method)} {`,
             ...block(4)(
