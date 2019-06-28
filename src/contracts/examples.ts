@@ -1,4 +1,4 @@
-import { State, Operation } from '../explore/states';
+import { State } from '../explore/states';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
 import { Explorer, Transition } from '../explore/explorer';
@@ -7,6 +7,7 @@ import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
+import { SimulationExamplesContract, SimulationContractInfo } from './contract';
 import * as Pie from './pie';
 
 const debug = Debugger(__filename);
@@ -18,12 +19,7 @@ interface Parameters {
     }
 }
 
-interface Result {
-    metadata: Metadata;
-    examples: {
-        positive: AbstractExample[];
-        negative: AbstractExample[];
-    };
+interface Result extends SimulationContractInfo {
     fields: string[];
     seedFeatures: string[];
 }
@@ -37,7 +33,7 @@ export type AbstractExample = {
     }
 }
 
-type SimulationExample = {
+export type SimulationExample = {
     source: State;
     target: State;
     kind: Kind;
@@ -92,9 +88,16 @@ export class Examples {
         const { paths } = parameters;
         const source = await Compile.fromFile(paths.source);
         const target = await Compile.fromFile(paths.target);
-        const contract = new Contract(source, target);
-        const result = await contract.get();
-        return result;
+        const info = { name: 'SimulationExamples', path: 'SimulationExamples.sol' };
+        const contract = new SimulationExamplesContract(source, target, info, Examples.getExamples);
+        const { metadata, examples } = await contract.get();
+
+        const fields = [
+            ...Pie.fields(source).map(f => `${source.name}.${f}`),
+            ...Pie.fields(target).map(f => `${target.name}.${f}`)
+        ];
+        const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
+        return { metadata, examples, fields, seedFeatures };
     }
 
     static async * getExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
@@ -203,62 +206,4 @@ class Context {
         }
     }
 
-}
-
-class Contract {
-    constructor(public source: Metadata, public target: Metadata) { }
-
-    async get(): Promise<Result> {
-        const path = 'Examples.sol';
-        const methods: { content: string }[] = [];
-        const positive: AbstractExample[] = [];
-        const negative: AbstractExample[] = [];
-
-        for await (const example of Examples.getExamples(this.source, this.target)) {
-            const { kind } = example;
-            const method = `${kind}Example${methods.length}`;
-            const content = this.methodForExample(example, method);
-            methods.push({ content });
-            (kind === 'positive' ? positive : negative).push({ id: { contract: path, method }});
-        }
-
-        const header = [
-            `pragma solidity ^0.5.0;`,
-            `import "${this.source.source.path}";`,
-            `import "${this.target.source.path}";`,
-            `contract Examples is ${this.source.name}, ${this.target.name}`
-        ];
-        const content = `${header.join(`\n`)} {
-    ${methods.map(({ content }) => content).join('\n    ')}
-}`;
-        const metadata = Compile.fromString({ path, content });
-
-        const fields = [
-            ...Pie.fields(this.source).map(f => `${this.source.name}.${f}`),
-            ...Pie.fields(this.target).map(f => `${this.target.name}.${f}`)
-        ];
-        const seedFeatures = getProductSeedFeatures(this.source, this.target).map(([f,_]) => f);
-        return { metadata, examples: { negative, positive }, fields, seedFeatures };
-    }
-
-    methodForExample(example: SimulationExample, name: string): string {
-        const { source: { trace: { operations: sOps }},
-                target: { trace: { operations: tOps }} } = example;
-
-        const invocations = [
-            ...sOps.map(Contract.ofOperation(this.source)),
-            ...tOps.map(Contract.ofOperation(this.target))
-        ];
-
-        return `function ${name}() public {
-        ${invocations.join('\n        ')}
-    }`;
-    }
-
-    static ofOperation({ name }: Metadata) {
-        return function (operation: Operation) {
-            const { invocation: { method, inputs } } = operation;
-            return `${name}.${method.name}(${inputs.join(', ')});`;
-        }
-    }
 }
