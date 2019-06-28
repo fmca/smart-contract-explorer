@@ -1,158 +1,74 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
-import { Expr } from '../frontend/sexpr';
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr, ContractMember, isVariableDeclaration } from '../frontend/ast';
 import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
 
-export function getProductCode(spec: Metadata, impl: Metadata, productFile: string): Metadata {
-    const { abi: specAbi, name: specName, source: { path: specFile } } = spec;
-    const { abi: implAbi, name: implName, source: { path: implFile } } = impl;
+export interface Parameters {
+    paths: {
+        source: string;
+        target: string;
+    }
+}
+
+export interface Result {
+    metadata: Metadata;
+}
+
+export async function getProduct(parameters: Parameters): Promise<Result> {
+    const { paths: { source, target } } = parameters;
+    const t = await Compile.fromFile(target);
+    const s = await Compile.fromFile(source);
+    const metadata = getProductFromMetadata(s, t);
+    return { metadata };
+}
+
+export function getProductFromMetadata(impl: Metadata, spec: Metadata): Metadata {
+    const path = `Product.sol`;
+    const name = `Product`;
+    const { abi: specAbi } = spec;
+    const { abi: implAbi } = impl;
 
     if (specAbi.length !== implAbi.length)
         throw Error('Expected two contracts with the same methods.');
 
-    const specPreconds = computePrePostConditions(spec);
-
-    var inputs : string = ' ';
-
-    var inputs_Type : string = '';
-    var outputs_Type : string = '';
-
-    var outputs_Spec : string = '';
-    var outputs_Impl : string = '';
-
-
-    const outputs_assu : string[][] = [];
-
-    const method_Sig  : string[] = [];
-    const method_Impl : string[] = [];
-    const method_Spec : string[] = [];
-
-
-
-    for (const [mid, method ] of specAbi.entries())
-    {
-        if (method.name !== implAbi[mid].name)
-            throw Error('Spec and Impl methods must have the same signature.');
-
-        inputs_Type = '';
-        inputs = '';
-
-        if(method.inputs !== undefined)
-        {
-
-            for (let inpEle = 0; inpEle < method.inputs.length  ;inpEle++)
-            {   if(inpEle ==  method.inputs.length - 1)
-                {
-                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name  ;
-                    inputs = inputs + method.inputs[inpEle].name ;
-                }
-                else
-                {
-                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name +  ', ';
-                    inputs = inputs + method.inputs[inpEle].name + ', ';
-                }
-            }
-        }
-
-        outputs_Type = '';
-        outputs_Spec = '';
-        outputs_Impl = '';
-
-        outputs_assu[mid] = [];
-
-        if(method.outputs !== undefined)
-        {
-
-            for (let inpEle = 0; inpEle < method.outputs.length  ;inpEle++)
-            {
-
-                if(inpEle ==  method.outputs.length - 1)
-                {
-                    if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name  ;
-                    else
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
-
-                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
-                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
-                }
-                else
-                {
-                    if(method.outputs[inpEle].name !== "")
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name + ', ';
-                    else
-                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
-                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
-                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
-                }
-
-                outputs_assu[mid][inpEle] = 'require(spec_' + String(inpEle) + '_' + method.outputs[inpEle].name + ' == ' +
-                                'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name + ', "Outputs of spec and impl differ.");';
-            }
-            if(method.outputs.length > 1)
-            {
-                outputs_Spec = '(' + outputs_Spec + ')';
-                outputs_Impl = '(' + outputs_Impl + ')';
-            }
-
-        }
-
-        if(method.name !== undefined)
-        {
-            method_Sig[mid] =  'function  ' + method.name +  '(' + inputs_Type + ')';
-            method_Impl[mid] = specName + '.' + method.name +  '(' + inputs + ') ;';
-            method_Spec[mid] = implName + '.' + method.name +  '(' + inputs + ') ;';
-        }
-        if(method.payable)
-            method_Sig[mid] = method_Sig[mid] +  ' payable' ;
-        method_Sig[mid] = method_Sig[mid] + ' public '; //
-        if(method.stateMutability == 'view')
-            method_Sig[mid] = method_Sig[mid] + 'view ' ;
-        if(method.outputs !== undefined && outputs_Type !== '')
-        {
-            method_Sig[mid] =  method_Sig[mid] + 'returns (' +  outputs_Type + ')';
-            method_Impl[mid] = outputs_Impl + ' = ' +  method_Impl[mid];
-            method_Spec[mid] = outputs_Spec + ' = ' +  method_Spec[mid];
-        }
-
-    }
-
-    var stdOut : string = '';
-
-    stdOut = `${stdOut}pragma solidity ^0.5.9; \n`;
-
-    stdOut = `${stdOut}import "${specFile}"; \n`;
-    stdOut = `${stdOut}import "${implFile}"; \n`;
-
-    stdOut = `${stdOut}contract SimContract is  ${specName}, ${implName} {\n`  ;
-
-    for (const mid in specAbi)
-    {
-        stdOut = `${stdOut}      /**`;
-        for(const specPrecond of specPreconds[mid])
-        {
-            stdOut = `${stdOut}      ${specPrecond} \n` ;
-        }
-        stdOut = `${stdOut}      */\n`;
-
-        stdOut = `${stdOut}      ${method_Sig[mid]} {\n`;
-        stdOut = `${stdOut}            ${method_Impl[mid]} \n` ;
-        stdOut = `${stdOut}            ${method_Spec[mid]} \n`;
-        for (let inpEle = 0; inpEle < outputs_assu[mid].length  ;inpEle++)
-            stdOut = `${stdOut}            ${outputs_assu[mid][inpEle]} \n`;
-        stdOut = `${stdOut}}\n`;
-
-    }
-
-    stdOut = `${stdOut}}`;
-    const productMetadata = Compile.fromString({ path: productFile, content: stdOut });
-    return productMetadata;
+    const content = getProductCode(impl, spec, name);
+    const metadata = Compile.fromString({ path, content });
+    return metadata;
 }
 
+function getProductCode(impl: Metadata, spec: Metadata, name: string) {
+    const { name: implName, source: { path: implFile } } = impl;
+    const { name: specName, source: { path: specFile } } = spec;
+    const preconditions = computePrePostConditions(spec);
 
+    const header = [
+        `pragma solidity ^0.5.0;`,
+        `import "${implFile}";`,
+        `import "${specFile}";`,
+        `contract ${name} is ${implName}, ${specName}`
+    ];
+
+    const members: string[] = [];
+
+    for (const methodInfo of getMethodInfo(impl, spec)) {
+        const { signature, implementation, specification, outputAssumptions } = methodInfo;
+        const member = `/** ${preconditions.join('\n')} */
+        ${signature} {
+            ${implementation}
+            ${specification}
+            ${outputAssumptions.join('\n')}
+        }`;
+        members.push(member);
+    }
+
+    const code = `${header.join('\n')} {
+    ${members.join('\n    ')}
+}`;
+    debug(`code: %s`, code);
+    return code;
+}
 
 function computePrePostConditions({ userdoc, abi, name, members }: Metadata): string[][] {
 
@@ -200,6 +116,120 @@ function computePrePostConditions({ userdoc, abi, name, members }: Metadata): st
     return methodComments;
 }
 
+type MethodInfo = {
+    signature: string;
+    implementation: string;
+    specification: string;
+    outputAssumptions: string[];
+}
+
+function getMethodInfo(impl: Metadata, spec: Metadata): MethodInfo[] {
+    const { name: implName, abi: implAbi } = impl;
+    const { name: specName, abi: specAbi } = spec;
+
+    var inputs : string = ' ';
+
+    var inputs_Type : string = '';
+    var outputs_Type : string = '';
+
+    var outputs_Spec : string = '';
+    var outputs_Impl : string = '';
+
+    const methodInfo: MethodInfo[] = [];
+
+    for (const [mid, method ] of specAbi.entries()) {
+        if (method.name !== implAbi[mid].name)
+            throw Error('Spec and Impl methods must have the same signature.');
+
+        let signature = '';
+        let implementation = '';
+        let specification = '';
+        let outputAssumptions: string[] = [];
+
+        inputs_Type = '';
+        inputs = '';
+
+        if(method.inputs !== undefined)
+        {
+
+            for (let inpEle = 0; inpEle < method.inputs.length  ;inpEle++)
+            {   if(inpEle ==  method.inputs.length - 1)
+                {
+                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name  ;
+                    inputs = inputs + method.inputs[inpEle].name ;
+                }
+                else
+                {
+                    inputs_Type = inputs_Type + method.inputs[inpEle].type + ' ' + method.inputs[inpEle].name +  ', ';
+                    inputs = inputs + method.inputs[inpEle].name + ', ';
+                }
+            }
+        }
+
+        outputs_Type = '';
+        outputs_Spec = '';
+        outputs_Impl = '';
+
+        if(method.outputs !== undefined)
+        {
+
+            for (let inpEle = 0; inpEle < method.outputs.length  ;inpEle++)
+            {
+
+                if(inpEle ==  method.outputs.length - 1)
+                {
+                    if(method.outputs[inpEle].name !== "")
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name  ;
+                    else
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
+
+                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
+                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name ;
+                }
+                else
+                {
+                    if(method.outputs[inpEle].name !== "")
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type + ' ' + method.outputs[inpEle].name + ', ';
+                    else
+                        outputs_Type = outputs_Type +  method.outputs[inpEle].type ;
+                    outputs_Spec = outputs_Spec + method.outputs[inpEle].type + ' spec_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
+                    outputs_Impl = outputs_Impl + method.outputs[inpEle].type + ' impl_' + String(inpEle) + '_' + method.outputs[inpEle].name +  ', ';
+                }
+
+                outputAssumptions[inpEle] = 'require(spec_' + String(inpEle) + '_' + method.outputs[inpEle].name + ' == ' +
+                                'impl_' + String(inpEle) + '_' + method.outputs[inpEle].name + ', "Outputs of spec and impl differ.");';
+            }
+            if(method.outputs.length > 1)
+            {
+                outputs_Spec = '(' + outputs_Spec + ')';
+                outputs_Impl = '(' + outputs_Impl + ')';
+            }
+
+        }
+
+        if(method.name !== undefined)
+        {
+            signature =  'function  ' + method.name +  '(' + inputs_Type + ')';
+            implementation = specName + '.' + method.name +  '(' + inputs + ') ;';
+            specification = implName + '.' + method.name +  '(' + inputs + ') ;';
+        }
+        if(method.payable)
+            signature = signature +  ' payable' ;
+        signature = signature + ' public '; //
+        if(method.stateMutability == 'view')
+            signature = signature + 'view ' ;
+        if(method.outputs !== undefined && outputs_Type !== '')
+        {
+            signature =  signature + 'returns (' +  outputs_Type + ')';
+            implementation = outputs_Impl + ' = ' +  implementation;
+            specification = outputs_Spec + ' = ' +  specification;
+        }
+
+        methodInfo.push({ signature, implementation, specification, outputAssumptions })
+    }
+
+    return methodInfo;
+}
 
 export function extractContractFields(members: ContractMember[]): string[]
 {
