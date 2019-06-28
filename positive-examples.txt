@@ -1,1 +1,0 @@
-{"id":{"contract":"Examples.sol","method":"positiveExample0"}}
