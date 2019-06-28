@@ -1,5 +1,5 @@
 import * as Compile from '../frontend/compile';
-import { Metadata } from "../frontend/metadata";
+import { Metadata, Method } from "../frontend/metadata";
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
@@ -27,50 +27,27 @@ export async function getSimulationCheckContract(parameters: Parameters) {
     return { metadata };
 }
 
-export function computePrePostConditions(metadata: Metadata): string[][] {
-    const { userdoc, abi, name, members } = metadata;
-    const fieldsNames = Pie.fields(metadata);
+interface MethodSpec {
+    preconditions: string[],
+    postconditions: string[]
+}
 
-    const methodComments : string[][] = [];
-    for (const [mid, method ] of abi.entries())
-    {
-        methodComments[mid] = [];
-        for (const [methodName, methodSpec] of Object.entries(userdoc))
-        {
-            if(method.name === methodName.substring(0, methodName.indexOf("(") ))
-            {
-                const {notice :methodComment} = methodSpec ;
-                debug(`method comments: %s`, methodComment);
-                //Some hacking to get only precondition statements
-                const methodPreComments = methodComment.split(/precondition/);
-                for(const [index, mdcomment] of methodPreComments.entries())
-                {
-                    if(index !== 0)
-                    {   const methodPostComments = mdcomment.split(/postcondition/);
-                        methodComments[mid].push(methodPostComments[0]);
-                    }
-                }
-                var result : string;
-               debug(`methodComments: %s`, methodComments);
-                for (const [index, mdcomment] of methodComments[mid].entries())
-                {
-                    result = mdcomment;
-                    debug(`method comment: %s`, mdcomment);
-                    for(const field of fieldsNames)
-                    {
-                        let re = new RegExp(`\\b${field}\\b`,'gi');
-                        result = result.replace(re, `${name}.${field}`);
-                       debug(`result1 is: %s`, result);
-                    }
-                    debug(`result2 is: %s`, result);
-                    methodComments[mid][index] = `@notice precondition ${result}`;
-                    debug(`methodComments[mid][index]: %s`, methodComments[mid][index]);
-                }
-            }
-            debug(`method spec: %o`, methodSpec);
-        }
-    }
-    return methodComments;
+export function getMethodSpec(metadata: Metadata, method: Method): MethodSpec {
+    const { userdoc } = metadata;
+
+    if (method.name === undefined)
+        return { preconditions: [], postconditions: [] };
+
+    const name = Object.keys(userdoc).find(key => key.split('(')[0] === method.name);
+
+    if (name === undefined)
+        return { preconditions: [], postconditions: [] };
+
+    const { notice } = userdoc[name];
+    const specifications = notice.split(/(?=precondition)|(?=postcondition)/);
+    const preconditions = specifications.filter(s => s.startsWith('precondition'));
+    const postconditions = specifications.filter(s => s.startsWith('postcondition'));
+    return { preconditions, postconditions };
 }
 
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {

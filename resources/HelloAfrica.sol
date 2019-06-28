@@ -9,8 +9,8 @@ contract HelloAfrica {
 	/**
 	  @notice precondition counter3 == counter + 1
 	*/
-	function inc() public {
-		counter ++;
+	function inc(int i) public {
+		counter += i;
 	}
 
 	/**

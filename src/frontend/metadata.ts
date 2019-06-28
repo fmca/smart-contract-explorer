@@ -18,12 +18,16 @@ export interface SourceInfo {
     content: string;
 }
 
+export interface UserDoc {
+    [methodName: string]: { notice: string }
+}
+
 export interface Metadata {
     name: string;
     source: SourceInfo;
     abi: Method[];
     bytecode: string;
-    userdoc: object;
+    userdoc: UserDoc;
     ast: SourceUnit;
     members: ContractMember[];
 }

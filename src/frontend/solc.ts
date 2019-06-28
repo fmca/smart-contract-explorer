@@ -35,7 +35,7 @@ export interface Output {
                 name: string;
                 abi: Method[];
                 userdoc: {
-                    methods: object;
+                    methods: { [_: string]: { notice: string } };
                 }
                 evm: {
                     bytecode: {
@@ -53,6 +53,7 @@ export function compile(input: Input): Output {
     const [ sourceName ] = Object.keys(input.sources);
     const { sources: { [sourceName]: { content }} } = input;
     const output = JSON.parse(solc.compile(json, findImports));
+    debug(output);
     return output;
 }
 

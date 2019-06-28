@@ -1,7 +1,7 @@
 import { Metadata, Method } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
-import { computePrePostConditions } from './product';
+import { getMethodSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 
@@ -159,17 +159,18 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     async getBody(): Promise<string[]> {
-
-
-        const preconditions = computePrePostConditions(this.target);
-        return this.target.abi.map(method => this.getMethod(method, preconditions)).flat();
+        const { target: { abi } } = this;
+        return abi.map(this.getMethod.bind(this)).flat();
     }
 
-    getMethod(method: Method, preconditions: string[][]): string[] {
+    getMethod(method: Method): string[] {
+        const { target: metadata } = this;
+        const { preconditions, postconditions } = getMethodSpec(metadata, method);
         return [
             ``,
             `/**`,
-            ...preconditions.flat().map(p => ` * ${p}`),
+            ...preconditions.map(p => ` * @notice ${p}`),
+            ...postconditions.map(p => ` * @notice ${p}`),
             ` */`,
             `${Contract.signatureOfMethod(method)} {`,
             ...block(4)(

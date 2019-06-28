@@ -3,19 +3,19 @@ pragma solidity ^0.5.9;
 contract HelloWorld {
 
 	int total;
-	mapping (int => int) counters;
+	int counter;
 
 	function inc(int i) public {
-		counters[i] ++;
-		total ++;
+		counter += i;
+		total += i;
 	}
 
-	function dec(int i) public {
-		counters[i] --;
+	function dec() public {
+		counter --;
 		total --;
 	}
 
-	function get(int i) public view returns(int) {
-		return counters[i];
+	function get() public view returns(int) {
+		return counter;
 	}
 }
