@@ -1,9 +1,28 @@
-import Contract from "web3/eth/contract";
+
+type NodeType = 'SourceUnit'
+    | 'PragmaDirective'
+    | 'ImportDirective'
+    | 'Contract'
+    | 'ImportDirective'
+    | 'ContractDefinition'
+    | 'FunctionDefinition'
+    | 'VariableDeclaration'
+    | 'ElementaryTypeName'
+    | 'Mapping'
+    | 'Return'
+    | 'Identifier'
+    | 'Literal'
+    | 'IndexAccess'
+    | 'Assignment'
+    | 'BinaryOperation'
+    | 'UnaryOperation'
+    | 'Conditional'
 
 export interface Node {
     id: number;
     src: string;
-    nodeType: string;
+    nodeType: NodeType;
+    [_: string]: any;
 }
 
 export interface SourceUnit extends Node {
@@ -33,16 +52,8 @@ export interface ContractDefinition extends Node {
     nodes: ContractMember[];
 }
 
-export function isContractDefinition(node: SourceUnitElement): node is ContractDefinition {
-    return node.nodeType === 'ContractDefinition';
-}
-
 export interface ContractMember extends Node {
 
-}
-
-export function isVariableDeclaration(node: ContractMember): node is VariableDeclaration {
-    return node.nodeType === 'VariableDeclaration';
 }
 
 export interface FunctionDefinition extends ContractMember {
@@ -59,15 +70,41 @@ export interface FunctionDefinition extends ContractMember {
     documentation: string;
 }
 
-export type storage = 'default';
-
 export interface VariableDeclaration extends ContractMember {
     nodeType: 'VariableDeclaration';
     name: string;
     scope: number;
     constant: boolean;
     stateVariable: boolean;
-    storageLocation: storage;
+    storageLocation: StorageLocation;
+    typeDescriptions: TypeDescriptions;
+    typeName: TypeName;
+}
+
+export type StorageLocation = 'default';
+
+export interface TypeDescriptions {
+    typeIdentifier: string;
+    typeString: string;
+}
+
+export type TypeName = ElementaryTypeName | Mapping;
+
+export interface TypeNameBase extends Node {
+    typeDescriptions: TypeDescriptions;
+}
+
+export interface ElementaryTypeName extends TypeNameBase {
+    nodeType: 'ElementaryTypeName';
+    name: ElementaryType;
+}
+
+export type ElementaryType = 'uint' | 'int' | 'string' | 'bytes' | 'address' | 'bool';
+
+export interface Mapping extends TypeNameBase {
+    nodeType: 'Mapping';
+    keyType: TypeName;
+    valueType: TypeName;
 }
 
 export interface Parameters extends Node {
@@ -92,12 +129,15 @@ export interface Return extends Statement {
 }
 
 export interface Expression extends Node {
-
+    argumentTypes: null;
+    typeDescriptions: TypeDescriptions;
 }
 
 export interface Identifier extends Expression {
     nodeType: 'Identifier';
     name: string;
+    overloadedDeclarations: any[];
+    referencedDeclaration: number;
 }
 
 export interface Literal extends Expression {
@@ -105,10 +145,17 @@ export interface Literal extends Expression {
     value : string;
 }
 
-export interface IndexAccess extends Expression {
+export interface Operation extends Expression {
+    isConstant: boolean;
+    isLValue: boolean;
+    isPure: boolean;
+}
+
+export interface IndexAccess extends Operation {
     nodeType: 'IndexAccess';
     baseExpression: Expression;
     indexExpression: Expression;
+    lValueRequested: boolean;
 }
 
 export interface Assignment extends Expression {
@@ -118,14 +165,14 @@ export interface Assignment extends Expression {
     leftHandSide: Expression;
 }
 
-export interface BinaryOperation extends Expression {
+export interface BinaryOperation extends Operation {
     nodeType: 'BinaryOperation';
     operator: '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>' ;
     leftExpression: Expression;
     rightExpression: Expression;
 }
 
-export interface UnaryOperation extends Expression {
+export interface UnaryOperation extends Operation {
     nodeType: 'UnaryOperation';
     prefix : boolean;
     operator: '-' | '!' | '--' | '++' ;
@@ -137,6 +184,18 @@ export interface Conditional extends Expression {
     condition: Expression;
     falseExpression: Expression;
     trueExpression: Expression;
+}
+
+export function isContractDefinition(node: SourceUnitElement): node is ContractDefinition {
+    return node.nodeType === 'ContractDefinition';
+}
+
+export function isVariableDeclaration(node: ContractMember): node is VariableDeclaration {
+    return node.nodeType === 'VariableDeclaration';
+}
+
+export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName {
+    return node.nodeType === 'ElementaryTypeName';
 }
 
 export function toSExpr(node: Node): string {
@@ -322,7 +381,7 @@ class NodeToContract extends NodeVisitor<string> {
     }
 }
 
-class AddPrefixToNode extends NodeVisitor<Node> {
+class AddPrefixToNode extends NodeVisitor<Expression> {
 
     contractFields: string[];
     contractName: string;
@@ -350,39 +409,32 @@ class AddPrefixToNode extends NodeVisitor<Node> {
     }
 
     visitIndexAccess(node: IndexAccess) {
-        const newNode = node;
-        newNode.baseExpression = this.visit(newNode.baseExpression);
-        newNode.indexExpression = this.visit(newNode.indexExpression);
-        return newNode;
+        const baseExpression = this.visit(node.baseExpression);
+        const indexExpression = this.visit(node.indexExpression);
+        return { ...node, baseExpression, indexExpression };
     }
 
     visitAssignment(node: Assignment) {
-        const newNode = node;
-        newNode.rightHandSide = this.visit(newNode.rightHandSide);
-        newNode.leftHandSide = this.visit(newNode.leftHandSide);
-        return newNode;
+        const rightHandSide = this.visit(node.rightHandSide);
+        const leftHandSide = this.visit(node.leftHandSide);
+        return { ...node, leftHandSide, rightHandSide };
     }
 
     visitBinaryOperation(node: BinaryOperation) {
-        const newNode = node;
-        newNode.rightExpression = this.visit(newNode.rightExpression);
-        newNode.leftExpression = this.visit(newNode.leftExpression);
-        return newNode;
-
+        const rightExpression = this.visit(node.rightExpression);
+        const leftExpression = this.visit(node.leftExpression);
+        return { ...node, leftExpression, rightExpression };
     }
 
     visitUnaryOperation(node: UnaryOperation) {
-        const newNode = node;
-        newNode.subExpression = this.visit(newNode.subExpression);
-        return newNode;
+        const subExpression = this.visit(node.subExpression);
+        return { ...node, subExpression };
     }
 
     visitConditional(node: Conditional) {
-        const newNode = node;
-        newNode.condition = this.visit(newNode.condition);
-        newNode.trueExpression = this.visit(newNode.trueExpression);
-        newNode.falseExpression = this.visit(newNode.falseExpression);
-
-        return newNode;
+        const condition = this.visit(node.condition);
+        const trueExpression = this.visit(node.trueExpression);
+        const falseExpression = this.visit(node.falseExpression);
+        return { ...node, condition, trueExpression, falseExpression };
     }
 }

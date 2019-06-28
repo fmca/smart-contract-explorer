@@ -6,8 +6,8 @@ import { Metadata } from '../frontend/metadata';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
-import { extractContractFields, getProductSeedFeatures, } from './product';
-import { isContractDefinition } from '../frontend/ast';
+import { getProductSeedFeatures, } from './product';
+import * as Pie from './pie';
 
 const debug = Debugger(__filename);
 
@@ -232,12 +232,10 @@ class Contract {
     ${methods.map(({ content }) => content).join('\n    ')}
 }`;
         const metadata = Compile.fromString({ path, content });
-        const { nodes: ss } = this.source.ast.nodes.find(isContractDefinition)!;
-        const { nodes: ts } = this.target.ast.nodes.find(isContractDefinition)!;
 
         const fields = [
-            ...extractContractFields(ss).map(f => `${this.source.name}.${f}`),
-            ...extractContractFields(ts).map(f => `${this.target.name}.${f}`)
+            ...Pie.fields(this.source).map(f => `${this.source.name}.${f}`),
+            ...Pie.fields(this.target).map(f => `${this.target.name}.${f}`)
         ];
         const seedFeatures = getProductSeedFeatures(this.source, this.target).map(([f,_]) => f);
         return { metadata, examples: { negative, positive }, fields, seedFeatures };

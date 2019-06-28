@@ -1,4 +1,4 @@
-import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Assignment, Literal, Conditional } from './ast';
+import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from './ast';
 
 interface App extends Array<Expr> { }
 export type Expr = App | string;
@@ -127,7 +127,7 @@ class Visitor<T> {
     }
 }
 
-class ExprToNode extends Visitor<Node> {
+class ExprToNode extends Visitor<Expression> {
 
     visitIndex(base: Expr, index: Expr): IndexAccess {
         const id = 0;
@@ -135,7 +135,8 @@ class ExprToNode extends Visitor<Node> {
         const nodeType = 'IndexAccess';
         const baseExpression = this.visit(base);
         const indexExpression = this.visit(index);
-        return { id, src, nodeType, baseExpression, indexExpression };
+        const expression = { id, src, nodeType, baseExpression, indexExpression };
+        return expression as IndexAccess;
     }
 
     visitBinaryOperation(boperator: Boperators, bleft: Expr, bright: Expr): BinaryOperation {
@@ -145,7 +146,8 @@ class ExprToNode extends Visitor<Node> {
         const operator = boperator;
         const leftExpression = this.visit(bleft);
         const rightExpression = this.visit(bright);
-        return { id, src, nodeType, operator, leftExpression, rightExpression };
+        const expression = { id, src, nodeType, operator, leftExpression, rightExpression };
+        return expression as BinaryOperation;
     }
 
     visitAndOperation(args: Expr): BinaryOperation {
@@ -161,7 +163,8 @@ class ExprToNode extends Visitor<Node> {
             rightExpression = this.visit(rargs[0]);
 
         const leftExpression = this.visit(lExpr);
-        return { id, src, nodeType, operator, leftExpression, rightExpression };
+        const expression = { id, src, nodeType, operator, leftExpression, rightExpression };
+        return expression as BinaryOperation;
     }
 
     visitIteOperation(itecond: Expr, itetrue: Expr, itefalse: Expr): Conditional {
@@ -171,7 +174,8 @@ class ExprToNode extends Visitor<Node> {
         const condition = this.visit(itecond);
         const falseExpression = this.visit(itefalse);
         const trueExpression = this.visit(itetrue);
-        return { id, src, nodeType, condition, falseExpression, trueExpression };
+        const expression = { id, src, nodeType, condition, falseExpression, trueExpression };
+        return expression as Conditional;
     }
 
     visitUnaryOperation(uoperator: Uoperators, usub: Expr): UnaryOperation {
@@ -181,20 +185,23 @@ class ExprToNode extends Visitor<Node> {
         const prefix = true;
         const operator = uoperator;
         const subExpression = this.visit(usub);
-        return { id, src, nodeType, prefix, operator, subExpression};
+        const expression = { id, src, nodeType, prefix, operator, subExpression};
+        return expression as UnaryOperation;
     }
 
     visitIdentifier(name: string): Identifier {
         const id = 0;
         const src = '';
         const nodeType = 'Identifier';
-        return { id, src, nodeType, name };
+        const expression = { id, src, nodeType, name };
+        return expression as Identifier;
     }
 
     visitLiteral(value: string): Literal {
         const id = 0;
         const src = '';
         const nodeType = 'Literal';
-        return { id, src, nodeType, value };
+        const expression = { id, src, nodeType, value };
+        return expression as Literal;
     }
 }

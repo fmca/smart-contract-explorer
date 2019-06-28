@@ -1,6 +1,7 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
-import { addPrefixToNode, FunctionDefinition, Return, toSExpr, ContractMember, isVariableDeclaration } from '../frontend/ast';
+import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
+import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
@@ -70,9 +71,9 @@ function getProductCode(impl: Metadata, spec: Metadata, name: string) {
     return code;
 }
 
-function computePrePostConditions({ userdoc, abi, name, members }: Metadata): string[][] {
-
-    const fieldsNames = extractContractFields(members);
+function computePrePostConditions(metadata: Metadata): string[][] {
+    const { userdoc, abi, name, members } = metadata;
+    const fieldsNames = Pie.fields(metadata);
 
     const methodComments : string[][] = [];
     for (const [mid, method ] of abi.entries())
@@ -231,24 +232,13 @@ function getMethodInfo(impl: Metadata, spec: Metadata): MethodInfo[] {
     return methodInfo;
 }
 
-export function extractContractFields(members: ContractMember[]): string[]
-{
-    debug(`members size: %s`, members.length);
-    const fieldNames = members.filter(isVariableDeclaration)
-        .filter(f => f.stateVariable)
-        .map(f => f.name);
-
-    debug(`fields: %o`, fieldNames);
-    return fieldNames;
-}
-
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {
 
     const spec_contractMembers = spec.members;
     const impl_contractMembers = impl.members;
 
-    const spec_fieldsNames = extractContractFields(spec_contractMembers);
-    const impl_fieldsNames = extractContractFields(impl_contractMembers);
+    const spec_fieldsNames = Pie.fields(spec);
+    const impl_fieldsNames = Pie.fields(impl);
 
     const spec_contractName = spec.name;
     const impl_contractName = impl.name;

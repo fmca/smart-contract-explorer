@@ -1,10 +1,11 @@
-import { toSExpr, toContract } from '../frontend/ast';
+import { toSExpr, toContract, IndexAccess, Identifier, Assignment, BinaryOperation } from '../frontend/ast';
 import assert from 'assert';
 
 
 describe('ast', function() {
 
-const  ASTbaseExpression = { argumentTypes: null,
+const ASTbaseExpression: Identifier = {
+    argumentTypes: null,
     id: 24,
     name: 'counters',
     nodeType: 'Identifier',
@@ -13,10 +14,11 @@ const  ASTbaseExpression = { argumentTypes: null,
     src: '163:8:0',
     typeDescriptions:
     { typeIdentifier: 't_mapping$_t_int256_$_t_int256_$',
-       typeString: 'mapping(int256 => int256)' } } ;
+       typeString: 'mapping(int256 => int256)' }
+} ;
 
-       
-const ASTindexExpression = { argumentTypes: null,
+
+const ASTindexExpression: Identifier = { argumentTypes: null,
     id: 25,
     name: 'i',
     nodeType: 'Identifier',
@@ -25,7 +27,7 @@ const ASTindexExpression = { argumentTypes: null,
     src: '172:1:0',
     typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } };
 
-const ASTleftHandSide = { argumentTypes: null,
+const ASTleftHandSide: IndexAccess = { argumentTypes: null,
       baseExpression: ASTbaseExpression,
       id: 26,
       indexExpression: ASTindexExpression,
@@ -38,7 +40,7 @@ const ASTleftHandSide = { argumentTypes: null,
       typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } } ;
 
 
-const leftExpression =  { argumentTypes: null,
+const leftExpression: IndexAccess =  { argumentTypes: null,
         baseExpression:
          { argumentTypes: null,
            id: 30,
@@ -69,7 +71,7 @@ const leftExpression =  { argumentTypes: null,
         typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } };
 
 
-const rightExpression = { argumentTypes: null,
+const rightExpression: BinaryOperation = { argumentTypes: null,
         commonType: { typeIdentifier: 't_int256', typeString: 'int256' },
         id: 35,
         isConstant: false,
@@ -106,8 +108,8 @@ const rightExpression = { argumentTypes: null,
         src: '199:5:0',
         typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } };
 
-        
-const ASTtrueExpression =
+
+const ASTtrueExpression: BinaryOperation =
       { argumentTypes: null,
         commonType: { typeIdentifier: 't_int256', typeString: 'int256' },
         id: 36,
@@ -122,7 +124,7 @@ const ASTtrueExpression =
         src: '185:19:0',
         typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } };
 
-const ASTfalseExpression =
+const ASTfalseExpression: BinaryOperation =
         { argumentTypes: null,
           commonType: { typeIdentifier: 't_int256', typeString: 'int256' },
           id: 41,
@@ -174,8 +176,8 @@ const ASTfalseExpression =
              src: '207:15:0',
              typeDescriptions: { typeIdentifier: 't_int256', typeString: 'int256' } };
 
-             
-const ASTcondition =
+
+const ASTcondition: BinaryOperation =
           { argumentTypes: null,
             commonType: { typeIdentifier: 't_int256', typeString: 'int256' },
             id: 29,
@@ -214,7 +216,7 @@ const ASTcondition =
             typeDescriptions: { typeIdentifier: 't_bool', typeString: 'bool' } };
 
 
-    const ast = { argumentTypes: null,
+    const ast: Assignment = { argumentTypes: null,
                             id: 43,
                             isConstant: false,
                             isLValue: false,
@@ -271,5 +273,5 @@ const ASTcondition =
         const expr = toContract(ast);
         assert.deepEqual(expr, `counters[i] = k == 1? counters[i] + 2 * k: counters[i] + k`);
     });
-                        
+
 });
