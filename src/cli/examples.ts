@@ -27,12 +27,14 @@ async function main() {
     try {
         const { source, target } = args;
         const paths = { source, target };
-        const { metadata, examples: { positive, negative } } = await Examples.generate({ paths });
+        const { metadata, examples: { positive, negative }, fields, seedFeatures } = await Examples.generate({ paths });
         const { source: { path, content } } = metadata;
 
         await fs.writeFile(path, content);
         await fs.writeFile(`positive-examples.txt`, positive.map(JSON.stringify as any).join(`\n`));
         await fs.writeFile(`negative-examples.txt`, negative.map(JSON.stringify as any).join(`\n`));
+        await fs.writeFile(`fields.txt`, fields.join(`\n`));
+        await fs.writeFile(`seed-features.txt`, seedFeatures.join(`\n`));
 
     } catch (e) {
         console.error(e);

@@ -1,3 +1,5 @@
+import Contract from "web3/eth/contract";
+
 export interface Node {
     id: number;
     src: string;
@@ -6,12 +8,24 @@ export interface Node {
 
 export interface SourceUnit extends Node {
     nodeType: 'SourceUnit';
-    nodes: Node[];
+    nodes: SourceUnitElement[];
 }
+
+export type SourceUnitElement = PragmaDirective | ImportDirective | ContractDefinition;
 
 export interface PragmaDirective extends Node {
     nodeType: 'PragmaDirective';
     literals: string[];
+}
+
+export interface ImportDirective extends Node {
+    nodeType: 'ImportDirective';
+    file: string;
+    absolutePath: string;
+    scope: number;
+    sourceUnit: number;
+    symbolAliases: any[];
+    unitAlias: string;
 }
 
 export interface ContractDefinition extends Node {
@@ -19,8 +33,16 @@ export interface ContractDefinition extends Node {
     nodes: ContractMember[];
 }
 
+export function isContractDefinition(node: SourceUnitElement): node is ContractDefinition {
+    return node.nodeType === 'ContractDefinition';
+}
+
 export interface ContractMember extends Node {
 
+}
+
+export function isVariableDeclaration(node: ContractMember): node is VariableDeclaration {
+    return node.nodeType === 'VariableDeclaration';
 }
 
 export interface FunctionDefinition extends ContractMember {
@@ -37,8 +59,15 @@ export interface FunctionDefinition extends ContractMember {
     documentation: string;
 }
 
+export type storage = 'default';
+
 export interface VariableDeclaration extends ContractMember {
     nodeType: 'VariableDeclaration';
+    name: string;
+    scope: number;
+    constant: boolean;
+    stateVariable: boolean;
+    storageLocation: storage;
 }
 
 export interface Parameters extends Node {
@@ -175,9 +204,9 @@ class NodeVisitor<T> {
             case 'Assignment':
                 return this.visitAssignment(node as Assignment);
             case 'BinaryOperation':
-                return this.visitBinaryOperation(node as BinaryOperation);   
+                return this.visitBinaryOperation(node as BinaryOperation);
             case 'UnaryOperation':
-                return this.visitUnaryOperation(node as UnaryOperation);   
+                return this.visitUnaryOperation(node as UnaryOperation);
             case 'Conditional':
                 return this.visitConditional(node as Conditional);
             case 'Literal':
@@ -230,7 +259,7 @@ class NodeToSExpr extends NodeVisitor<string> {
     visitUnaryOperation(node: UnaryOperation) {
         const sub = this.visit(node.subExpression);
         switch (node.operator) {
-                case '!': 
+                case '!':
                     return `(not ${sub})`;
                 case '-':
                     return `(-${sub})`;
@@ -298,7 +327,7 @@ class AddPrefixToNode extends NodeVisitor<Node> {
     contractFields: string[];
     contractName: string;
 
-    constructor (contractName: string, contractFields: string[]) 
+    constructor (contractName: string, contractFields: string[])
     {
         super();
         this.contractFields = contractFields;
