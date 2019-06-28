@@ -1,7 +1,7 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
 import { Expr } from '../frontend/sexpr';
-import { addPrefixToNode, FunctionDefinition, Return, toSExpr, ContractMember } from '../frontend/ast';
+import { addPrefixToNode, FunctionDefinition, Return, toSExpr, ContractMember, isVariableDeclaration } from '../frontend/ast';
 import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
@@ -201,19 +201,15 @@ function computePrePostConditions({ userdoc, abi, name, members }: Metadata): st
 }
 
 
-function extractContractFields(members: ContractMember[]): string[]
+export function extractContractFields(members: ContractMember[]): string[]
 {
-    debug(`specFields size: %s`, Object.keys(members).length);
-    const fieldsNames : string[] = [];
-    for (const node of members as any[])
-    {
-        if(node.nodeType == 'VariableDeclaration' && node.stateVariable == true)
-        {
-            fieldsNames.push(node.name);
-        }
-    }
-    debug(`number of fields: %s`, fieldsNames.length);
-    return fieldsNames;
+    debug(`members size: %s`, members.length);
+    const fieldNames = members.filter(isVariableDeclaration)
+        .filter(f => f.stateVariable)
+        .map(f => f.name);
+
+    debug(`fields: %o`, fieldNames);
+    return fieldNames;
 }
 
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {
@@ -233,22 +229,22 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
     for (const spec_node of spec_contractMembers)
     {
         if(spec_node.nodeType === 'FunctionDefinition')
-        {  
+        {
             const spec_func = spec_node as FunctionDefinition;
 
             if(spec_func.visibility === 'public' && spec_func.stateMutability === 'view')
-            {   
+            {
                 for (const impl_node of impl_contractMembers)
                 {
                     if(impl_node.nodeType === 'FunctionDefinition')
-                    { 
+                    {
                         const impl_func = impl_node as FunctionDefinition;
 
                         if(impl_func.name === spec_func.name && impl_func.visibility === 'public' && impl_func.stateMutability === 'view')
-                        {  
+                        {
                             if(spec_func.body.statements.length != 1 || spec_func.body.statements.length != impl_func.body.statements.length)
                                 throw Error('expected single statement in observation function');
-                            
+
                             const spec_statement = spec_func.body.statements[0];
                             const impl_statement = impl_func.body.statements[0];
 
@@ -260,7 +256,7 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
 
                             const spec_expression = addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
                             const impl_expression = addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
-                            
+
                             const spec_exper = toSExpr(spec_expression);
                             const impl_exper = toSExpr(impl_expression);
 
@@ -268,7 +264,7 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
 
                             seed_features.push([seed_feature,spec_func.name]);
                         }
-                    }  
+                    }
                 }
             }
         }

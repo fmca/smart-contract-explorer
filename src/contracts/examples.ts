@@ -6,6 +6,8 @@ import { Metadata } from '../frontend/metadata';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
+import { extractContractFields, getProductSeedFeatures, } from './product';
+import { isContractDefinition } from '../frontend/ast';
 
 const debug = Debugger(__filename);
 
@@ -21,7 +23,9 @@ interface Result {
     examples: {
         positive: AbstractExample[];
         negative: AbstractExample[];
-    }
+    };
+    fields: string[];
+    seedFeatures: string[];
 }
 
 type Kind = 'positive' | 'negative';
@@ -228,7 +232,15 @@ class Contract {
     ${methods.map(({ content }) => content).join('\n    ')}
 }`;
         const metadata = Compile.fromString({ path, content });
-        return { metadata, examples: { negative, positive } };
+        const { nodes: ss } = this.source.ast.nodes.find(isContractDefinition)!;
+        const { nodes: ts } = this.target.ast.nodes.find(isContractDefinition)!;
+
+        const fields = [
+            ...extractContractFields(ss).map(f => `${this.source.name}.${f}`),
+            ...extractContractFields(ts).map(f => `${this.target.name}.${f}`)
+        ];
+        const seedFeatures = getProductSeedFeatures(this.source, this.target).map(([f,_]) => f);
+        return { metadata, examples: { negative, positive }, fields, seedFeatures };
     }
 
     methodForExample(example: SimulationExample, name: string): string {
@@ -252,4 +264,3 @@ class Contract {
         }
     }
 }
-
