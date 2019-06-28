@@ -4,6 +4,7 @@ import { AbstractExample, SimulationExample } from "./examples";
 import { getMethodSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
+import { isVariableDeclaration } from "../frontend/ast";
 
 const debug = Debugger(__filename);
 
@@ -164,13 +165,15 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     getMethod(method: Method): string[] {
-        const { target: metadata } = this;
-        const { preconditions, postconditions } = getMethodSpec(metadata, method);
+        const { target } = this;
+        const spec = getMethodSpec(target, method);
+        const preconditions = spec.preconditions.map(substituteFields(target));
+        const postconditions = spec.postconditions.map(substituteFields(target));
         return [
             ``,
             `/**`,
-            ...preconditions.map(p => ` * @notice ${p}`),
-            ...postconditions.map(p => ` * @notice ${p}`),
+            ...preconditions.map(p => ` * @notice precondition ${p}`),
+            ...postconditions.map(p => ` * @notice postcondition ${p}`),
             ` */`,
             `${Contract.signatureOfMethod(method)} {`,
             ...block(4)(
@@ -186,6 +189,17 @@ export class SimulationCheckingContract extends ProductContract {
         const { outputs = [] } = method;
         return outputs.map(({ name }) => `require(${this.source.name}_${name} == ${this.target.name}_${name});`);
     }
+}
+
+function substituteFields(metadata: Metadata) {
+    return function(expression: string) {
+        const { name, members } = metadata;
+        const fields = members.filter(isVariableDeclaration)
+            .filter(f => f.stateVariable)
+            .map(({ name }) => name);
+        const re = new RegExp(`\\b(${fields.join('|')})\\b`, 'g');
+        return expression.replace(re, `${name}.$1`);
+    };
 }
 
 function block(indent?: number) {

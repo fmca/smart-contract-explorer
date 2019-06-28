@@ -44,9 +44,10 @@ export function getMethodSpec(metadata: Metadata, method: Method): MethodSpec {
         return { preconditions: [], postconditions: [] };
 
     const { notice } = userdoc[name];
-    const specifications = notice.split(/(?=precondition)|(?=postcondition)/);
-    const preconditions = specifications.filter(s => s.startsWith('precondition'));
-    const postconditions = specifications.filter(s => s.startsWith('postcondition'));
+    const specs = notice.split(/(?=precondition)|(?=postcondition)/);
+    const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
+    const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
+    const postconditions = specs.filter(s => s.startsWith('postcondition')).map(strip);
     return { preconditions, postconditions };
 }
 
