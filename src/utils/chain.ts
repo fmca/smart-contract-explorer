@@ -9,6 +9,7 @@ export interface BlockchainInterface {
 
 export async function get(): Promise<BlockchainInterface> {
     const provider = ganache.provider();
+    provider.setMaxListeners(100);
     const web3 = new Web3(provider);
     const accounts = await web3.eth.getAccounts();
     const create = (abi: Method[]) => new web3.eth.Contract(abi);
