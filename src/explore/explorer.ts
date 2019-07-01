@@ -3,6 +3,9 @@ import { ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
 import { Address, Metadata } from '../frontend/metadata';
+import { Debugger } from '../utils/debug';
+
+const debug = Debugger(__filename);
 
 interface Parameters {
     metadata: Metadata;
@@ -30,6 +33,7 @@ export class Explorer {
         const invGen = new InvocationGenerator(metadata, this.accounts);
         const initial = await this.initial(params);
         const workList = [ initial ];
+        debug({ post: initial });
         yield { post: initial };
 
         while (workList.length > 0) {
@@ -41,6 +45,7 @@ export class Explorer {
 
                 const { operation, state: post } = await executer.execute(pre, invocation);
                 const transition = { pre, operation, post };
+                debug(transition);
                 yield transition;
                 workList.push(post);
             }

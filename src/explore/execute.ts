@@ -43,12 +43,9 @@ export class Executor {
         const { contractId, trace: t } = state;
         const context = await this.createContext();
 
-        context.replayTrace(t);
-        debug(`M: %o`, invocation.isMutator());
+        await context.replayTrace(t);
         const result = await context.invoke(invocation);
-        debug(`R: %o`, result);
         const operation = new Operation(invocation, result);
-        debug(`O: %o`, operation);
         const operations = [...t.operations, operation];
         const trace = new Trace(operations);
 
@@ -81,13 +78,15 @@ class Context {
     constructor(public contract: Contract, public account: Address) { }
 
     async replayTrace(trace: Trace): Promise<Result> {
+        debug(`replaying trace: %s`, trace);
         const { operations } = trace;
         const invocations = operations.map(({ invocation }) => invocation);
         return this.invokeSequence(invocations);
     }
 
     async invokeSequence(invocations: Invocation[]): Promise<Result> {
-        let result = new Promise<Result>(_ => {});
+        debug(`invoking sequence: %o`, invocations);
+        let result = new Promise<Result>((resolve, _) => resolve(new Result()));
         for (const invocation of invocations)
             result = this.invoke(invocation);
         return result;
@@ -104,6 +103,8 @@ class Context {
         const { name } = method;
         const from = this.account;
 
+        debug(`invoking mutator method: %s`, invocation);
+
         const tx = this.contract.methods[name!](...inputs);
         const gas = await tx.estimateGas() * 10;
 
@@ -116,7 +117,7 @@ class Context {
         const { method, inputs } = invocation;
         const { name } = method;
 
-        debug(`calling method: %o`, invocation);
+        debug(`invoking readonly method: %s`, invocation);
         const outputs = await this.contract.methods[name!](...inputs).call();
 
         const values = valuesOf(outputs);

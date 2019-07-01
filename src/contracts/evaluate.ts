@@ -41,6 +41,7 @@ export class Evaluator {
             const { result } = response;
             console.log(`${result}`);
         }
+        debug(`stopped listening`);
     }
 
     async processRequest(request: Request): Promise<Response> {

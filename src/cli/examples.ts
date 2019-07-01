@@ -37,10 +37,10 @@ async function main() {
         const { source: { path: p, content } } = metadata;
 
         await fs.writeFile(p, content);
-        await fs.writeFile(`positive-examples.txt`, positive.map(JSON.stringify as any).join(`\n`));
-        await fs.writeFile(`negative-examples.txt`, negative.map(JSON.stringify as any).join(`\n`));
-        await fs.writeFile(`fields.txt`, fields.join(`\n`));
-        await fs.writeFile(`seed-features.txt`, seedFeatures.join(`\n`));
+        await fs.writeFile(`positive-examples.txt`, positive.map(e => `${JSON.stringify(e)}\n`).join(''));
+        await fs.writeFile(`negative-examples.txt`, negative.map(e => `${JSON.stringify(e)}\n`).join(''));
+        await fs.writeFile(`fields.txt`, fields.join(`\n`) + '\n');
+        await fs.writeFile(`seed-features.txt`, seedFeatures.join(`\n`) + '\n');
 
     } catch (e) {
         console.error(e);
