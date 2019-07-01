@@ -1,6 +1,4 @@
 import { Debugger } from '../utils/debug';
-import * as readline from 'readline';
-import stream from 'stream';
 import { Expr } from '../frontend/sexpr';
 import { State, Operation, Result, Trace, Observation } from '../explore/states';
 import * as Compile from '../frontend/compile';
@@ -10,6 +8,7 @@ import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate } from './extension';
 import { AbstractExample } from './examples';
+import { lines } from '../utils/lines';
 
 const debug = Debugger(__filename);
 
@@ -104,12 +103,4 @@ function getInvocation({ abi }: Metadata, methodName: string): Invocation {
     if (method === undefined)
         throw Error(`method ${methodName} not found`);
     return new Invocation(method);
-}
-
-function lines(input: stream.Readable): AsyncIterable<string> {
-    const output = new stream.PassThrough({ objectMode: true });
-    const rl = readline.createInterface({ input });
-    rl.on("line", line => { output.write(line); });
-    rl.on("close", () => { output.push(null); });
-    return output;
 }
