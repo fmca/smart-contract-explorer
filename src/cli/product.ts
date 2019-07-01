@@ -41,14 +41,16 @@ async function main() {
         await fs.writeFile(path, content);
 
         if (check) {
-            const command = `echo`;
-            const args = [`TODO:`, `solc-verify`, path];
+            const command = `solc-verify.py`;
+            const args = [path];
             const options = {};
             const { stdout, stderr } = await cp.spawn(command, args, options);
 
-            for await (const line of lines(stdout)) {
+            for await (const line of lines(stdout))
                 console.log(line);
-            }
+
+            for await (const line of lines(stderr))
+                console.error(line);
         }
 
 
