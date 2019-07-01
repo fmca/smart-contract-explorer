@@ -24,7 +24,8 @@ abstract class Contract {
 
     static signatureOfMethod(method: Method) {
         const { name, inputs = [], stateMutability, payable, outputs = [] } = method;
-        const parameters = inputs.map(({ name, type }) => `${type} ${name}`).join(', ');
+        const parameters = inputs.map(({ name, type }) => `${type} ${name}`);
+        const returns = outputs.map(({ name, type }) => `${type} ${name}`);
 
         const modifiers = ['public'];
 
@@ -35,9 +36,9 @@ abstract class Contract {
             modifiers.push('view');
 
         if (outputs.length > 0)
-            modifiers.push(`returns (${outputs.map(({ type }) => `${type}`).join(', ')})`);
+            modifiers.push(`returns (${returns.join(', ')})`);
 
-        return `function ${name}(${parameters}) ${modifiers.join(' ')}`;
+        return `function ${name}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
     }
 
     static callOfOperation({ name }: Metadata) {
@@ -198,15 +199,18 @@ export class SimulationCheckingContract extends ProductContract {
             ...block(4)(
                 Contract.callOfMethod(this.source)(method),
                 Contract.callOfMethod(this.target)(method),
-                ...this.getValidations(method)
+                ...this.getValidationsAndReturn(method),
             ),
             `}`
         ];
     }
 
-    getValidations(method: Method): string[] {
+    getValidationsAndReturn(method: Method): string[] {
         const { outputs = [] } = method;
-        return outputs.map(({ name }) => `require(${this.source.name}_${name} == ${this.target.name}_${name});`);
+        const lines = outputs.map(({ name }) => `require(${this.source.name}_${name} == ${this.target.name}_${name});`);
+        if (outputs.length > 0)
+            lines.push(`return (${outputs.map(({ name }) => `${this.source.name}_${name}`)});`);
+        return lines;
     }
 }
 

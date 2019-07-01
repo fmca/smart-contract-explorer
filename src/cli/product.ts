@@ -3,6 +3,7 @@
 require('source-map-support').install();
 
 import yargs from 'yargs';
+import path from 'path';
 import fs from 'fs-extra';
 import cp from 'child_process';
 import { getSimulationCheckContract } from '../contracts/product';
@@ -27,6 +28,7 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
         describe: 'attempt to verify the simulation contract',
         type: 'boolean'
     })
+    .coerce(['source', 'target'], path.resolve)
     .help('help')
     .argv;
 
@@ -34,7 +36,7 @@ async function main() {
 
     try {
         const { source, target, check } = args;
-        const paths = { source, target };
+        const paths = { source: source!, target: target! };
         const { metadata } = await getSimulationCheckContract({ paths });
         const { source: { path, content } } = metadata;
 
