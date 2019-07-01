@@ -1,5 +1,5 @@
 import * as Compile from '../frontend/compile';
-import { Metadata, Method } from "../frontend/metadata";
+import { Metadata, Method, Contract } from "../frontend/metadata";
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
@@ -27,28 +27,44 @@ export async function getSimulationCheckContract(parameters: Parameters) {
     return { metadata };
 }
 
-interface MethodSpec {
+export interface ContractSpec {
+    simulations: string[];
+}
+
+export interface MethodSpec {
     preconditions: string[],
     postconditions: string[]
 }
 
+export function getContractSpec(metadata: Metadata): ContractSpec {
+    const { name, userdoc: { notice } } = metadata;
+    const specs = notice.split(/(?=simulation)/);
+    const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
+    const simulations = specs.filter(s => s.startsWith('simulation')).map(strip);
+    const spec = { simulations };
+    debug(`spec(%s): %O`, name, spec);
+    return spec;
+}
+
 export function getMethodSpec(metadata: Metadata, method: Method): MethodSpec {
-    const { userdoc } = metadata;
+    const { userdoc: { methods } } = metadata;
 
     if (method.name === undefined)
         return { preconditions: [], postconditions: [] };
 
-    const name = Object.keys(userdoc).find(key => key.split('(')[0] === method.name);
+    const name = Object.keys(methods).find(key => key.split('(')[0] === method.name);
 
     if (name === undefined)
         return { preconditions: [], postconditions: [] };
 
-    const { notice } = userdoc[name];
+    const { notice } = methods[name];
     const specs = notice.split(/(?=precondition)|(?=postcondition)/);
     const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
     const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
     const postconditions = specs.filter(s => s.startsWith('postcondition')).map(strip);
-    return { preconditions, postconditions };
+    const spec = { preconditions, postconditions };
+    debug(`spec(%s): %O`, method.name, spec)
+    return spec;
 }
 
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {

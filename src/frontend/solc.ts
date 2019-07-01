@@ -23,6 +23,14 @@ export interface Input {
     }
 };
 
+export interface Notice {
+    notice: string;
+}
+
+export interface UserDoc extends Notice {
+    methods: { [_:string]: Notice }
+}
+
 export interface Output {
     sources: {
         [sourcePath: string]: {
@@ -34,9 +42,7 @@ export interface Output {
             [contractName: string]: {
                 name: string;
                 abi: Method[];
-                userdoc: {
-                    methods: { [_: string]: { notice: string } };
-                }
+                userdoc: UserDoc;
                 evm: {
                     bytecode: {
                         object: string;

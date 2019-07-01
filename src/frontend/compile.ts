@@ -59,7 +59,7 @@ function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
 
     const [ [name, contract] ] = contractEntries;
 
-    const { abi, userdoc: { methods: userdoc }, evm: { bytecode: { object: bytecode } } } = contract;
+    const { abi, userdoc, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
 
     const metadata = { abi, name, source: source, bytecode, userdoc, ast, members };

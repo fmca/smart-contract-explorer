@@ -1,6 +1,7 @@
 import { ABIDefinition } from 'web3/eth/abi';
 import Contract from 'web3/eth/contract';
 import { SourceUnit, ContractMember } from './ast';
+import { UserDoc } from './solc';
 
 export type Contract = Contract;
 
@@ -16,10 +17,6 @@ export namespace Method {
 export interface SourceInfo {
     path: string;
     content: string;
-}
-
-export interface UserDoc {
-    [methodName: string]: { notice: string }
 }
 
 export interface Metadata {

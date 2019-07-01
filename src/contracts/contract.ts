@@ -1,7 +1,7 @@
 import { Metadata, Method } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
-import { getMethodSpec } from './product';
+import { getMethodSpec, getContractSpec, ContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { isVariableDeclaration } from "../frontend/ast";
@@ -74,6 +74,7 @@ abstract class ProductContract extends Contract {
 
     async getContract(): Promise<string[]> {
         const { name } = this.info;
+        const spec = await this.getSpec();
         const body = await this.getBody();
         const lines = block()(
             `pragma solidity ^0.5.0;`,
@@ -81,11 +82,16 @@ abstract class ProductContract extends Contract {
             `import "${this.source.source.path}";`,
             `import "${this.target.source.path}";`,
             ``,
+            ...spec,
             `contract ${name} is ${this.source.name}, ${this.target.name} {`,
             ...block(4)(...body),
             `}`
         );
         return lines;
+    }
+
+    async getSpec(): Promise<string[]> {
+        return [];
     }
 
     abstract async getBody(): Promise<string[]>;
@@ -160,8 +166,21 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     async getBody(): Promise<string[]> {
-        const { target: { abi } } = this;
-        return abi.map(this.getMethod.bind(this)).flat();
+        const { source, target: { abi } } = this;
+        return abi.map(m => this.getMethod(m)).flat();
+    }
+
+    async getSpec(): Promise<string[]> {
+        const { source } = this;
+        const { simulations } = getContractSpec(source);
+        if (simulations.length == 0)
+            return [];
+
+        return [
+            `/**`,
+            ...simulations.map(p => ` * @notice invariant ${p}`),
+            ` */`
+        ];
     }
 
     getMethod(method: Method): string[] {
@@ -174,7 +193,6 @@ export class SimulationCheckingContract extends ProductContract {
             `/**`,
             ...preconditions.map(p => ` * @notice precondition ${p}`),
             ...postconditions.map(p => ` * @notice postcondition ${p}`),
-            ` * TODO: add simulation relation`,
             ` */`,
             `${Contract.signatureOfMethod(method)} {`,
             ...block(4)(
