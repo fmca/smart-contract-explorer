@@ -27,7 +27,8 @@ export function fromString(source: SourceInfo): Metadata {
     const output = Solc.compile(input);
     handleErrors(output);
     debug(`output: %O`, output);
-    const metadata = toMetadata(output, {path, content});
+    const info = { path, content };
+    const metadata = toMetadata(output, info);
     debug(`metadata: %O`, metadata);
     return metadata;
 }
@@ -47,7 +48,8 @@ function handleErrors(output: Solc.Output): void {
 
 function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
     const { contracts, sources } = output;
-    debug(`ts: %O`, contracts);
+    debug(`contracts: %O`, contracts);
+    debug(`sources: %O`, sources);
 
     const { path } = source;
     const { ast } = sources[path];
@@ -62,6 +64,6 @@ function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
     const { abi, userdoc, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
 
-    const metadata = { abi, name, source: source, bytecode, userdoc, ast, members };
+    const metadata = { abi, name, source, bytecode, userdoc, ast, members };
     return metadata;
 }

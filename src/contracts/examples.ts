@@ -1,3 +1,4 @@
+import path from 'path';
 import { State } from '../explore/states';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
@@ -7,7 +8,7 @@ import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, SimulationContractInfo } from './contract';
+import { SimulationExamplesContract, SimulationContractInfo, ContractInfo } from './contract';
 import * as Pie from './pie';
 
 const debug = Debugger(__filename);
@@ -16,7 +17,8 @@ interface Parameters {
     paths: {
         source: string;
         target: string;
-    }
+    },
+    output: ContractInfo
 }
 
 interface Result extends SimulationContractInfo {
@@ -85,10 +87,9 @@ export class Examples {
     }
 
     static async generate(parameters: Parameters): Promise<Result> {
-        const { paths } = parameters;
+        const { paths, output: info } = parameters;
         const source = await Compile.fromFile(paths.source);
         const target = await Compile.fromFile(paths.target);
-        const info = { name: 'SimulationExamples', path: 'SimulationExamples.sol' };
         const contract = new SimulationExamplesContract(source, target, info, Examples.getExamples);
         const { metadata, examples } = await contract.get();
 

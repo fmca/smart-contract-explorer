@@ -37,14 +37,15 @@ async function main() {
     try {
         const { source, target, check } = args;
         const paths = { source: source!, target: target! };
-        const { metadata } = await getSimulationCheckContract({ paths });
-        const { source: { path, content } } = metadata;
+        const output = { name: 'SimulationCheck', path: path.resolve('SimulationCheck.sol') };
+        const { metadata } = await getSimulationCheckContract({ paths, output });
+        const { source: { path: p, content } } = metadata;
 
-        await fs.writeFile(path, content);
+        await fs.writeFile(p, content);
 
         if (check) {
             const command = `solc-verify.py`;
-            const args = [path];
+            const args = [p];
             const options = {};
             const { stdout, stderr } = await cp.spawn(command, args, options);
 

@@ -3,7 +3,7 @@ import { Metadata, Method, Contract } from "../frontend/metadata";
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
-import { SimulationCheckingContract } from './contract';
+import { SimulationCheckingContract, ContractInfo } from './contract';
 
 const debug = Debugger(__filename);
 
@@ -11,7 +11,8 @@ export interface Parameters {
     paths: {
         source: string;
         target: string;
-    }
+    },
+    output: ContractInfo
 }
 
 export interface Result {
@@ -19,10 +20,9 @@ export interface Result {
 }
 
 export async function getSimulationCheckContract(parameters: Parameters) {
-    const { paths: { source, target } } = parameters;
+    const { paths: { source, target }, output: info } = parameters;
     const t = await Compile.fromFile(target);
     const s = await Compile.fromFile(source);
-    const info = { name: 'SimulationCheck', path: 'SimulationCheck.sol' };
     const metadata = await new SimulationCheckingContract(s, t, info).getMetadata();
     return { metadata };
 }
