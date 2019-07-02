@@ -9,11 +9,19 @@ contract HelloWorld {
 
 	int counter;
 
+	/**
+	 * @notice modifies total
+	 * @notice modifies counter
+	 */
 	function inc(int i) public {
 		counter += i;
 		total += i;
 	}
 
+	/**
+	 * @notice modifies total
+	 * @notice modifies counter
+	 */
 	function dec() public {
 		counter --;
 		total --;

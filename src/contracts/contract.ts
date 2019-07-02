@@ -186,13 +186,19 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     getMethod(method: Method): string[] {
-        const { target } = this;
+        const { source, target } = this;
+        const { modifies: srcMods } = getMethodSpec(source, method);
         const spec = getMethodSpec(target, method);
+        const modifies = [
+            ...srcMods.map(substituteFields(source)),
+            ...spec.modifies.map(substituteFields(target))
+        ];
         const preconditions = spec.preconditions.map(substituteFields(target));
         const postconditions = spec.postconditions.map(substituteFields(target));
         return [
             ``,
             `/**`,
+            ...modifies.map(p => ` * @notice modifies ${p}`),
             ...preconditions.map(p => ` * @notice precondition ${p}`),
             ...postconditions.map(p => ` * @notice postcondition ${p}`),
             ` */`,
@@ -208,10 +214,11 @@ export class SimulationCheckingContract extends ProductContract {
 
     getValidationsAndReturn(method: Method): string[] {
         const { outputs = [] } = method;
-        const lines = outputs.map(({ name }) => `require(${this.source.name}_${name} == ${this.target.name}_${name});`);
-        if (outputs.length > 0)
-            lines.push(`return (${outputs.map(({ name }) => `${this.source.name}_${name}`)});`);
-        return lines;
+        const varName = ({ name }: Metadata, varName: string) => `${name}_${varName}`;
+        return [
+            ...outputs.map(({ name }) => `require(${varName(this.source,name)} == ${varName(this.target,name)});`),
+            ...(outputs.length > 0 ? [`return (${outputs.map(({ name }) => `${varName(this.source,name)}`)});`] : []),
+        ];
     }
 }
 
