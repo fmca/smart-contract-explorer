@@ -4,7 +4,7 @@ Exploring behaviors of Solidity smart contracts.
 
 ## Requirements
 
-* [Node.js](https://nodejs.org/en/) < 12.0.0
+* [Node.js](https://nodejs.org/en/) < 12.0.0 — as of July 1019 [the Web3.js package is incompatible with Node 12](https://github.com/ethereum/web3.js/issues/2913)
 
 ## Setup
 
