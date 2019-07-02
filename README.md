@@ -96,6 +96,8 @@ Options:
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"positiveExample3"}}
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"positiveExample4"}}
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"positiveExample5"}}
+```
+```json
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"negativeExample6"}}
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"negativeExample7"}}
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"negativeExample8"}}
