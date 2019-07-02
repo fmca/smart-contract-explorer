@@ -14,6 +14,8 @@ $ npm link
 
 ```bash
 $ sc-product --help && sc-product --source resources/HelloWorld.sol --target resources/HelloAfrica.sol && cat SimulationCheck.sol
+```
+```
 usage: sc-product --source <filename> --target <filename>
 
 Options:
@@ -73,6 +75,8 @@ contract SimulationCheck is HelloWorld, HelloAfrica {
 
 ```bash
 $ sc-examples --help && sc-examples --source resources/HelloWorld.sol --target resources/HelloAfrica.sol && cat positive-examples.txt && cat negative-examples.txt && cat fields.txt && cat seed-features.txt && cat SimulationExamples.sol
+```
+```
 usage: sc-examples --source <filename> --target <filename>
 
 Options:
@@ -113,10 +117,12 @@ Options:
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"negativeExample28"}}
 {"id":{"contract":"/Users/mje/Code/smart-contract-explorer/dist/SimulationExamples.sol","method":"negativeExample29"}}
 ```
-```bash
+```
 HelloWorld.total: Int
 HelloWorld.counter: Int
 HelloAfrica.counter: Int
+```
+```
 (= counter counter)
 ```
 ```solidity
