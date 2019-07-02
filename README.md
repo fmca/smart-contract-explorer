@@ -4,7 +4,7 @@ Exploring behaviors of Solidity smart contracts.
 
 ## Requirements
 
-* [https://nodejs.org/en/][Node.js] < 12.0.0
+* [https://nodejs.org/en/](Node.js) < 12.0.0
 
 ## Setup
 
