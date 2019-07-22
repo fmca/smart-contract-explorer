@@ -46,7 +46,7 @@ export class ValueGenerator {
 
     valuesOfType(type: string): Iterable<Value> {
 
-        if (type.match(/int\d*/) || type.match(/uint\d*/))
+        if (type.match(/u?int\d*/))
             return this.intValues();
 
         if (type === 'address')
@@ -54,8 +54,6 @@ export class ValueGenerator {
 
         throw Error(`unexpected type: ${type}`);
     }
-
-    
 
     * valuesOfTypes(types: string[]): Iterable<Value[]> {
         if (types.length === 0) {
@@ -67,7 +65,7 @@ export class ValueGenerator {
 
         const values : Value[][] = [];
         var i;
-        for (const type of types) {    
+        for (const type of types) {
             i = 0;
             for (const value of this.valuesOfType(type)) {
                 if (values[i] === undefined) {
@@ -78,7 +76,7 @@ export class ValueGenerator {
             }
         }
 
-        for (const value of values){    
+        for (const value of values){
             debug(`value: %o`, value);
             yield value;
         }
