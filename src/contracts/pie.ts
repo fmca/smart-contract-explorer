@@ -1,13 +1,19 @@
 import { VariableDeclaration, TypeName, ElementaryType, isVariableDeclaration } from "../frontend/ast";
 import { Metadata } from "../frontend/metadata";
 
-export function fields({ members }: Metadata): string[] {
+export function fieldNames({ members }: Metadata): string[] {
     return members.filter(isVariableDeclaration)
         .filter(f => f.stateVariable)
-        .map(field);
+        .map(({ name }) => name);
 }
 
-export function field({ name, typeName }: VariableDeclaration): string {
+export function fieldDecls({ members }: Metadata): string[] {
+    return members.filter(isVariableDeclaration)
+        .filter(f => f.stateVariable)
+        .map(fieldDecl);
+}
+
+export function fieldDecl({ name, typeName }: VariableDeclaration): string {
     return `${name}: ${type(typeName)}`;
 }
 
@@ -27,6 +33,12 @@ function primitiveType(name: ElementaryType) {
             return 'Bool';
 
         case 'int':
+            return 'Int';
+
+        case 'uint':
+            return 'Int';
+
+        case 'uint256':
             return 'Int';
 
         case 'string':

@@ -75,12 +75,11 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
     const spec_contractMembers = spec.members;
     const impl_contractMembers = impl.members;
 
-    const spec_fieldsNames = Pie.fields(spec);
-    const impl_fieldsNames = Pie.fields(impl);
+    const spec_fieldsNames = Pie.fieldNames(spec);
+    const impl_fieldsNames = Pie.fieldNames(impl);
 
     const spec_contractName = spec.name;
     const impl_contractName = impl.name;
-
 
     const seed_features : [string,string][] = [];
 

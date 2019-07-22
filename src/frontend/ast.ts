@@ -99,7 +99,7 @@ export interface ElementaryTypeName extends TypeNameBase {
     name: ElementaryType;
 }
 
-export type ElementaryType = 'uint' | 'int' | 'string' | 'bytes' | 'address' | 'bool';
+export type ElementaryType = 'uint256' | 'uint' | 'int' | 'string' | 'bytes' | 'address' | 'bool';
 
 export interface Mapping extends TypeNameBase {
     nodeType: 'Mapping';

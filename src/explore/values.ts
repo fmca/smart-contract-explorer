@@ -1,4 +1,8 @@
 import { Address } from "../frontend/metadata";
+import { Debugger } from '../utils/debug';
+import { cross } from 'd3-array';
+
+const debug = Debugger(__filename);
 
 export type Value = number | boolean | Address;
 
@@ -43,7 +47,7 @@ export class ValueGenerator {
 
     valuesOfType(type: string): Iterable<Value> {
 
-        if (type.match(/int\d*/))
+        if (type.match(/u?int\d*/))
             return this.intValues();
 
         if (type === 'address')
@@ -58,12 +62,10 @@ export class ValueGenerator {
             return;
         }
 
-        if (types.length !== 1)
-            throw Error(`unexpected arity: ${types.length}`);
+        const values = types.map(type => this.valuesOfType(type));
 
-        const [ type ] = types;
-
-        for (const value of this.valuesOfType(type))
-            yield [value];
+        for (const tuple of (cross as any)(...values)) {
+            yield tuple;
+        }
     }
 }
