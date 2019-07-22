@@ -94,8 +94,8 @@ export class Examples {
         const { metadata, examples } = await contract.get();
 
         const fields = [
-            ...Pie.fields(source).map(f => `${source.name}.${f}`),
-            ...Pie.fields(target).map(f => `${target.name}.${f}`)
+            ...Pie.fieldDecls(source).map(f => `${source.name}.${f}`),
+            ...Pie.fieldDecls(target).map(f => `${target.name}.${f}`)
         ];
         const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
         return { metadata, examples, fields, seedFeatures };
