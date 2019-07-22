@@ -4,6 +4,7 @@ import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../fronten
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
+import { isVariableDeclaration } from "../frontend/ast";
 
 const debug = Debugger(__filename);
 
@@ -75,8 +76,13 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
     const spec_contractMembers = spec.members;
     const impl_contractMembers = impl.members;
 
-    const spec_fieldsNames = Pie.fields(spec);
-    const impl_fieldsNames = Pie.fields(impl);
+    const spec_fieldsNames = spec_contractMembers.filter(isVariableDeclaration)
+                                                 .filter(f => f.stateVariable)
+                                                 .map(({ name }) => name);
+                                                 
+    const impl_fieldsNames = impl_contractMembers.filter(isVariableDeclaration)
+                                                 .filter(f => f.stateVariable)
+                                                 .map(({ name }) => name);
 
     const spec_contractName = spec.name;
     const impl_contractName = impl.name;

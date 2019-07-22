@@ -29,6 +29,12 @@ function primitiveType(name: ElementaryType) {
         case 'int':
             return 'Int';
 
+        case 'uint':
+            return 'Int';
+
+        case 'uint256':
+            return 'Int';
+
         case 'string':
             return 'String';
 
