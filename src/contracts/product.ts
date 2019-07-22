@@ -4,7 +4,6 @@ import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../fronten
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
-import { isVariableDeclaration } from "../frontend/ast";
 
 const debug = Debugger(__filename);
 
