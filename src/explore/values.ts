@@ -1,5 +1,6 @@
 import { Address } from "../frontend/metadata";
 import { Debugger } from '../utils/debug';
+import { cross } from 'd3-array';
 
 const debug = Debugger(__filename);
 
@@ -40,7 +41,7 @@ export class ValueGenerator {
     * addressValues(): Iterable<Value> {
         // TODO: consider which accounts
 
-        for (const account of this.accounts.slice(0, 3))
+        for (const account of this.accounts.slice(0, 2))
             yield account;
     }
 
@@ -61,30 +62,10 @@ export class ValueGenerator {
             return;
         }
 
-        debug("types: %o", types);
+        const values = types.map(type => this.valuesOfType(type));
 
-        const values : Value[][] = [];
-        var i;
-        for (const type of types) {
-            i = 0;
-            for (const value of this.valuesOfType(type)) {
-                if (values[i] === undefined) {
-                    values[i] = []
-                }
-                values[i].push(value);
-                i = i + 1;
-            }
-        }
-
-        for (const value of values){
-            debug(`value: %o`, value);
-            yield value;
+        for (const tuple of (cross as any)(...values)) {
+            yield tuple;
         }
     }
-
-
-
-
 }
-
-
