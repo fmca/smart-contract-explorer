@@ -68,9 +68,6 @@ abstract class Contract {
 abstract class ProductContract extends Contract {
     constructor(public source: Metadata, public target: Metadata, public info: ContractInfo) {
         super(info);
-
-       // if (source.abi.length !== target.abi.length)
-       //     throw Error('expected contracts with the same methods.');
     }
 
     async getContract(): Promise<string[]> {
