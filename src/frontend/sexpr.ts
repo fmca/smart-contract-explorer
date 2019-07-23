@@ -10,6 +10,7 @@ export namespace Expr {
         //const alphabet = /[\w\-+\|\/\*\!\=\<\>\&]/;
        // const alphabet = '[\w\-\+\/\*\!\=\<\>\_]+';
         const json = s
+            .replace(/["]/g, '')
             .replace(/([\w\-\+\/\*\!\=\<\>\_.]+)/g, '"$1"')
             .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
             .replace(/[(]/g, '[')

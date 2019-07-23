@@ -40,7 +40,7 @@ function primitiveType(name: ElementaryType) {
 
         // TODO should address be int?
         case 'address':
-            return 'Int';
+            return 'Address';
 
         default:
             throw new Error(`unexpected type: ${name}`);
