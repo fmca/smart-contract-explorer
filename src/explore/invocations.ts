@@ -43,7 +43,7 @@ export class InvocationGenerator {
             if (!accept(method))
                 continue;
 
-            if(method.type === 'constructor')
+            if (method.type === 'constructor')
                 continue;
 
             const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
