@@ -104,7 +104,7 @@ export class Examples {
     static async * getExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
         const chain = await Chain.get();
         const examples = new Examples(chain);
-        const limiters = new StateCountLimiterFactory(5);
+        const limiters = new StateCountLimiterFactory(13);
         for await (const example of examples.simulationExamples(source, target, limiters))
             yield example;
     }
@@ -136,6 +136,7 @@ class Context {
         this.traces.get(traceString)!.add(state);
 
         const observationString = state.observation.toString();
+        debug(`source observationString: %s`, observationString);
         if (!this.observations.has(observationString))
             this.observations.set(observationString, new Set<State>());
         this.observations.get(observationString)!.add(state);
@@ -169,6 +170,7 @@ class Context {
 
     * getSourceObservationDistinct(state: State): Iterable<State> {
         const observationString = state.observation.toString();
+        debug(`target observationString: %s`, observationString);
         for (const [obs, states] of this.observations.entries()) {
             if (obs === observationString)
                 continue;
