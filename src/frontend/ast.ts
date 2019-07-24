@@ -17,6 +17,7 @@ type NodeType = 'SourceUnit'
     | 'BinaryOperation'
     | 'UnaryOperation'
     | 'Conditional'
+    | 'MemberAccess'
 
 export interface Node {
     id: number;
@@ -80,6 +81,7 @@ export interface VariableDeclaration extends ContractMember {
     typeDescriptions: TypeDescriptions;
     typeName: TypeName;
 }
+
 
 export type StorageLocation = 'default';
 
@@ -158,6 +160,12 @@ export interface IndexAccess extends Operation {
     lValueRequested: boolean;
 }
 
+export interface MemberAccess extends Operation {
+    nodeType: 'MemberAccess';
+    expression: Expression;
+    memberName: string;
+}
+
 export interface Assignment extends Expression {
     nodeType: 'Assignment';
     operator: '=';
@@ -230,6 +238,10 @@ class NodeVisitor<T> {
         return unimplemented(node);
     }
 
+    visitMemberAccess(node: MemberAccess): T {
+        return unimplemented(node);
+    }
+
     visitReturn(node: Return): T {
         return unimplemented(node);
     }
@@ -270,6 +282,8 @@ class NodeVisitor<T> {
                 return this.visitConditional(node as Conditional);
             case 'Literal':
                 return this.visitLiteral(node as Literal);
+            case 'MemberAccess':
+                return this.visitMemberAccess(node as MemberAccess);
             default:
                 throw Error(`unexpected node type: ${nodeType}`);
         }
@@ -285,11 +299,16 @@ class NodeToSExpr extends NodeVisitor<string> {
     visitLiteral(node: Literal) {
         return node.value;
     }
-
+    
     visitIndexAccess(node: IndexAccess) {
         const base = this.visit(node.baseExpression);
         const index = this.visit(node.indexExpression);
         return `(index ${base} ${index})`;
+    }
+
+    visitMemberAccess(node: MemberAccess) {     
+        const exper = this.visit(node.expression);
+        return `${exper}.${node.memberName}`;
     }
 
     visitAssignment(node: Assignment) {
@@ -352,6 +371,11 @@ class NodeToContract extends NodeVisitor<string> {
         return `${base}[${index}]`;
     }
 
+    visitMemberAccess(node: MemberAccess) {
+        const exper = this.visit(node.expression);
+        return `${exper}.${node.memberName}`;
+    }
+
     visitAssignment(node: Assignment) {
         const rightHandSide = this.visit(node.rightHandSide);
         const leftHandSide = this.visit(node.leftHandSide);
@@ -367,7 +391,7 @@ class NodeToContract extends NodeVisitor<string> {
     visitUnaryOperation(node: UnaryOperation) {
         const sub = this.visit(node.subExpression);
         if(node.prefix)
-            return `${node.operator}${sub}`;
+            return `${node.operator}(${sub})`;
         else
             return `${sub}${node.operator}`;
     }
@@ -412,6 +436,11 @@ class AddPrefixToNode extends NodeVisitor<Expression> {
         const baseExpression = this.visit(node.baseExpression);
         const indexExpression = this.visit(node.indexExpression);
         return { ...node, baseExpression, indexExpression };
+    }
+
+    visitMemberAccess(node: MemberAccess) {    
+        const exper = this.visit(node.expression);
+        return { ...node, exper};
     }
 
     visitAssignment(node: Assignment) {
