@@ -25,11 +25,10 @@ interface Response {
 export class Evaluator {
     static DELIMITER = "@";
 
-    executorFactory: ExecutorFactory
-    metadataCache = new Map<string, Metadata>();
+    evaluation: Evaluation;
 
     constructor(chain: Chain.BlockchainInterface) {
-        this.executorFactory = new ExecutorFactory(chain);
+        this.evaluation = new ExtensionEvaluation(chain);
     }
 
     async listen() {
@@ -47,7 +46,7 @@ export class Evaluator {
 
     async processRequest(request: Request): Promise<Response> {
         const { example, expression } = request;
-        const operation = await this.evaluateExpression(example, expression);
+        const operation = await this.evaluation.evaluate(example, expression);
         const { result: { values: [ result ] } } = operation;
         debug(`result: %o`, result);
 
@@ -55,17 +54,6 @@ export class Evaluator {
             throw Error(`Expected Boolean-valued expression`);
 
         return { result };
-    }
-
-    async evaluateExpression(example: AbstractExample, expression: Expr): Promise<Operation> {
-        const { id: { contract, method: stateMethod } } = example;
-        const metadata = await this.getMetadata(contract);
-        const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
-        const executor = this.executorFactory.getExecutor(extension);
-        const state = getState(extension, stateMethod);
-        const invocation = getInvocation(extension, predicateMethod);
-        const { operation } = await executor.execute(state, invocation);
-        return operation;
     }
 
     parseRequest(line: string): Request {
@@ -80,18 +68,47 @@ export class Evaluator {
         return { example, expression };
     }
 
+    static async listen() {
+        const chain = await Chain.get();
+        const evaluator = new Evaluator(chain);
+        await evaluator.listen();
+    }
+}
+
+abstract class Evaluation {
+    executorFactory: ExecutorFactory;
+
+    constructor(chain: Chain.BlockchainInterface) {
+        this.executorFactory = new ExecutorFactory(chain);
+    }
+
+    abstract async evaluate(example: AbstractExample, expression: Expr): Promise<Operation>;
+}
+
+class ExtensionEvaluation extends Evaluation {
+    metadataCache = new Map<string, Metadata>();
+
+    constructor(chain: Chain.BlockchainInterface) {
+        super(chain);
+    }
+
+    async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
+        const { id: { contract, method: stateMethod } } = example;
+        const metadata = await this.getMetadata(contract);
+        const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
+        const executor = this.executorFactory.getExecutor(extension);
+        const state = getState(extension, stateMethod);
+        const invocation = getInvocation(extension, predicateMethod);
+        const { operation } = await executor.execute(state, invocation);
+        return operation;
+    }
+
     async getMetadata(contractId: string): Promise<Metadata> {
         if (!this.metadataCache.has(contractId)) {
             const metadata = await Compile.fromFile(contractId);
             this.metadataCache.set(contractId, metadata);
         }
         return this.metadataCache.get(contractId)!;
-    }
-
-    static async listen() {
-        const chain = await Chain.get();
-        const evaluator = new Evaluator(chain);
-        await evaluator.listen();
     }
 }
 
