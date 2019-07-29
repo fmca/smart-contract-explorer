@@ -2,14 +2,15 @@ import { Debugger } from '../utils/debug';
 import { Expr } from '../frontend/sexpr';
 import { State, Operation, Result, Trace, Observation } from '../explore/states';
 import * as Compile from '../frontend/compile';
-import { ExecutorFactory } from '../explore/execute';
+import { ExecutorFactory, Context } from '../explore/execute';
 import { Invocation } from '../explore/invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
-import { extendWithPredicate } from './extension';
+import { extendWithPredicate, expressionEvaluator } from './extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
 import { Value } from '../explore/values';
+import { Expression } from '../frontend/ast';
 
 const debug = Debugger(__filename);
 
@@ -77,16 +78,24 @@ export class Evaluator {
 
 abstract class Evaluation {
     executorFactory: ExecutorFactory;
+    metadataCache = new Map<string, Metadata>();
 
     constructor(chain: Chain.BlockchainInterface) {
         this.executorFactory = new ExecutorFactory(chain);
     }
 
     abstract async evaluate(example: AbstractExample, expression: Expr): Promise<Operation>;
+
+    async getMetadata(contractId: string): Promise<Metadata> {
+        if (!this.metadataCache.has(contractId)) {
+            const metadata = await Compile.fromFile(contractId);
+            this.metadataCache.set(contractId, metadata);
+        }
+        return this.metadataCache.get(contractId)!;
+    }
 }
 
 class ExtensionEvaluation extends Evaluation {
-    metadataCache = new Map<string, Metadata>();
 
     constructor(chain: Chain.BlockchainInterface) {
         super(chain);
@@ -102,13 +111,51 @@ class ExtensionEvaluation extends Evaluation {
         const { operation } = await executor.execute(state, invocation);
         return operation;
     }
+}
 
-    async getMetadata(contractId: string): Promise<Metadata> {
-        if (!this.metadataCache.has(contractId)) {
-            const metadata = await Compile.fromFile(contractId);
-            this.metadataCache.set(contractId, metadata);
+class CachingEvaluation extends Evaluation {
+    exampleCache = new Map<string, Context>();
+    expressionCache = new Map<string, Context>();
+
+    constructor(chain: Chain.BlockchainInterface) {
+        super(chain);
+    }
+
+    async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
+        const { contract: { options: { address }}} = await this.getExample(example);
+        const context = await this.getExpression(expression);
+        const { contract: { options: { jsonInterface: [method] }} } = context;
+        const invocation = new Invocation(method, address);
+        const result = await context.invokeReadOnly(invocation);
+        const operation = new Operation(invocation, result);
+        return operation;
+    }
+
+    async getExample(example: AbstractExample) {
+        const key = JSON.stringify(example);
+
+        if (!this.exampleCache.has(key)) {
+            const { id: { contract } } = example;
+            const metadata = await this.getMetadata(contract);
+            const executor = this.executorFactory.getExecutor(metadata);
+            const context = await executor.createContext();
+            this.exampleCache.set(key, context);
         }
-        return this.metadataCache.get(contractId)!;
+
+        return this.exampleCache.get(key)!;
+    }
+
+    async getExpression(expression: Expr) {
+        const key = JSON.stringify(expression);
+
+        if (!this.expressionCache.has(key)) {
+            const metadata = await expressionEvaluator(expression);
+            const executor = this.executorFactory.getExecutor(metadata);
+            const context = await executor.createContext();
+            this.expressionCache.set(key, context);
+        }
+
+        return this.expressionCache.get(key)!;
     }
 }
 

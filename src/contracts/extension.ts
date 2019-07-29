@@ -6,6 +6,10 @@ import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
 
+export async function expressionEvaluator(expression: Expr): Promise<Metadata> {
+    throw Error(`TODO: implement me`);
+}
+
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {
     const nodeAst = Expr.toNode(feature);
     const strFeature = toContract(nodeAst);
