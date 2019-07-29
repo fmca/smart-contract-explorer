@@ -29,7 +29,7 @@ export class Evaluator {
     evaluation: Evaluation;
 
     constructor(chain: Chain.BlockchainInterface) {
-        this.evaluation = new ExtensionEvaluation(chain);
+        this.evaluation = Evaluation.get(chain, false);
     }
 
     async listen() {
@@ -92,6 +92,10 @@ abstract class Evaluation {
             this.metadataCache.set(contractId, metadata);
         }
         return this.metadataCache.get(contractId)!;
+    }
+
+    static get(chain: Chain.BlockchainInterface, caching: boolean) {
+        return caching ? new CachingEvaluation(chain) : new ExtensionEvaluation(chain);
     }
 }
 

@@ -7,7 +7,11 @@ import { Debugger } from '../utils/debug';
 const debug = Debugger(__filename);
 
 export async function expressionEvaluator(expression: Expr): Promise<Metadata> {
-    throw Error(`TODO: implement me`);
+    const path = `generated-feature`;
+    const content = `pragma solidity ^0.5.0; contract C { function f(address a) public pure returns (bool) { return a == a; } }`;
+    const source = { path, content };
+    const metadata = await Compile.fromString(source);
+    return metadata;
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {
