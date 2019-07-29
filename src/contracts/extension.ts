@@ -31,7 +31,7 @@ export async function extendWithFeatures(contract: Metadata, features: string[])
 
     for (const [index, feature] of features.entries())
     {
-            stdOut = `${stdOut}      function feature_${String(index)}() public pure returns (bool) {\n`;
+            stdOut = `${stdOut}      function feature_${String(index)}() public view returns (bool) {\n`;
             featuresNames.push(`feature_${String(index)}`);
             stdOut = `${stdOut}            return ${feature};\n`;
             stdOut = `${stdOut}      }\n`;

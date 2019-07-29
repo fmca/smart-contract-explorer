@@ -9,6 +9,7 @@ import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate } from './extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
+import { Value } from '../explore/values';
 
 const debug = Debugger(__filename);
 
@@ -46,6 +47,17 @@ export class Evaluator {
 
     async processRequest(request: Request): Promise<Response> {
         const { example, expression } = request;
+        const operation = await this.evaluateExpression(example, expression);
+        const { result: { values: [ result ] } } = operation;
+        debug(`result: %o`, result);
+
+        if (typeof(result) !== 'boolean')
+            throw Error(`Expected Boolean-valued expression`);
+
+        return { result };
+    }
+
+    async evaluateExpression(example: AbstractExample, expression: Expr): Promise<Operation> {
         const { id: { contract, method: stateMethod } } = example;
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
@@ -53,14 +65,7 @@ export class Evaluator {
         const state = getState(extension, stateMethod);
         const invocation = getInvocation(extension, predicateMethod);
         const { operation } = await executor.execute(state, invocation);
-        const { result: { values: [ result ] } } = operation;
-
-        debug(`result: %o`, result);
-
-        if (typeof(result) !== 'boolean')
-            throw Error(`Expected Boolean-valued expression`);
-
-        return { result };
+        return operation;
     }
 
     parseRequest(line: string): Request {
