@@ -9,6 +9,7 @@ import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
 import { SimulationExamplesContract, SimulationContractInfo, ContractInfo, ExampleGenerator } from './contract';
 import * as Pie from './pie';
+import { SimulationCounterExample } from '../explore/counterexample';
 
 const debug = Debugger(__filename);
 
@@ -80,10 +81,19 @@ export class Examples {
 
         while (workList.length > 0) {
             const example = workList.shift()!;
+
+            const { source, target } = example;
+
+            if (source.trace.equals(target.trace))
+                throw new SimulationCounterExample(source, target);
+
             yield example;
 
-            for (const pred of context.getNewJointPredecessors(example))
+            for (const pred of context.getNewJointPredecessors(example)) {
+                debug(`predecessor: %s * %s`, pred.source, pred.target);
+                debug(`from: %s * %s`, example.source, example.target);
                 workList.push(pred);
+            }
         }
 
         debug(`generated negative examples`);
