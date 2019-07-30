@@ -29,7 +29,7 @@ export class Evaluator {
     evaluation: Evaluation;
 
     constructor(chain: Chain.BlockchainInterface) {
-        this.evaluation = Evaluation.get(chain, false);
+        this.evaluation = Evaluation.get(chain, true);
     }
 
     async listen() {
@@ -88,6 +88,7 @@ abstract class Evaluation {
 
     async getMetadata(contractId: string): Promise<Metadata> {
         if (!this.metadataCache.has(contractId)) {
+            debug(`caching contract: %o`, contractId);
             const metadata = await Compile.fromFile(contractId);
             this.metadataCache.set(contractId, metadata);
         }
@@ -139,6 +140,7 @@ class CachingEvaluation extends Evaluation {
         const key = JSON.stringify(example);
 
         if (!this.exampleCache.has(key)) {
+            debug(`caching example: %o`, example);
             const { id: { contract } } = example;
             const metadata = await this.getMetadata(contract);
             const executor = this.executorFactory.getExecutor(metadata);
@@ -153,6 +155,7 @@ class CachingEvaluation extends Evaluation {
         const key = JSON.stringify(expression);
 
         if (!this.expressionCache.has(key)) {
+            debug(`caching expression: %o`, expression);
             const metadata = await expressionEvaluator(expression);
             const executor = this.executorFactory.getExecutor(metadata);
             const context = await executor.createContext();
