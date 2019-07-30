@@ -59,6 +59,7 @@ async function main() {
     } catch (e) {
         if (e instanceof SimulationCounterExample) {
             const { source, target } = e;
+            console.log();
             console.log(`Found a simulation counterexample; the source state`);
             console.log();
             console.log(`  ${source}`);
