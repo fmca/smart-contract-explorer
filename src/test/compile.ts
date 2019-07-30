@@ -11,7 +11,7 @@ describe('compile', function() {
         const { abi, members, userdoc } = await Compile.fromString({ path, content });
         assert.equal(abi.length, 0);
         assert.equal(Object.entries(members).length, 0);
-        assert.equal(Object.entries(userdoc).length, 0);
+        assert.equal(Object.entries(userdoc.methods).length, 0);
     });
 
     it (`compiles a simple contract`, async function() {
