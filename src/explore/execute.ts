@@ -73,7 +73,7 @@ export class Executor {
     }
 }
 
-class Context {
+export class Context {
     constructor(public contract: Contract, public account: Address) { }
 
     async replayTrace(trace: Trace): Promise<Result> {
