@@ -7,27 +7,23 @@ const debug = Debugger(__filename);
 export type Value = number | boolean | Address;
 
 export namespace Value {
+    export function toString(v: Value) {
+        return v.toString();
+    }
+
     export function equals(v1: Value, v2: Value) {
-        return v1 === v2;
+        return JSON.stringify(v1) == JSON.stringify(v2);
     }
 }
 
 export namespace Values {
-    export function equals(vs1: Value[], vs2: Value[]) {
-        return vs1.length === vs2.length
-            && vs1.every((v1,i) => Value.equals(v1, vs2[i]))
+    export function toString(vs: Value[]) {
+        return vs.toString();
     }
-}
 
-export function valuesOf(x: any): Value[] {
-    const intVal = parseInt(x);
-    if (Number.isInteger(intVal))
-        return [intVal];
-
-    if (x === true || x === false)
-        return [x];
-
-    throw Error(`Unexpected value: ${x}`);
+    export function equals(vs1: Value[], vs2: Value[]) {
+        return JSON.stringify(vs1) == JSON.stringify(vs2);
+    }
 }
 
 export class ValueGenerator {

@@ -1,23 +1,17 @@
 import { Value, Values } from './values';
 import { Invocation } from './invocations';
-import { Metadata } from '../frontend/metadata';
 
 export class Result {
     public values: Value[];
 
-    constructor(...values: Value[]) {
-        this.values = values;
+    constructor(value: Value);
+    constructor(...values: Value[]);
+    constructor(v: Value | Value[]) {
+        this.values = (Array.isArray(v)) ? v : [v];
     }
 
     toString() {
-        switch (this.values.length) {
-        case 0:
-            return `void`;
-        case 1:
-            return this.values[0].toString();
-        default:
-            return `(${this.values.join(', ')})`
-        }
+        return Values.toString(this.values);
     }
 
     equals(that: Result): boolean {

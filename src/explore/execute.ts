@@ -1,6 +1,5 @@
 import { State, Trace, Observation, Operation, Result } from './states';
 import { Invocation, InvocationGenerator } from './invocations';
-import { valuesOf } from './values';
 import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
 import { Address, Contract, Metadata } from '../frontend/metadata';
@@ -118,12 +117,10 @@ class Context {
         const { name } = method;
 
         debug(`invoking readonly method: %s`, invocation);
-        const outputs = await this.contract.methods[name!](...inputs).call();
-
-        const values = valuesOf(outputs);
+        const values = await this.contract.methods[name!](...inputs).call();
         debug("values: %o", values);
-        const result = new Result(...values);
-        debug("result: %o", outputs);
+        const result = new Result(values);
+        debug("result: %o", result);
 
         return result;
     }
