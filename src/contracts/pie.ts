@@ -22,7 +22,8 @@ export function type(typeName: TypeName): string {
         case 'ElementaryTypeName':
             return primitiveType(typeName.name);
         case 'Mapping':
-            return `Map ${type(typeName.keyType)} ${type(typeName.valueType)}`;
+            return 'Map';
+            //return `Map ${type(typeName.keyType)} ${type(typeName.valueType)}`;
     }
 }
 

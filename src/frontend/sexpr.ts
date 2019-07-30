@@ -1,4 +1,8 @@
 import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from './ast';
+import { Debugger } from '../utils/debug';
+
+const debug = Debugger(__filename);
+
 
 interface App extends Array<Expr> { }
 export type Expr = App | string;
@@ -19,6 +23,11 @@ export namespace Expr {
 
     export function toNode(expr: Expr): Node {
         return new ExprToNode().visit(expr);
+    }
+
+    export function instantiateQExper(expr: string, experParameters: string[]): Expr {
+        const sexpr = parse(expr);
+        return new InstantiateQExper(experParameters).visit(sexpr);
     }
 }
 
@@ -204,4 +213,47 @@ class ExprToNode extends Visitor<Expression> {
         const expression = { id, src, nodeType, value };
         return expression as Literal;
     }
+}
+
+class InstantiateQExper extends Visitor<Expr> {
+
+    
+    experParameters: string[];
+
+    constructor (experParameters: string[])
+    {
+        super();
+        debug(`experParameters: %o`, experParameters);
+        this.experParameters = experParameters;
+    }
+
+    visitIdentifier(name: string): Expr {
+        return name;
+    }
+
+    visitLiteral(value: string): Expr {
+        return value;
+    }
+
+    visitIndex(base: Expr, index: Expr): Expr {
+        
+        const indexExpression = this.visit(index) as string;
+        if (!this.experParameters.includes(indexExpression))
+            throw Error('expected the indexExpression to be a paramters: TODO add support for arrays');
+
+        const baseExpression = this.visit(base);
+        debug(`baseExpression: %o`, baseExpression);
+        
+        return baseExpression;
+    }
+
+    visitBinaryOperation(boperator: Boperators, bleft: Expr, bright: Expr): Expr {
+        if (boperator != '==')
+            throw Error('expected == operator: TODO add support for other operators');
+        const leftExpression = this.visit(bleft);
+        const rightExpression = this.visit(bright);
+        const expression = `(= ${leftExpression} ${rightExpression})`;
+        return expression;
+    }
+    
 }

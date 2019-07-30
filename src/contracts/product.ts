@@ -1,6 +1,7 @@
 import * as Compile from '../frontend/compile';
 import { Metadata, Method, Contract } from "../frontend/metadata";
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
+import { Expr } from '../frontend/sexpr';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
@@ -99,6 +100,20 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
 
                         if(impl_func.name === spec_func.name && impl_func.visibility === 'public' && impl_func.stateMutability === 'view')
                         {
+                            
+                            const spec_func_params = spec_func.parameters.parameters.map(m => [m.name , m.typeDescriptions.typeString]);
+                            const impl_func_params = impl_func.parameters.parameters.map(m => [m.name , m.typeDescriptions.typeString]);
+
+                            if(JSON.stringify(spec_func_params) != JSON.stringify(impl_func_params))
+                                throw Error('expected the same parameters for both spec and impl methods');
+
+                               
+                            /** var paramQ = '' ;
+                            for (const param of spec_func_params)
+                                paramQ = `${paramQ} (${param[0]} ${param[1]})`;
+                            if (spec_func_params.length != 0)
+                                paramQ = `forall (${paramQ})`;*/
+                            
                             if(spec_func.body.statements.length != 1 || spec_func.body.statements.length != impl_func.body.statements.length)
                                 throw Error('expected single statement in observation function');
 
@@ -117,8 +132,17 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
                             const spec_expression = addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
                             const impl_expression = addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
 
-                            const spec_exper = toSExpr(spec_expression);
-                            const impl_exper = toSExpr(impl_expression);
+                            const spec_Qexper = toSExpr(spec_expression);
+                            const impl_Qexper = toSExpr(impl_expression);
+
+                            var spec_exper  = spec_Qexper;
+                            var impl_exper = impl_Qexper;
+
+                            if(spec_func_params.length != 0)
+                            {   
+                                spec_exper = Expr.instantiateQExper(spec_Qexper, spec_func_params.map(m => m[0])) as string;
+                                impl_exper = Expr.instantiateQExper(impl_Qexper, impl_func_params.map(m => m[0])) as string;
+                            }
 
                             const seed_feature = `(= ${spec_exper} ${impl_exper})`;
 
