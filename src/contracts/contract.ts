@@ -105,7 +105,7 @@ export interface SimulationContractInfo {
     examples: Examples;
 };
 
-type ExampleGenerator = (s: Metadata, t: Metadata) => AsyncIterable<SimulationExample>;
+export type ExampleGenerator = (s: Metadata, t: Metadata) => AsyncIterable<SimulationExample>;
 
 export interface ContractInfo {
     name: string;

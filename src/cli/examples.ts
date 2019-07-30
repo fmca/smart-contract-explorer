@@ -22,6 +22,11 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
         type: 'string',
         requiresArg: true
     })
+    .option('states', {
+        describe: 'number of states to explore',
+        type: 'number',
+        default: 5
+    })
     .coerce(['source', 'target'], path.resolve)
     .help('help')
     .argv;
@@ -29,11 +34,11 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
 async function main() {
 
     try {
-        const { source, target } = args;
+        const { source, target, states } = args;
 
         const output = { name: 'SimulationExamples', path: path.resolve('SimulationExamples.sol') };
         const paths = { source: source!, target: target! };
-        const { metadata, examples: { positive, negative }, fields, seedFeatures } = await Examples.generate({ paths, output });
+        const { metadata, examples: { positive, negative }, fields, seedFeatures } = await Examples.generate({ paths, output, states });
         const { source: { path: p, content } } = metadata;
 
         await fs.writeFile(p, content);
