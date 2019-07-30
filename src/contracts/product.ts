@@ -109,7 +109,10 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
                                 throw Error('expected return statement');
 
                             const return_spec = spec_statement as Return;
+                            debug(`return_spec: %o`, return_spec);
                             const return_impl = impl_statement as Return;
+                            debug(`return_impl: %o`, return_impl);
+
 
                             const spec_expression = addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
                             const impl_expression = addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);

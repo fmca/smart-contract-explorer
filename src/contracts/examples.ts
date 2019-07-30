@@ -1,4 +1,3 @@
-import path from 'path';
 import { State } from '../explore/states';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
@@ -8,7 +7,7 @@ import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, SimulationContractInfo, ContractInfo } from './contract';
+import { SimulationExamplesContract, SimulationContractInfo, ContractInfo, ExampleGenerator } from './contract';
 import * as Pie from './pie';
 
 const debug = Debugger(__filename);
@@ -18,6 +17,7 @@ interface Parameters {
         source: string;
         target: string;
     },
+    states: number;
     output: ContractInfo
 }
 
@@ -43,15 +43,18 @@ export type SimulationExample = {
 
 export class Examples {
     explorer: Explorer;
+    limiters: LimiterFactory;
 
-    constructor(chain: Chain.BlockchainInterface) {
+    constructor(chain: Chain.BlockchainInterface, states: number) {
         const { accounts } = chain;
         const factory = new ExecutorFactory(chain);
         this.explorer = new Explorer(factory, accounts);
+        this.limiters = new StateCountLimiterFactory(states);
     }
 
-    async * simulationExamples(source: Metadata, target: Metadata, limiters: LimiterFactory): AsyncIterable<SimulationExample> {
+    async * simulationExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
         const context = new Context();
+        const { limiters } = this;
         const workList: SimulationExample[] = [];
 
         debug(`exploring source states`);
@@ -87,10 +90,10 @@ export class Examples {
     }
 
     static async generate(parameters: Parameters): Promise<Result> {
-        const { paths, output: info } = parameters;
+        const { paths, states, output: info } = parameters;
         const source = await Compile.fromFile(paths.source);
         const target = await Compile.fromFile(paths.target);
-        const contract = new SimulationExamplesContract(source, target, info, Examples.getExamples);
+        const contract = new SimulationExamplesContract(source, target, info, Examples.getExamples(states));
         const { metadata, examples } = await contract.get();
 
         const fields = [
@@ -101,12 +104,13 @@ export class Examples {
         return { metadata, examples, fields, seedFeatures };
     }
 
-    static async * getExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
-        const chain = await Chain.get();
-        const examples = new Examples(chain);
-        const limiters = new StateCountLimiterFactory(5);
-        for await (const example of examples.simulationExamples(source, target, limiters))
-            yield example;
+    static getExamples(states: number): ExampleGenerator {
+        return async function*(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
+            const chain = await Chain.get();
+            const examples = new Examples(chain, states);
+            for await (const example of examples.simulationExamples(source, target))
+                yield example;
+        };
     }
 }
 
@@ -136,6 +140,7 @@ class Context {
         this.traces.get(traceString)!.add(state);
 
         const observationString = state.observation.toString();
+        debug(`source observationString: %s`, observationString);
         if (!this.observations.has(observationString))
             this.observations.set(observationString, new Set<State>());
         this.observations.get(observationString)!.add(state);
@@ -169,6 +174,7 @@ class Context {
 
     * getSourceObservationDistinct(state: State): Iterable<State> {
         const observationString = state.observation.toString();
+        debug(`target observationString: %s`, observationString);
         for (const [obs, states] of this.observations.entries()) {
             if (obs === observationString)
                 continue;

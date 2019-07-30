@@ -16,13 +16,14 @@ export class ContractCreator {
     async instantiate(contract: Contract, metadata: Metadata) {
         const { bytecode: data } = metadata;
         const tx = contract.deploy({ data, arguments: [] });
-        debug(`tx: %o`, tx);
+        //debug(`tx: %o`, tx);
 
         const { accounts: [ from ] } = this.chain;
         const gas = await tx.estimateGas() + 1;
         debug(`gas: %o`, gas);
 
         const instance = await tx.send({ from, gas });
+        debug(`from: %o`, from);
         return instance;
     }
 
