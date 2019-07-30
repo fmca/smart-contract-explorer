@@ -116,13 +116,11 @@ export class Examples {
 
 class Context {
     traces: Map<string, Set<State>>;
-    observations: Map<string, Set<State>>;
     predecessorStates: Map<State, Map<string, Set<State>>>;
     exploredPairs: Map<State, Set<State>>;
 
     constructor() {
         this.traces = new Map<string, Set<State>>();
-        this.observations = new Map<string, Set<State>>();
         this.predecessorStates = new Map<State, Map<string, Set<State>>>();
         this.exploredPairs = new Map<State, Set<State>>();
     }
@@ -138,12 +136,6 @@ class Context {
         if (!this.traces.has(traceString))
             this.traces.set(traceString, new Set<State>());
         this.traces.get(traceString)!.add(state);
-
-        const observationString = state.observation.toString();
-        debug(`source observationString: %s`, observationString);
-        if (!this.observations.has(observationString))
-            this.observations.set(observationString, new Set<State>());
-        this.observations.get(observationString)!.add(state);
     }
 
     addTarget(transition: Transition): void {
@@ -173,13 +165,16 @@ class Context {
     }
 
     * getSourceObservationDistinct(state: State): Iterable<State> {
-        const observationString = state.observation.toString();
-        debug(`target observationString: %s`, observationString);
-        for (const [obs, states] of this.observations.entries()) {
-            if (obs === observationString)
-                continue;
-            for (const state of states)
-                yield state;
+        debug(`target observation: %s`, state.observation);
+        for (const states of this.traces.values()) {
+            for (const s of states) {
+                if (!s.obsEquals(state)) {
+                    debug(`distinct observation: %s`, s.observation);
+                    yield s;
+                } else {
+                    debug(`matching observation: %s`, s.observation);
+                }
+            }
         }
     }
 

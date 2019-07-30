@@ -79,8 +79,18 @@ export class Observation {
     }
 
     equals(that: Observation): boolean {
-        return this.operations.length === that.operations.length
-            && this.operations.every((o1,i) => o1.equals(that.operations[i]));
+        const map = new Map<string,string>();
+
+        for (const { invocation, result } of this.operations)
+            map.set(invocation.toString(), result.toString());
+
+        for (const { invocation, result } of that.operations) {
+            const r = map.get(invocation.toString())
+            if (r !== undefined && r !== result.toString())
+                return false;
+        }
+
+        return true;
     }
 
     static deserialize(obj: { [K in keyof Observation]: Observation[K] }): Observation {
@@ -98,7 +108,7 @@ export class State {
         return `[[ ${this.trace} : ${this.observation} ]]`;
     }
 
-    obsEqual(that: State) {
+    obsEquals(that: State) {
         return this.observation.equals(that.observation);
     }
 
