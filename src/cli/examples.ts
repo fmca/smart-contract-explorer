@@ -53,7 +53,7 @@ async function main() {
         await fs.writeFile(path.join(dir, `positive-examples.txt`), positive.map(e => `${JSON.stringify(e)}\n`).join(''));
         await fs.writeFile(path.join(dir, `negative-examples.txt`), negative.map(e => `${JSON.stringify(e)}\n`).join(''));
         await fs.writeFile(path.join(dir, `fields.txt`), fields.join(`\n`) + '\n');
-        await fs.writeFile(path.join(dir, `seed-features.txt)`, seedFeatures.join(`\n`) + '\n');
+        await fs.writeFile(path.join(dir, `seed-features.txt`), seedFeatures.join(`\n`) + '\n');
 
     } catch (e) {
         console.error(e);
