@@ -6,12 +6,26 @@ import { Debugger } from '../utils/debug';
 
 const debug = Debugger(__filename);
 
-export async function expressionEvaluator(expression: Expr): Promise<Metadata> {
+export async function expressionEvaluator(expression: Expr, examples: Metadata): Promise<Metadata> {
     const path = `generated-feature`;
-    const content = `pragma solidity ^0.5.0; contract C { function f(address a) public pure returns (bool) { return a == a; } }`;
+    const content = expressionEvaluationContract(expression, examples);
     const source = { path, content };
+    debug(`compiling feature contract: %o`, source);
     const metadata = await Compile.fromString(source);
     return metadata;
+}
+
+function expressionEvaluationContract(expression: Expr, examples: Metadata) {
+    const { name, source: { path } } = examples;
+    const node = Expr.toNode(expression);
+    const solExpr = fieldsToGetters(toContract(node));
+    return `pragma solidity ^0.5.0;
+import "${path}";
+contract C { function f(${name} x) public pure returns (bool) { return ${solExpr}; } }`;
+}
+
+function fieldsToGetters(expression: string) {
+    return expression.replace(/(\w+)[.](\w+)/g, 'x.$1$$$2()');
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {

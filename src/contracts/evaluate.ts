@@ -111,15 +111,33 @@ class ExtensionEvaluation extends Evaluation {
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
         const executor = this.executorFactory.getExecutor(extension);
-        const state = getState(extension, stateMethod);
-        const invocation = getInvocation(extension, predicateMethod);
+        const state = ExtensionEvaluation.getState(extension, stateMethod);
+        const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);
         const { operation } = await executor.execute(state, invocation);
         return operation;
     }
+
+    static getState(metadata: Metadata, methodName: string): State {
+        const invocation = ExtensionEvaluation.getInvocation(metadata, methodName);
+        const operation = new Operation(invocation, new Result());
+        const trace = new Trace([operation]);
+        const observation = new Observation([]);
+        const state = new State('', trace, observation);
+        return state;
+    }
+
+    static getInvocation({ abi }: Metadata, methodName: string): Invocation {
+        const method = abi.find(({ name }) => name === methodName);
+        if (method === undefined)
+            throw Error(`method ${methodName} not found`);
+        return new Invocation(method);
+    }
 }
 
+type CachedExample = { metadata: Metadata, context: Context };
+
 class CachingEvaluation extends Evaluation {
-    exampleCache = new Map<string, Context>();
+    exampleCache = new Map<string, CachedExample>();
     expressionCache = new Map<string, Context>();
 
     constructor(chain: Chain.BlockchainInterface) {
@@ -127,8 +145,8 @@ class CachingEvaluation extends Evaluation {
     }
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
-        const { contract: { options: { address }}} = await this.getExample(example);
-        const context = await this.getExpression(expression);
+        const { metadata, context: { contract: { options: { address }}}} = await this.getExample(example);
+        const context = await this.getExpression(expression, metadata);
         const { contract: { options: { jsonInterface: [method] }} } = context;
         const invocation = new Invocation(method, address);
         const result = await context.invokeReadOnly(invocation);
@@ -141,22 +159,27 @@ class CachingEvaluation extends Evaluation {
 
         if (!this.exampleCache.has(key)) {
             debug(`caching example: %o`, example);
-            const { id: { contract } } = example;
+            const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
             const executor = this.executorFactory.getExecutor(metadata);
             const context = await executor.createContext();
-            this.exampleCache.set(key, context);
+            const method = metadata.abi.find(({ name }) => name === methodName);
+            if (method === undefined)
+                throw Error(`unknown method: ${methodName}`);
+            const invocation = new Invocation(method);
+            await context.invoke(invocation);
+            this.exampleCache.set(key, { metadata, context });
         }
 
         return this.exampleCache.get(key)!;
     }
 
-    async getExpression(expression: Expr) {
+    async getExpression(expression: Expr, examples: Metadata) {
         const key = JSON.stringify(expression);
 
         if (!this.expressionCache.has(key)) {
             debug(`caching expression: %o`, expression);
-            const metadata = await expressionEvaluator(expression);
+            const metadata = await expressionEvaluator(expression, examples);
             const executor = this.executorFactory.getExecutor(metadata);
             const context = await executor.createContext();
             this.expressionCache.set(key, context);
@@ -164,20 +187,4 @@ class CachingEvaluation extends Evaluation {
 
         return this.expressionCache.get(key)!;
     }
-}
-
-function getState(metadata: Metadata, methodName: string): State {
-    const invocation = getInvocation(metadata, methodName);
-    const operation = new Operation(invocation, new Result());
-    const trace = new Trace([operation]);
-    const observation = new Observation([]);
-    const state = new State('', trace, observation);
-    return state;
-}
-
-function getInvocation({ abi }: Metadata, methodName: string): Invocation {
-    const method = abi.find(({ name }) => name === methodName);
-    if (method === undefined)
-        throw Error(`method ${methodName} not found`);
-    return new Invocation(method);
 }
