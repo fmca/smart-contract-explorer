@@ -1,10 +1,11 @@
 import { Metadata, Method } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
-import { getMethodSpec, getContractSpec, ContractSpec } from './product';
+import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { isVariableDeclaration } from "../frontend/ast";
+import { isVariableDeclaration, VariableDeclaration, isElementaryTypeName } from "../frontend/ast";
+import { type } from "./pie";
 
 const debug = Debugger(__filename);
 
@@ -139,8 +140,28 @@ export class SimulationExamplesContract extends ProductContract {
             (kind === 'positive' ? positive : negative).push({ id: { contract: path, method }});
         }
 
+        for (const metadata of [this.source, this.target]) {
+            for (const variable of metadata.members.filter(isVariableDeclaration)) {
+                const lines = this.getAccessor(metadata, variable);
+                methods.push(lines);
+            }
+        }
+
         this.examples = { positive, negative };
         return methods.flat();
+    }
+
+    getAccessor(metadata: Metadata, variable: VariableDeclaration): string[] {
+        const { name: source } = metadata;
+        const { name, typeName } = variable;
+        if (!isElementaryTypeName(typeName))
+            return [];
+        const { name: t } = typeName;
+        return [
+            ``,
+            `function ${source}$${name}() public pure returns (${t}) {`,
+            ...block(4)(`return ${source}.${name};`),
+            `}`]
     }
 
     getMethod(example: SimulationExample, name: string): string[] {
