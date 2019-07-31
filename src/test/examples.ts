@@ -5,12 +5,14 @@ import { Examples } from '../contracts/examples';
 import { SimulationCounterExample } from '../explore/counterexample';
 
 const resources = path.resolve(__dirname, '..', '..', 'resources');
+const contracts = path.join(resources, 'contracts');
 const tests = path.resolve(resources, 'example-tests');
 
 describe('explorer integration', function() {
     this.timeout(5000);
 
     for (const filename of fs.readdirSync(tests)) {
+        const name = path.basename(filename, '.json');
         const file = path.join(tests, filename);
         const test = fs.readJSONSync(file);
         const {
@@ -24,12 +26,12 @@ describe('explorer integration', function() {
         } = test;
 
         it (description, async function() {
-            const result = path.join(resources, `SimulationExamples-${path.basename(filename, '.json')}.sol`);
+            const result = path.join(contracts, `SimulationExamples-${name}.sol`);
 
             const output = { name: 'SimulationExamples', path: result };
             const paths = {
-                source: path.join(resources, source),
-                target: path.join(resources, target)
+                source: path.join(contracts, source),
+                target: path.join(contracts, target)
             };
 
             if (expectFailure) {

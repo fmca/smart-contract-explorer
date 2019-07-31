@@ -5,6 +5,7 @@ import assert from 'assert';
 import { getSimulationCheckContract } from '../contracts/product';
 
 const resources = path.resolve(__dirname, '..', '..', 'resources');
+const contracts = path.join(resources, 'contracts');
 const tests = path.resolve(resources, 'verifier-tests');
 
 describe('explorer integration', function() {
@@ -22,11 +23,11 @@ describe('explorer integration', function() {
         } = test;
 
         it (description, async function() {
-            const result = path.join(resources, `SimulationCheck-${name}.sol`);
+            const result = path.join(contracts, `SimulationCheck-${name}.sol`);
             const output = { name: 'SimulationCheck', path: result };
             const paths = {
-                source: path.join(resources, source),
-                target: path.join(resources, target)
+                source: path.join(contracts, source),
+                target: path.join(contracts, target)
             };
             const { metadata } = await getSimulationCheckContract({ paths, output });
             const { source: { path: p, content } } = metadata;
