@@ -8,7 +8,7 @@ const resources = path.resolve(__dirname, '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
 const tests = path.resolve(resources, 'verifier-tests');
 
-describe('explorer integration', function() {
+describe('verifier integration', function() {
     this.timeout(5000);
 
     for (const filename of fs.readdirSync(tests)) {
