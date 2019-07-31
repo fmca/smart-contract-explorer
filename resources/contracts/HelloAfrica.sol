@@ -32,7 +32,7 @@ contract HelloAfrica {
 	/**
 	  @notice postcondition true
 	 */
-	function getCount2() private view returns(int) {
+	function getCount() public view returns(int) {
 		return counter;
 	}
 }
