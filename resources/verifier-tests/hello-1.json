@@ -1,0 +1,5 @@
+{
+    "description": "Africa simulates World",
+    "source": "HelloWorld.sol",
+    "target": "HelloAfrica.sol"
+}

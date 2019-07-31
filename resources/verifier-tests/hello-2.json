@@ -1,0 +1,6 @@
+{
+    "description": "Africa does not simulate World",
+    "source": "HelloWorld.sol",
+    "target": "HelloAfrica.sol",
+    "valid": false
+}
