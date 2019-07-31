@@ -1,6 +1,6 @@
 {
-    "description": "Africa does not simulate World",
-    "source": "HelloWorld.sol",
+    "description": "Africa does not simulate World with incomplete relation",
+    "source": "HelloWorld-bare.sol",
     "target": "HelloAfrica.sol",
     "valid": false
 }

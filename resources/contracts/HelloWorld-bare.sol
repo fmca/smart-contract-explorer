@@ -2,7 +2,6 @@ pragma solidity ^0.5.0;
 
 /**
  * @notice simulation HelloWorld.total == HelloAfrica.counter
- * @notice simulation HelloWorld.counter == HelloAfrica.counter
  */
 contract HelloWorld {
 	int total;
