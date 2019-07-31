@@ -1,0 +1,6 @@
+{
+    "description": "Africa2 does not simulate World2",
+    "source": "HelloWorld2.sol",
+    "target": "HelloAfrica2.sol",
+    "failure": true
+}

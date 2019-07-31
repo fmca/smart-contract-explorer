@@ -15,7 +15,7 @@ contract HelloWorld {
 		total --;
 	}
 
-	function get(int i) public view returns(int) {
-		return counters[i];
+	function get() public view returns(int) {
+		return counters[1];
 	}
 }

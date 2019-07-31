@@ -7,7 +7,7 @@ export class Result {
     constructor(value: Value);
     constructor(...values: Value[]);
     constructor(v: Value | Value[]) {
-        this.values = (Array.isArray(v)) ? v : [v];
+        this.values = v === undefined ? [] : (Array.isArray(v)) ? v : [v];
     }
 
     toString() {
