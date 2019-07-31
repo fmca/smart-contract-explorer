@@ -28,11 +28,4 @@ contract HelloAfrica {
 	function get() public view returns(int value) {
 		return counter;
 	}
-
-	/**
-	  @notice postcondition true
-	 */
-	function getCount() public view returns(int) {
-		return counter;
-	}
 }

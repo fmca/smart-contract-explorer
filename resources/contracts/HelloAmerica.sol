@@ -8,7 +8,7 @@ contract HelloAmerica {
 		counter ++;
 	}
 
-	function getCount() public view returns(int) {
+	function get() public view returns(int) {
 		return counter;
 	}
 }
