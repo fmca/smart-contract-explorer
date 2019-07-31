@@ -12,6 +12,12 @@ import { lines } from '../utils/lines';
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()
     .check(({ _: { length }}) => length === 0)
+    .option('output', {
+        describe: 'output directory',
+        type: 'string',
+        requriesArg: true,
+        default: '.'
+    })
     .option('source', {
         demandOption: true,
         describe: 'source smart contract',
@@ -36,16 +42,18 @@ async function main() {
 
     try {
         const { source, target, check } = args;
+        const dir = path.resolve(args.output);
         const paths = { source: source!, target: target! };
-        const output = { name: 'SimulationCheck', path: path.resolve('SimulationCheck.sol') };
-        const { metadata } = await getSimulationCheckContract({ paths, output });
-        const { source: { path: p, content } } = metadata;
+        const output = { name: 'SimulationCheck', path: path.join(dir, 'SimulationCheck.sol') };
+        const { contract, internalized } = await getSimulationCheckContract({ paths, output });
 
-        await fs.writeFile(p, content);
+        await fs.mkdirp(dir);
+        for (const { path, content } of [contract, ...Object.values(internalized)])
+            await fs.writeFile(path, content);
 
         if (check) {
             const command = `solc-verify.py`;
-            const args = [p];
+            const args = [output.path];
             const options = {};
             const { stdout, stderr } = await cp.spawn(command, args, options);
 

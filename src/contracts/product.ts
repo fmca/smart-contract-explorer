@@ -1,5 +1,7 @@
+import fs from 'fs-extra';
+import path from 'path';
 import * as Compile from '../frontend/compile';
-import { Metadata, Method, Contract } from "../frontend/metadata";
+import { Metadata, Method, Contract, SourceInfo } from "../frontend/metadata";
 import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
@@ -16,15 +18,35 @@ export interface Parameters {
 }
 
 export interface Result {
-    metadata: Metadata;
+    contract: SourceInfo;
+    internalized: {
+        source: SourceInfo;
+        target: SourceInfo;
+    }
 }
 
-export async function getSimulationCheckContract(parameters: Parameters) {
-    const { paths: { source, target }, output: info } = parameters;
-    const t = await Compile.fromFile(target);
-    const s = await Compile.fromFile(source);
-    const metadata = await new SimulationCheckingContract(s, t, info).getMetadata();
-    return { metadata };
+export async function getSimulationCheckContract(parameters: Parameters): Promise<Result> {
+    const { paths: { source, target }, output: o } = parameters;
+    const dir = path.dirname(o.path);
+    const si = await internalize(source, dir);
+    const ti = await internalize(target, dir);
+    const internalized = {
+        source: si,
+        target: ti
+    };
+    const s = await Compile.fromString({ ...internalized.source, content: si.original });
+    const t = await Compile.fromString({ ...internalized.target, content: ti.original });
+    const contract = await new SimulationCheckingContract(s, t, o).getSourceInfo();
+    return { contract, internalized };
+}
+
+async function internalize(file: string, dir: string): Promise<SourceInfo & { original: string }> {
+    const name = path.basename(file, '.sol');
+    const loc = path.join(dir, `${name}-internalized.sol`);
+    const buffer = await fs.readFile(file);
+    const original = buffer.toString();
+    const content = original.replace(/\bpublic\b/g, 'internal');
+    return { path: loc, content, original };
 }
 
 export interface ContractSpec {

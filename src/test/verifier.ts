@@ -29,13 +29,14 @@ describe('verifier integration', function() {
                 source: path.join(contracts, source),
                 target: path.join(contracts, target)
             };
-            const { metadata } = await getSimulationCheckContract({ paths, output });
-            const { source: { path: p, content } } = metadata;
+            const { contract, internalized } = await getSimulationCheckContract({ paths, output });
 
-            await fs.writeFile(p, content);
+            // await fs.mkdirp(dir);
+            for (const { path, content } of [contract, ...Object.values(internalized)])
+                await fs.writeFile(path, content);
 
             const command = `solc-verify.py`;
-            const args = [p];
+            const args = [output.path];
             const options = {};
             const success = await new Promise<boolean>((resolve, reject) => {
                 try {

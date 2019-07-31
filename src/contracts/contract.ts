@@ -1,4 +1,4 @@
-import { Metadata, Method } from "../frontend/metadata";
+import { Metadata, Method, SourceInfo } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
 import { getMethodSpec, getContractSpec } from './product';
@@ -15,12 +15,23 @@ abstract class Contract {
     abstract async getContract(): Promise<string[]>;
 
     async getMetadata(): Promise<Metadata> {
+        const info = await this.getSourceInfo();
+        const metadata = Compile.fromString(info);
+        return metadata;
+    }
+
+    async getSourceInfo(): Promise<SourceInfo> {
         const { path } = this.info;
+        const content = await this.getContent();
+        const info = { path, content };
+        return info;
+    }
+
+    async getContent(): Promise<string> {
         const lines = await this.getContract();
         const content = format()(...lines);
         debug(content);
-        const metadata = Compile.fromString({ path, content });
-        return metadata;
+        return content;
     }
 
     static signatureOfMethod(method: Method) {
@@ -39,7 +50,7 @@ abstract class Contract {
         if (outputs.length > 0)
             modifiers.push(`returns (${returns.join(', ')})`);
 
-        return `function ${name}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
+        return `function check$${name}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
     }
 
     static callOfOperation({ name }: Metadata) {
@@ -234,7 +245,7 @@ export class SimulationCheckingContract extends ProductContract {
         const { outputs = [] } = method;
         const varName = ({ name }: Metadata, varName: string) => `${name}_${varName}`;
         return [
-            ...outputs.map(({ name }) => `require(${varName(this.source,name)} == ${varName(this.target,name)});`),
+            ...outputs.map(({ name }) => `assert(${varName(this.source,name)} == ${varName(this.target,name)});`),
             ...(outputs.length > 0 ? [`return (${outputs.map(({ name }) => `${varName(this.source,name)}`)});`] : []),
         ];
     }
