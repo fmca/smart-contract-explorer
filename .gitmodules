@@ -1,0 +1,3 @@
+[submodule "LoopInvGen"]
+	path = LoopInvGen
+	url = git@github.com:michael-emmi/LoopInvGen.git
