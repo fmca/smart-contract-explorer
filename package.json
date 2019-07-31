@@ -11,9 +11,12 @@
   "scripts": {
     "build": "tsc",
     "postinstall": "npm run build",
-    "test": "mocha dist/test/**/*.js",
-    "infer-build": "cd LoopInvGen && opam install . && dune build",
-    "infer-test": "cd LoopInvGen && (cd _build/default/test && ./Runner.exe $(which z3))"
+    "test:unittests": "mocha dist/test/**/*.js --exclude '**/examples*,**/verifier*'",
+    "test:examples": "mocha dist/test/examples.js",
+    "test:verifier": "mocha dist/test/verifier.js",
+    "pretest:infer": "cd LoopInvGen && opam install . && dune build",
+    "test:infer": "cd LoopInvGen && (cd _build/default/test && ./Runner.exe $(which z3))",
+    "test": "npm-run-all test:*"
   },
   "keywords": [],
   "author": "Michael Emmi <michael.emmi@gmail.com>",
@@ -28,6 +31,7 @@
     "@types/web3": "^1.0.19",
     "@types/yargs": "^13.0.0",
     "mocha": "^6.1.4",
+    "npm-run-all": "^4.1.5",
     "ts-node": "^8.3.0",
     "typescript": "^3.5.2"
   },
