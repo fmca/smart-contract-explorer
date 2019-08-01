@@ -1,0 +1,5 @@
+{
+    "description": "ERC20-moloch-constructor simulates OZ ERC20-constructor",
+    "source": "ERC20-moloch-constructor.sol",
+    "target": "ERC20-spec-constructor.sol"
+}
