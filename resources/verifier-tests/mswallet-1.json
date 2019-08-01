@@ -1,0 +1,5 @@
+{
+    "description": "MultiSigWallet_APIS simulates MultiSigWallet",
+    "source": "MultiSigWallet-generic-impl.sol",
+    "target": "MultiSigWallet-generic-spec.sol"
+}
