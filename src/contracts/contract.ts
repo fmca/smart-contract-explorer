@@ -210,7 +210,9 @@ export class SimulationCheckingContract extends ProductContract {
 
     async getBody(): Promise<string[]> {
         const { source, target: { abi } } = this;
-        return abi.map(m => this.getMethod(m)).flat();
+        return abi
+            .filter(({ name }) => source.abi.some(m => m.name === name))
+            .map(m => this.getMethod(m)).flat();
     }
 
     async getSpec(): Promise<string[]> {
