@@ -5,19 +5,25 @@ contract MultiSigWallet {
 
     uint constant public MAX_OWNER_COUNT = 50;
 
-   struct Transaction {
-       address destination ;
-       uint value;
-       bytes data;
-       bool executed;
-   }
+    //struct Transaction {
+    //   address destination ;
+    //   uint value;
+    //   bytes data;
+    //   bool executed;
+    //}
+
+   struct Withdrawal {
+        address payable destination;
+        uint attoApis;
+        bool executed;
+    }
 
     mapping (address => bool) internal is_owner ;
     address[] internal owners;
 
     mapping (uint => mapping (address => bool)) internal confirmations ;
 
-    mapping (uint => Transaction) internal transactions ;
+    mapping (uint => Withdrawal) internal transactions ;
 
     uint internal required;
 
@@ -110,8 +116,7 @@ contract MultiSigWallet {
         @notice precondition transactions[transactionCount].destination == address(0)
         @notice precondition _destination != address(0)
         @notice postcondition transactions[transactionCount].destination == _destination
-        @notice postcondition transactions[transactionCount].value == _val
-        @notice postcondition transactions[transactionCount].data == _data
+        @notice postcondition transactions[transactionCount].attoApis == _val
         @notice postcondition transactions[transactionCount].executed == false
         @notice postcondition confirmations[transactionCount][msg.sender] == true
         @notice postcondition transactionCount == transactionCount + 1
@@ -119,13 +124,12 @@ contract MultiSigWallet {
         @notice modifies transactions[transactionCount]
         @notice modifies transactionCount
     */
-    function submitTransaction(address _destination, uint _val, bytes memory _data) public returns (uint transactionId)
+    function submitTransaction(address payable _destination, uint _val) public returns (uint transactionId)
     {
         transactionId = transactionCount;
     
         transactions[transactionId].destination = _destination;
-        transactions[transactionId].value = _val;
-        transactions[transactionId].data = _data;
+        transactions[transactionId].attoApis = _val;
         transactions[transactionId].executed = false;
 
         confirmTransaction(transactionId);

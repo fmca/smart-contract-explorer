@@ -5,7 +5,15 @@ pragma solidity >=0.5.0;
 // and inherit from ERC20. To simplify I changed to work with ether
 // instead and to not inherit from ERC20
 
-
+ /**
+ * @notice simulation  __verifier_eq(MultiSigWallet_APIS.is_owner, MultiSigWallet.is_owner)
+ * @notice simulation __verifier_eq(MultiSigWallet_APIS.owners, MultiSigWallet.owners)
+ * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawals, MultiSigWallet.transactions)
+ * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawalConfirmations, MultiSigWallet.confirmations)
+ * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawalCount, MultiSigWallet.transactionCount)
+ * @notice simulation __verifier_eq(MultiSigWallet_APIS.required, MultiSigWallet.required)
+ 
+ */
 contract MultiSigWallet_APIS {
 
     //@dev Owners can not register more than 50
@@ -28,6 +36,7 @@ contract MultiSigWallet_APIS {
         uint attoApis;
         bool executed;
     }
+
 
 
     constructor(address[] memory _owners, uint _required)
