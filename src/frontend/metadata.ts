@@ -1,4 +1,4 @@
-import { ABIDefinition } from 'web3/eth/abi';
+import { ABIDefinition, ABIDataTypes } from 'web3/eth/abi';
 import Contract from 'web3/eth/contract';
 import { SourceUnit, ContractMember } from './ast';
 import { UserDoc } from './solc';
@@ -7,6 +7,13 @@ export type Contract = Contract;
 
 export type Address = string;
 export type Method = ABIDefinition;
+
+export type Location = 'storage' | 'memory';
+
+export interface Parameter {
+    name: string;
+    type: ABIDataTypes;
+};
 
 export namespace Method {
     export function equals(m1: Method, m2: Method): boolean {

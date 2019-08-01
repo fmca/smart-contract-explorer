@@ -1,11 +1,10 @@
-import { Metadata, Method, SourceInfo } from "../frontend/metadata";
+import { Metadata, Method, SourceInfo, Parameter, Location } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
 import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { isVariableDeclaration, VariableDeclaration, isElementaryTypeName } from "../frontend/ast";
-import { type } from "./pie";
 
 const debug = Debugger(__filename);
 
@@ -36,8 +35,8 @@ abstract class Contract {
 
     static signatureOfMethod(method: Method) {
         const { name, inputs = [], stateMutability, payable, outputs = [] } = method;
-        const parameters = inputs.map(({ name, type }) => `${type} ${name}`);
-        const returns = outputs.map(({ name, type }) => `${type} ${name}`);
+        const parameters = inputs.map(p => Contract.parameter(p));
+        const returns = outputs.map(p => Contract.parameter(p));
 
         const modifiers = ['public'];
 
@@ -51,6 +50,19 @@ abstract class Contract {
             modifiers.push(`returns (${returns.join(', ')})`);
 
         return `function check$${name}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
+    }
+
+    static parameter(parameter: Parameter, location: Location = 'memory'): string {
+        const { name, type } = parameter;
+        const elems = [type];
+
+        if (type.endsWith("[]"))
+            elems.push(location);
+
+        if (name !== '')
+            elems.push(name);
+
+        return elems.join(' ');
     }
 
     static callOfOperation({ name }: Metadata) {
@@ -67,7 +79,7 @@ abstract class Contract {
                 throw Error(`TODO: handle multiple outputs`);
 
             const assignments = outputs.length > 0
-                ? `${outputs.map(({ name: y, type }) => `${type} ${name}_${y}`)} = `
+                ? `${outputs.map(({ name: y, type }) => Contract.parameter({ name: `${name}_${y}`, type }))} = `
                 : ``;
 
             const args = inputs.map(({ name }) => name).join(', ');
