@@ -49,7 +49,9 @@ abstract class Contract {
         if (outputs.length > 0)
             modifiers.push(`returns (${returns.join(', ')})`);
 
-        return `function check$${name}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
+        const id = name === undefined ? `constructor` : `function check$${name}`;
+
+        return `${id}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
     }
 
     static parameter(parameter: Parameter, location: Location = 'memory'): string {
@@ -83,8 +85,9 @@ abstract class Contract {
                 : ``;
 
             const args = inputs.map(({ name }) => name).join(', ');
+            const id = method.name === undefined ? name : `${name}.${method.name}`;
 
-            return `${assignments}${name}.${method.name}(${args});`
+            return `${assignments}${id}(${args})`
         }
     }
 }
@@ -229,6 +232,9 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     getMethod(method: Method): string[] {
+        if (method.name === undefined)
+            return this.getConstructor(method);
+
         const { source, target } = this;
         const { modifies: srcMods } = getMethodSpec(source, method);
         const spec = getMethodSpec(target, method);
@@ -247,11 +253,23 @@ export class SimulationCheckingContract extends ProductContract {
             ` */`,
             `${Contract.signatureOfMethod(method)} {`,
             ...block(4)(
-                Contract.callOfMethod(this.source)(method),
-                Contract.callOfMethod(this.target)(method),
+                `${Contract.callOfMethod(this.source)(method)};`,
+                `${Contract.callOfMethod(this.target)(method)};`,
                 ...this.getValidationsAndReturn(method),
             ),
             `}`
+        ];
+    }
+
+    getConstructor(method: Method): string[] {
+        return [
+            ``,
+            `${Contract.signatureOfMethod(method)}`,
+            ...block(4)(
+                Contract.callOfMethod(this.source)(method),
+                Contract.callOfMethod(this.target)(method)
+            ),
+            `{ }`
         ];
     }
 
