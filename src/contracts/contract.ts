@@ -5,6 +5,7 @@ import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { isVariableDeclaration, VariableDeclaration, isElementaryTypeName } from "../frontend/ast";
+import { ABIDefinition } from "web3/eth/abi";
 
 const debug = Debugger(__filename);
 
@@ -58,13 +59,17 @@ abstract class Contract {
         const { name, type } = parameter;
         const elems = [type];
 
-        if (type.endsWith("[]"))
+        if (Contract.isPrimitive(type))
             elems.push(location);
 
         if (name !== '')
             elems.push(name);
 
         return elems.join(' ');
+    }
+
+    static isPrimitive(type: string) {
+        return type.endsWith('[]');
     }
 
     static callOfOperation({ name }: Metadata) {
@@ -81,7 +86,7 @@ abstract class Contract {
                 throw Error(`TODO: handle multiple outputs`);
 
             const assignments = outputs.length > 0
-                ? `${outputs.map(({ name: y, type }) => Contract.parameter({ name: `${name}_${y}`, type }))} = `
+                ? `${outputs.map((_, i) => `${name}_ret_${i}`).join(', ')} = `
                 : ``;
 
             const args = inputs.map(({ name }) => name).join(', ');
@@ -242,8 +247,20 @@ export class SimulationCheckingContract extends ProductContract {
             ...srcMods.map(substituteFields(source)),
             ...spec.modifies.map(substituteFields(target))
         ];
+        const outputs: ABIDefinition["outputs"] = [];
         const preconditions = spec.preconditions.map(substituteFields(target));
-        const postconditions = spec.postconditions.map(substituteFields(target));
+        const postconditions = [
+            ...spec.postconditions.map(substituteFields(target)),
+            ...this.getOutputEqualities(method)
+        ];
+
+        if (method.outputs !== undefined) {
+            for (const [i, param] of method.outputs.entries()) {
+                outputs.push({ ...param, name: `${source.name}_ret_${i}` });
+                outputs.push({ ...param, name: `${target.name}_ret_${i}` });
+            }
+        }
+
         return [
             ``,
             `/**`,
@@ -251,11 +268,11 @@ export class SimulationCheckingContract extends ProductContract {
             ...preconditions.map(p => ` * @notice precondition ${p}`),
             ...postconditions.map(p => ` * @notice postcondition ${p}`),
             ` */`,
-            `${Contract.signatureOfMethod(method)} {`,
+            `${Contract.signatureOfMethod({ ...method, outputs })} {`,
             ...block(4)(
                 `${Contract.callOfMethod(this.source)(method)};`,
                 `${Contract.callOfMethod(this.target)(method)};`,
-                ...this.getValidationsAndReturn(method),
+                ...this.getReturns(method),
             ),
             `}`
         ];
@@ -273,13 +290,39 @@ export class SimulationCheckingContract extends ProductContract {
         ];
     }
 
-    getValidationsAndReturn(method: Method): string[] {
+    getReturns(method: Method): string[] {
         const { outputs = [] } = method;
         const varName = ({ name }: Metadata, varName: string) => `${name}_${varName}`;
-        return [
-            ...outputs.map(({ name }) => `assert(${varName(this.source,name)} == ${varName(this.target,name)});`),
-            ...(outputs.length > 0 ? [`return (${outputs.map(({ name }) => `${varName(this.source,name)}`)});`] : []),
-        ];
+        const returns: string[] = [];
+        for (const { name } of [this.source, this.target]) {
+            for (const [i,_] of outputs.entries()) {
+                returns.push(`${name}_ret_${i}`);
+            }
+        }
+        return returns.length > 0 ? [`return (${returns.join(', ')});`] : [];
+    }
+
+    getOutputEqualities(method: Method): string[] {
+        const { outputs = [] } = method;
+        const expressions: string[] = [];
+
+        for (const [i,{ type }] of outputs.entries()) {
+            const lhs = `${this.source.name}_ret_${i}`;
+            const rhs = `${this.target.name}_ret_${i}`;
+
+            if (Contract.isPrimitive(type))
+                expressions.push(`__verifier_eq(${lhs}, ${rhs})`);
+            else
+                expressions.push(`${lhs} == ${rhs}`);
+        }
+        return expressions;
+    }
+
+    sourceVar(x: string) { return this.qualifiedVariable(this.source,x); }
+    targetVar(x: string) { return this.qualifiedVariable(this.target,x); }
+
+    qualifiedVariable({ name }: Metadata, varName: string) {
+        return `${name}_${varName}`;
     }
 }
 
