@@ -256,7 +256,7 @@ export class SimulationCheckingContract extends ProductContract {
         const returns: VariableDeclaration[] = [];
         const preconditions = spec.preconditions.map(substituteFields(this.target));
         const postconditions = [
-            ...spec.postconditions.map(substituteFields(this.target)),
+            ...spec.postconditions.map(p => substituteReturns(this.target, target)(substituteFields(this.target)(p))),
             ...this.getOutputEqualities(target)
         ];
 
@@ -356,13 +356,33 @@ export class SimulationCheckingContract extends ProductContract {
 
 function substituteFields(metadata: Metadata) {
     return function(expression: string) {
-        const { name, members } = metadata;
-        const fields = members.filter(isVariableDeclaration)
-            .filter(f => f.stateVariable)
-            .map(({ name }) => name);
-        const re = new RegExp(`\\b(${fields.join('|')})\\b`, 'g');
-        return expression.replace(re, `${name}.$1`);
+        const ids = [...Metadata.getVariables(metadata)].map(({ name }) => name);
+        return prefixIdentifiers(expression, ids, metadata.name);
     };
+}
+
+function substituteReturns(metadata: Metadata, method: FunctionDefinition) {
+    return function(expression: string) {
+        const substitutions =
+            [...FunctionDefinition.returns(method)]
+            .map(({ name }, i) => [name, `${metadata.name}_ret_${i}`]);
+
+        for (const [x, y] of substitutions) {
+            const re = new RegExp(`\\b${x}\\b`, 'g');
+            expression = expression.replace(re, y);
+        }
+
+        return expression;
+    }
+}
+
+function prefixIdentifiers(expression: string, ids: string[], prefix: string) {
+    return substitute(expression, ids, `${prefix}.$1`);
+}
+
+function substitute(expression: string, ids: string[], replacement: string) {
+    const re = new RegExp(`\\b(${ids.join('|')})\\b`, 'g');
+    return expression.replace(re, replacement);
 }
 
 function block(indent?: number) {

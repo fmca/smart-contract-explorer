@@ -72,7 +72,8 @@ export namespace Metadata {
     export function * getVariables(metadata: Metadata) {
         const contract = getContract(metadata);
         for (const m of ContractDefinition.variables(contract))
-            yield m;
+            if (m.stateVariable)
+                yield m;
     }
 
     export function * getFunctions(metadata: Metadata) {
