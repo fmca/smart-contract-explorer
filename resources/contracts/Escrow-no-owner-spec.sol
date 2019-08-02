@@ -4,13 +4,7 @@ pragma solidity >=0.5.0;
 contract Escrow {
 
     mapping(address=>uint) internal deposits ;
-    address internal owner ;
-
-
-   constructor(address _owner) public {
-        owner = _owner;
-    }
-
+ 
 
   /** 	@notice precondition payee != address(0)
       	@notice precondition  msg.value > 0
@@ -42,10 +36,9 @@ contract Escrow {
     }
 
 	/** @notice precondition payee != address(0)
-	*/
+	 */
 	function depositsOf(address payee) public view returns(uint) {
         return deposits[payee];
     }
-
 
 }

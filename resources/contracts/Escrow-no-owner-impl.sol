@@ -57,7 +57,6 @@ contract Escrow_Stacktical {
     function depositsOf(address _payee) public view returns(uint) {
         return deposits[_payee];
     }*/
-
     function depositsOf(address _payee) public view returns(uint) {
         return deposits[_payee];
     }

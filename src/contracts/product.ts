@@ -45,7 +45,8 @@ async function internalize(file: string, dir: string): Promise<SourceInfo & { or
     const loc = path.join(dir, `${name}-internalized.sol`);
     const buffer = await fs.readFile(file);
     const original = buffer.toString();
-    const content = original.replace(/\bpublic\b/g, 'internal');
+    const content = original.replace(/\bpublic\b/g, 'internal')
+                            .replace(/\bexternal\b/g, 'internal');
     return { path: loc, content, original };
 }
 
@@ -61,6 +62,7 @@ export interface MethodSpec {
 
 export function getContractSpec(metadata: Metadata): ContractSpec {
     const { name, userdoc: { notice } } = metadata;
+    debug(`notice(%s): %O`, name, notice);
     const specs = notice.split(/(?=simulation)/);
     const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
     const simulations = specs.filter(s => s.startsWith('simulation')).map(strip);

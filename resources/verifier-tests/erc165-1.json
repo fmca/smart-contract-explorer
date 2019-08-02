@@ -1,0 +1,5 @@
+{
+    "description": "ERC165-impl simulates OZ ERC165-spec",
+    "source": "ERC165-impl.sol",
+    "target": "ERC165-spec.sol"
+}

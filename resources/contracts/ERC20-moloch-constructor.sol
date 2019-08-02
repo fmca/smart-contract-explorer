@@ -25,6 +25,7 @@ pragma solidity >=0.5.0;
  /**
  * @notice simulation  __verifier_eq(Token._balances, ERC20.balances)
  * @notice simulation __verifier_eq(Token._allowed, ERC20.allowances)
+ * @notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
  */
 contract Token {
     //using SafeMath for uint;

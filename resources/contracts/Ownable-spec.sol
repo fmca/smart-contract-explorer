@@ -5,7 +5,7 @@ pragma solidity >=0.5.0;
 
 
 contract Ownable {
-    address private  _owner;
+    address internal  _owner;
 
     constructor () public {
         _owner = msg.sender;
