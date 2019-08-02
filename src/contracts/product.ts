@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
-import { Metadata, Method, Contract, SourceInfo } from "../frontend/metadata";
+import { Metadata, SourceInfo } from "../frontend/metadata";
 import { FunctionDefinition, Return, Node } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
@@ -50,50 +50,6 @@ async function internalize(file: string, dir: string): Promise<SourceInfo & { or
                             .replace(/\bpublic\b/g, 'internal')
                             .replace(/\bexternal\b/g, 'internal');
     return { path: loc, content, original };
-}
-
-export interface ContractSpec {
-    simulations: string[];
-}
-
-export interface MethodSpec {
-    modifies: string[];
-    preconditions: string[];
-    postconditions: string[];
-}
-
-export function getContractSpec(metadata: Metadata): ContractSpec {
-    const { name, userdoc: { notice } } = metadata;
-    debug(`notice(%s): %O`, name, notice);
-    const specs = notice.split(/(?=simulation)/);
-    const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
-    const simulations = specs.filter(s => s.startsWith('simulation')).map(strip);
-    const spec = { simulations };
-    debug(`spec(%s): %O`, name, spec);
-    return spec;
-}
-
-export function getMethodSpec(metadata: Metadata, name: string): MethodSpec {
-    const { userdoc: { methods } } = metadata;
-    const empty: MethodSpec = { modifies: [], preconditions: [], postconditions: [] };
-
-    if (name === undefined)
-        return empty;
-
-    const key = Object.keys(methods).find(key => key.split('(')[0] === name);
-
-    if (key === undefined)
-        return empty;
-
-    const { notice } = methods[key];
-    const specs = notice.split(/(?=modifies)|(?=precondition)|(?=postcondition)/);
-    const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
-    const modifies = specs.filter(s => s.startsWith('modifies')).map(strip);
-    const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
-    const postconditions = specs.filter(s => s.startsWith('postcondition')).map(strip);
-    const spec = { modifies, preconditions, postconditions };
-    debug(`spec(%s): %O`, name, spec)
-    return spec;
 }
 
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {

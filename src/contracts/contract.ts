@@ -1,14 +1,13 @@
-import { Metadata, Method, SourceInfo, Parameter, Location } from "../frontend/metadata";
+import { Metadata, SourceInfo } from "../frontend/metadata";
 import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
-import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { VariableDeclaration, ContractMember, TypeName, FunctionDefinition, Parameters, ReturnParameters } from "../frontend/ast";
-import { ABIDefinition } from "web3/eth/abi";
 
 const { isVariableDeclaration } = ContractMember;
 const { isElementaryTypeName } = TypeName;
+const { getMethodSpec, getContractSpec } = Metadata;
 
 const debug = Debugger(__filename);
 
