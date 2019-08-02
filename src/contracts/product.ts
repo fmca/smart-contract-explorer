@@ -45,7 +45,9 @@ async function internalize(file: string, dir: string): Promise<SourceInfo & { or
     const loc = path.join(dir, `${name}-internalized.sol`);
     const buffer = await fs.readFile(file);
     const original = buffer.toString();
-    const content = original.replace(/\bpublic\b/g, 'internal')
+    const content = original.replace(/\bpublic*\s*payable\b/g, 'internal')
+                            .replace(/\bexternal*\s*payable\b/g, 'internal')
+                            .replace(/\bpublic\b/g, 'internal')
                             .replace(/\bexternal\b/g, 'internal');
     return { path: loc, content, original };
 }
