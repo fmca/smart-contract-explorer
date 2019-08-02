@@ -1,6 +1,7 @@
-import { toSExpr, toContract, IndexAccess, Identifier, Assignment, BinaryOperation } from '../frontend/ast';
+import { Node, IndexAccess, Identifier, Assignment, BinaryOperation } from '../frontend/ast';
 import assert from 'assert';
 
+const { toSExpr, toContract } = Node;
 
 describe('ast', function() {
 

@@ -83,7 +83,7 @@ export interface VariableDeclaration extends ContractMember {
 }
 
 
-export type StorageLocation = 'default';
+export type StorageLocation = 'default' | 'memory';
 
 export interface TypeDescriptions {
     typeIdentifier: string;
@@ -194,30 +194,42 @@ export interface Conditional extends Expression {
     trueExpression: Expression;
 }
 
-export function isContractDefinition(node: SourceUnitElement): node is ContractDefinition {
-    return node.nodeType === 'ContractDefinition';
+export namespace SourceUnitElement {
+    export function isContractDefinition(node: SourceUnitElement): node is ContractDefinition {
+        return node.nodeType === 'ContractDefinition';
+    }
 }
 
-export function isVariableDeclaration(node: ContractMember): node is VariableDeclaration {
-    return node.nodeType === 'VariableDeclaration';
+export namespace ContractMember {
+    export function isVariableDeclaration(node: ContractMember): node is VariableDeclaration {
+        return node.nodeType === 'VariableDeclaration';
+    }
 }
 
-export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName {
-    return node.nodeType === 'ElementaryTypeName';
+export namespace TypeName {
+    export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName {
+        return node.nodeType === 'ElementaryTypeName';
+    }
 }
 
-export function toSExpr(node: Node): string {
-    return new NodeToSExpr().visit(node);
-}
+export namespace VariableDeclaration {
+    export function isPayable(decl: VariableDeclaration) {
+        return decl.typeDescriptions.typeString.split(' ').includes('payable');
+    }
+};
 
+export namespace Node {
+    export function toSExpr(node: Node): string {
+        return new NodeToSExpr().visit(node);
+    }
 
-export function addPrefixToNode(node: Node, contractName: string, contractFields: string[]): Node {
-    return new AddPrefixToNode(contractName, contractFields).visit(node);
-}
+    export function addPrefixToNode(node: Node, contractName: string, contractFields: string[]): Node {
+        return new AddPrefixToNode(contractName, contractFields).visit(node);
+    }
 
-
-export function toContract(node: Node): string {
-    return new NodeToContract().visit(node);
+    export function toContract(node: Node): string {
+        return new NodeToContract().visit(node);
+    }
 }
 
 function unimplemented<T>(node: Node): T {
@@ -299,14 +311,14 @@ class NodeToSExpr extends NodeVisitor<string> {
     visitLiteral(node: Literal) {
         return node.value;
     }
-    
+
     visitIndexAccess(node: IndexAccess) {
         const base = this.visit(node.baseExpression);
         const index = this.visit(node.indexExpression);
         return `(index ${base} ${index})`;
     }
 
-    visitMemberAccess(node: MemberAccess) {     
+    visitMemberAccess(node: MemberAccess) {
         const exper = this.visit(node.expression);
         return `${exper}.${node.memberName}`;
     }
@@ -438,7 +450,7 @@ class AddPrefixToNode extends NodeVisitor<Expression> {
         return { ...node, baseExpression, indexExpression };
     }
 
-    visitMemberAccess(node: MemberAccess) {    
+    visitMemberAccess(node: MemberAccess) {
         const exper = this.visit(node.expression);
         return { ...node, exper};
     }

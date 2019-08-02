@@ -4,8 +4,11 @@ import { AbstractExample, SimulationExample } from "./examples";
 import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { isVariableDeclaration, VariableDeclaration, isElementaryTypeName } from "../frontend/ast";
+import { VariableDeclaration, ContractMember, TypeName } from "../frontend/ast";
 import { ABIDefinition } from "web3/eth/abi";
+
+const { isVariableDeclaration } = ContractMember;
+const { isElementaryTypeName } = TypeName;
 
 const debug = Debugger(__filename);
 

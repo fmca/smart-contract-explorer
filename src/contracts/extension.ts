@@ -1,8 +1,10 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
-import { toContract } from '../frontend/ast';
+import { Node } from '../frontend/ast';
 import { Expr } from "../frontend/sexpr";
 import { Debugger } from '../utils/debug';
+
+const { toContract } = Node;
 
 const debug = Debugger(__filename);
 

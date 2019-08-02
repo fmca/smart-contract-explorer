@@ -1,5 +1,7 @@
-import { VariableDeclaration, TypeName, ElementaryType, isVariableDeclaration } from "../frontend/ast";
+import { VariableDeclaration, TypeName, ElementaryType, ContractMember } from "../frontend/ast";
 import { Metadata } from "../frontend/metadata";
+
+const { isVariableDeclaration } = ContractMember;
 
 export function fieldNames({ members }: Metadata): string[] {
     return members.filter(isVariableDeclaration)

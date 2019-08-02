@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
 import { Metadata, Method, Contract, SourceInfo } from "../frontend/metadata";
-import { addPrefixToNode, FunctionDefinition, Return, toSExpr } from '../frontend/ast';
+import { FunctionDefinition, Return, Node } from '../frontend/ast';
 import * as Pie from './pie';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
@@ -140,11 +140,11 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
                             debug(`return_impl: %o`, return_impl);
 
 
-                            const spec_expression = addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
-                            const impl_expression = addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
+                            const spec_expression = Node.addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
+                            const impl_expression = Node.addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
 
-                            const spec_exper = toSExpr(spec_expression);
-                            const impl_exper = toSExpr(impl_expression);
+                            const spec_exper = Node.toSExpr(spec_expression);
+                            const impl_exper = Node.toSExpr(impl_expression);
 
                             const seed_feature = `(= ${spec_exper} ${impl_exper})`;
 
