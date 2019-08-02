@@ -4,7 +4,7 @@ import { AbstractExample, SimulationExample } from "./examples";
 import { getMethodSpec, getContractSpec } from './product';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { VariableDeclaration, ContractMember, TypeName } from "../frontend/ast";
+import { VariableDeclaration, ContractMember, TypeName, FunctionDefinition, Parameters, ReturnParameters } from "../frontend/ast";
 import { ABIDefinition } from "web3/eth/abi";
 
 const { isVariableDeclaration } = ContractMember;
@@ -37,33 +37,33 @@ abstract class Contract {
         return content;
     }
 
-    static signatureOfMethod(method: Method) {
-        const { name, inputs = [], stateMutability, payable, outputs = [] } = method;
-        const parameters = inputs.map(p => Contract.parameter(p));
-        const returns = outputs.map(p => Contract.parameter(p));
+    static signature(method: FunctionDefinition) {
+        const { modifiers: _, stateMutability, visibility } = method;
+        const attributes: string[] = [];
+        const parameters = [...FunctionDefinition.parameters(method)].map(Contract.parameter);
+        const returns = [...FunctionDefinition.returns(method)].map(Contract.parameter);
 
-        const modifiers = ['public'];
+        attributes.push(visibility);
 
-        if (payable)
-            modifiers.push('payable');
+        if (stateMutability !== 'nonpayable')
+            attributes.push(stateMutability);
 
-        if (stateMutability === 'view')
-            modifiers.push('view');
+        if (returns.length > 0)
+            attributes.push(`returns (${returns.join(', ')})`);
 
-        if (outputs.length > 0)
-            modifiers.push(`returns (${returns.join(', ')})`);
+        const name = FunctionDefinition.isConstructor(method)
+            ? `constructor`
+            : `function check$${method.name}`;
 
-        const id = name === undefined ? `constructor` : `function check$${name}`;
-
-        return `${id}(${parameters.join(', ')}) ${modifiers.join(' ')}`;
+        return `${name}(${parameters.join(', ')}) ${attributes.join(' ')}`;
     }
 
-    static parameter(parameter: Parameter, location: Location = 'memory'): string {
-        const { name, type } = parameter;
+    static parameter(variable: VariableDeclaration): string {
+        const { name, storageLocation, typeDescriptions: { typeString: type } } = variable;
         const elems = [type];
 
-        if (Contract.isPrimitive(type))
-            elems.push(location);
+        if (storageLocation === 'memory')
+            elems.push(storageLocation);
 
         if (name !== '')
             elems.push(name);
@@ -82,21 +82,16 @@ abstract class Contract {
         }
     }
 
-    static callOfMethod({ name }: Metadata) {
-        return function (method: Method) {
-            const { inputs = [], outputs = [] } = method;
-            if (outputs.length > 1)
-                throw Error(`TODO: handle multiple outputs`);
+    static callMethod(contractName: string, method: FunctionDefinition) {
+        const args = [...FunctionDefinition.parameters(method)].map(({ name }) => name).join(', ');
+        const returns = [...FunctionDefinition.returns(method)].map((_, i) => `${contractName}_ret_${i}`);
+        const assignments = returns.length > 0 ? `${returns.join(', ')} = ` : ``;
 
-            const assignments = outputs.length > 0
-                ? `${outputs.map((_, i) => `${name}_ret_${i}`).join(', ')} = `
-                : ``;
+        const name = FunctionDefinition.isConstructor(method)
+            ? contractName
+            : `${contractName}.${method.name}`;
 
-            const args = inputs.map(({ name }) => name).join(', ');
-            const id = method.name === undefined ? name : `${name}.${method.name}`;
-
-            return `${assignments}${id}(${args})`
-        }
+        return `${assignments}${name}(${args})`
     }
 }
 
@@ -220,10 +215,14 @@ export class SimulationCheckingContract extends ProductContract {
     }
 
     async getBody(): Promise<string[]> {
-        const { source, target: { abi } } = this;
-        return abi
-            .filter(({ name }) => source.abi.some(m => m.name === name))
-            .map(m => this.getMethod(m)).flat();
+        const { source, target } = this;
+        const lines: string[] = [];
+
+        for (const { name } of Metadata.getFunctions(target))
+            if (Metadata.findFunction(name, source) !== undefined)
+                lines.push(...this.getMethod(name));
+
+        return lines;
     }
 
     async getSpec(): Promise<string[]> {
@@ -239,30 +238,47 @@ export class SimulationCheckingContract extends ProductContract {
         ];
     }
 
-    getMethod(method: Method): string[] {
-        if (method.name === undefined)
-            return this.getConstructor(method);
+    getMethod(name: string): string[] {
+        if (name === undefined || name === '')
+            return this.getConstructor(name);
 
-        const { source, target } = this;
-        const { modifies: srcMods } = getMethodSpec(source, method);
-        const spec = getMethodSpec(target, method);
+        const source = Metadata.findFunction(name, this.source);
+        const target = Metadata.findFunction(name, this.target);
+
+        if (source === undefined || target === undefined)
+            throw Error(`Expected function named ${name}`);
+
+        const { modifies: srcMods } = getMethodSpec(this.source, name);
+        const spec = getMethodSpec(this.target, name);
         const modifies = [
-            ...srcMods.map(substituteFields(source)),
-            ...spec.modifies.map(substituteFields(target))
+            ...srcMods.map(substituteFields(this.source)),
+            ...spec.modifies.map(substituteFields(this.target))
         ];
-        const outputs: ABIDefinition["outputs"] = [];
-        const preconditions = spec.preconditions.map(substituteFields(target));
+        const returns: VariableDeclaration[] = [];
+        const preconditions = spec.preconditions.map(substituteFields(this.target));
         const postconditions = [
-            ...spec.postconditions.map(substituteFields(target)),
-            ...this.getOutputEqualities(method)
+            ...spec.postconditions.map(substituteFields(this.target)),
+            ...this.getOutputEqualities(target)
         ];
 
-        if (method.outputs !== undefined) {
-            for (const [i, param] of method.outputs.entries()) {
-                outputs.push({ ...param, name: `${source.name}_ret_${i}` });
-                outputs.push({ ...param, name: `${target.name}_ret_${i}` });
-            }
+        for (const [i, param] of [...FunctionDefinition.returns(target)].entries()) {
+            returns.push({ ...param, name: `${this.source.name}_ret_${i}` });
+            returns.push({ ...param, name: `${this.target.name}_ret_${i}` });
         }
+
+        const parameters: Parameters = {
+            id: -1,
+            src: '',
+            nodeType: 'ParameterList',
+            parameters: [...FunctionDefinition.parameters(target)]
+        };
+
+        const returnParameters: ReturnParameters = {
+            id: -1,
+            src: '',
+            nodeType: 'ParameterList',
+            parameters: returns
+        };
 
         return [
             ``,
@@ -271,52 +287,62 @@ export class SimulationCheckingContract extends ProductContract {
             ...preconditions.map(p => ` * @notice precondition ${p}`),
             ...postconditions.map(p => ` * @notice postcondition ${p}`),
             ` */`,
-            `${Contract.signatureOfMethod({ ...method, outputs })} {`,
+            `${Contract.signature({ ...target, returnParameters })} {`,
             ...block(4)(
-                `${Contract.callOfMethod(this.source)(method)};`,
-                `${Contract.callOfMethod(this.target)(method)};`,
-                ...this.getReturns(method),
+                `${Contract.callMethod(this.source.name, { ...source, parameters })};`,
+                `${Contract.callMethod(this.target.name, target)};`,
+                ...this.getReturns(target),
             ),
             `}`
         ];
     }
 
-    getConstructor(method: Method): string[] {
+    getConstructor(name: string): string[] {
+        const source = Metadata.findFunction(name, this.source);
+        const target = Metadata.findFunction(name, this.target);
+
+        if (source === undefined || target === undefined)
+            throw Error(`Expected function named ${name}`);
+
+        const parameters: Parameters = {
+            id: -1,
+            src: '',
+            nodeType: 'ParameterList',
+            parameters: [...FunctionDefinition.parameters(target)]
+        };
+
         return [
             ``,
-            `${Contract.signatureOfMethod(method)}`,
+            `${Contract.signature(target)}`,
             ...block(4)(
-                Contract.callOfMethod(this.source)(method),
-                Contract.callOfMethod(this.target)(method)
+                Contract.callMethod(this.source.name, { ...source, parameters }),
+                Contract.callMethod(this.target.name, target)
             ),
             `{ }`
         ];
     }
 
-    getReturns(method: Method): string[] {
-        const { outputs = [] } = method;
-        const varName = ({ name }: Metadata, varName: string) => `${name}_${varName}`;
+    getReturns(method: FunctionDefinition): string[] {
         const returns: string[] = [];
-        for (const { name } of [this.source, this.target]) {
-            for (const [i,_] of outputs.entries()) {
+
+        for (const { name } of [this.source, this.target])
+            for (const [i] of [...FunctionDefinition.returns(method)].entries())
                 returns.push(`${name}_ret_${i}`);
-            }
-        }
+
         return returns.length > 0 ? [`return (${returns.join(', ')});`] : [];
     }
 
-    getOutputEqualities(method: Method): string[] {
-        const { outputs = [] } = method;
+    getOutputEqualities(method: FunctionDefinition): string[] {
         const expressions: string[] = [];
 
-        for (const [i,{ type }] of outputs.entries()) {
+        for (const [i, { typeName }] of [...FunctionDefinition.returns(method)].entries()) {
             const lhs = `${this.source.name}_ret_${i}`;
             const rhs = `${this.target.name}_ret_${i}`;
 
-            if (Contract.isPrimitive(type))
-                expressions.push(`__verifier_eq(${lhs}, ${rhs})`);
-            else
+            if (TypeName.isElementaryTypeName(typeName))
                 expressions.push(`${lhs} == ${rhs}`);
+            else
+                expressions.push(`__verifier_eq(${lhs}, ${rhs})`);
         }
         return expressions;
     }

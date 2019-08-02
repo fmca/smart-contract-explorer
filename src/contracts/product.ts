@@ -73,26 +73,26 @@ export function getContractSpec(metadata: Metadata): ContractSpec {
     return spec;
 }
 
-export function getMethodSpec(metadata: Metadata, method: Method): MethodSpec {
+export function getMethodSpec(metadata: Metadata, name: string): MethodSpec {
     const { userdoc: { methods } } = metadata;
     const empty: MethodSpec = { modifies: [], preconditions: [], postconditions: [] };
-
-    if (method.name === undefined)
-        return empty;
-
-    const name = Object.keys(methods).find(key => key.split('(')[0] === method.name);
 
     if (name === undefined)
         return empty;
 
-    const { notice } = methods[name];
+    const key = Object.keys(methods).find(key => key.split('(')[0] === name);
+
+    if (key === undefined)
+        return empty;
+
+    const { notice } = methods[key];
     const specs = notice.split(/(?=modifies)|(?=precondition)|(?=postcondition)/);
     const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
     const modifies = specs.filter(s => s.startsWith('modifies')).map(strip);
     const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
     const postconditions = specs.filter(s => s.startsWith('postcondition')).map(strip);
     const spec = { modifies, preconditions, postconditions };
-    debug(`spec(%s): %O`, method.name, spec)
+    debug(`spec(%s): %O`, name, spec)
     return spec;
 }
 
