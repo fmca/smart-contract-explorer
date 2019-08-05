@@ -1,19 +1,8 @@
-pragma solidity >=0.5.0;
-
-// BAT crowdsale
-// Link to contract source code:
-// https://github.com/brave-intl/basic-attention-token-crowdsale/blob/master/contracts/BAToken.sol
-
+pragma solidity ^0.4.10;
 import "./StandardToken.sol";
 import "./SafeMath.sol";
-/**
-  @notice simulation BAToken.ethFundDeposit ==  Crowdsale._wallet
-  @notice simulation BAToken.fundingStartBlock == Crowdsale._openingTime
-  @notice simulation BAToken.fundingEndBlock == Crowdsale._closingTime
-  @notice simulation BAToken.isFinalized == Crowdsale._finalized
- */
-contract BAToken is StandardToken, SafeMath {
 
+contract BAToken is StandardToken, SafeMath {
 
     // metadata
     string public constant name = "Basic Attention Token";
@@ -40,11 +29,11 @@ contract BAToken is StandardToken, SafeMath {
     event CreateBAT(address indexed _to, uint256 _value);
 
     // constructor
-    constructor(
-        address payable _ethFundDeposit,
+    function BAToken(
+        address _ethFundDeposit,
         address _batFundDeposit,
         uint256 _fundingStartBlock,
-        uint256 _fundingEndBlock) internal
+        uint256 _fundingEndBlock)
     {
       isFinalized = false;                   //controls pre through crowdsale state
       ethFundDeposit = _ethFundDeposit;
@@ -53,51 +42,51 @@ contract BAToken is StandardToken, SafeMath {
       fundingEndBlock = _fundingEndBlock;
       totalSupply = batFund;
       balances[batFundDeposit] = batFund;    // Deposit Brave Intl share
-      emit CreateBAT(batFundDeposit, batFund);  // logs Brave Intl fund
+      CreateBAT(batFundDeposit, batFund);  // logs Brave Intl fund
     }
 
     /// @dev Accepts ether and creates new BAT tokens.
-    function createTokens() external payable  {
-      if (isFinalized) revert();
-      if (block.number < fundingStartBlock) revert();
-      if (block.number > fundingEndBlock) revert();
-      if (msg.value == 0) revert();
+    function createTokens() payable external {
+      if (isFinalized) throw;
+      if (block.number < fundingStartBlock) throw;
+      if (block.number > fundingEndBlock) throw;
+      if (msg.value == 0) throw;
 
       uint256 tokens = safeMult(msg.value, tokenExchangeRate); // check that we're not over totals
       uint256 checkedSupply = safeAdd(totalSupply, tokens);
 
       // return money if something goes wrong
-      if (tokenCreationCap < checkedSupply) revert();  // odd fractions won't be found
+      if (tokenCreationCap < checkedSupply) throw;  // odd fractions won't be found
 
       totalSupply = checkedSupply;
       balances[msg.sender] += tokens;  // safeAdd not needed; bad semantics to use here
-      emit CreateBAT(msg.sender, tokens);  // logs token creation
+      CreateBAT(msg.sender, tokens);  // logs token creation
     }
 
     /// @dev Ends the funding period and sends the ETH home
     function finalize() external {
-      if (isFinalized) revert();
-      if (msg.sender != ethFundDeposit) revert(); // locks finalize to the ultimate ETH owner
-      if(totalSupply < tokenCreationMin) revert();      // have to sell minimum to move to operational
-      if(block.number <= fundingEndBlock && totalSupply != tokenCreationCap) revert();
+      if (isFinalized) throw;
+      if (msg.sender != ethFundDeposit) throw; // locks finalize to the ultimate ETH owner
+      if(totalSupply < tokenCreationMin) throw;      // have to sell minimum to move to operational
+      if(block.number <= fundingEndBlock && totalSupply != tokenCreationCap) throw;
       // move to operational
       isFinalized = true;
-      if(!ethFundDeposit.send(this.balance)) revert();  // send the eth to Brave International
+      if(!ethFundDeposit.send(this.balance)) throw;  // send the eth to Brave International
     }
 
     /// @dev Allows contributors to recover their ether in the case of a failed funding campaign.
     function refund() external {
-      if(isFinalized) revert();                       // prevents refund if operational
-      if (block.number <= fundingEndBlock) revert(); // prevents refund until sale period is over
-      if(totalSupply >= tokenCreationMin) revert();  // no refunds if we sold enough
-      if(msg.sender == batFundDeposit) revert();    // Brave Intl not entitled to a refund
+      if(isFinalized) throw;                       // prevents refund if operational
+      if (block.number <= fundingEndBlock) throw; // prevents refund until sale period is over
+      if(totalSupply >= tokenCreationMin) throw;  // no refunds if we sold enough
+      if(msg.sender == batFundDeposit) throw;    // Brave Intl not entitled to a refund
       uint256 batVal = balances[msg.sender];
-      if (batVal == 0) revert();
+      if (batVal == 0) throw;
       balances[msg.sender] = 0;
       totalSupply = safeSubtract(totalSupply, batVal); // extra safe
-      uint256 ethVal = batVal / tokenExchangeRate;     // should be safe; previous revert()s covers edges
+      uint256 ethVal = batVal / tokenExchangeRate;     // should be safe; previous throws covers edges
       LogRefund(msg.sender, ethVal);               // log it 
-      if (!msg.sender.send(ethVal)) revert();       // if you're using a contract; make sure it works with .send gas limits
+      if (!msg.sender.send(ethVal)) throw;       // if you're using a contract; make sure it works with .send gas limits
     }
 
 }

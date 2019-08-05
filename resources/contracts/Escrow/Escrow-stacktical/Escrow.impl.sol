@@ -2,7 +2,7 @@ pragma solidity >=0.5.0;
 
 
 // Link to contract source code:
-//https://github.com/Stacktical/stacktical-tokensale-contracts/blob/master/contracts/Crowdsale/Escrow.sol
+// https://github.com/Stacktical/stacktical-tokensale-contracts/blob/master/contracts/Crowdsale/Escrow.sol
 
 
 /**

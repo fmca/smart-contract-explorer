@@ -5,9 +5,9 @@ pragma solidity >=0.5.0;
 
 
  /**
- * @notice simulation  __verifier_eq(FCK.bets, Dice.bets)
+ * @notice simulation  __verifier_eq(FckDice.bets, Dice.bets)
  */
-contract FCK {
+contract FckDice {
 
 
     uint public constant HOUSE_EDGE_OF_TEN_THOUSAND = 98;

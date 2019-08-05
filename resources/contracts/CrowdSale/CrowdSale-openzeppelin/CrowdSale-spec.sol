@@ -4,8 +4,8 @@ pragma solidity >=0.5.0;
 // Link to contract source code:
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/crowdsale
 
-import './IERC20.sol';
-import './SafeMath.sol';
+import './original/IERC20.sol';
+import './original/SafeMath.sol';
 
 contract Crowdsale {
 

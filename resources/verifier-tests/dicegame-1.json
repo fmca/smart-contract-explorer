@@ -1,5 +1,5 @@
 {
     "description": "FCK simulates Dice game",
-    "source": "Games/FCK.sol",
-    "target": "Games/Dice-spec.sol"
+    "source": "Games/FCK/Fck.sol",
+    "target": "Games/Dice-game/Dice-spec.sol"
 }
