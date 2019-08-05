@@ -1,5 +1,5 @@
 {
     "description": "ERC165-impl simulates OZ ERC165-spec",
-    "source": "ERC/ERC165-impl.sol",
-    "target": "ERC/ERC165-spec.sol"
+    "source": "Interface/ERC165-eip/ERC165.impl.sol",
+    "target": "Interface/ERC165-openzeppelin/ERC165.spec.sol"
 }
