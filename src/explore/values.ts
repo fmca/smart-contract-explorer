@@ -41,6 +41,11 @@ export class ValueGenerator {
             yield account;
     }
 
+    * boolValues(): Iterable<Value> {
+        for (const v of [true,false])
+            yield v;
+    }
+
     valuesOfType(type: string): Iterable<Value> {
 
         if (type.match(/u?int\d*/))
@@ -48,6 +53,9 @@ export class ValueGenerator {
 
         if (type === 'address')
             return this.addressValues();
+
+        if (type === 'bool')
+            return this.boolValues();
 
         throw Error(`unexpected type: ${type}`);
     }

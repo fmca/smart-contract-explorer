@@ -217,8 +217,8 @@ export class SimulationCheckingContract extends ProductContract {
         const { source, target } = this;
         const lines: string[] = [];
 
-        for (const { name } of Metadata.getFunctions(target))
-            if (Metadata.findFunction(name, source) !== undefined)
+        for (const { name, visibility } of Metadata.getFunctions(target))
+            if (Metadata.findFunction(name, source) !== undefined && (visibility === 'public' || visibility === 'external'))
                 lines.push(...this.getMethod(name));
 
         return lines;
