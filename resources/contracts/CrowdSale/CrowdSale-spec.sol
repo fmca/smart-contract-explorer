@@ -4,11 +4,16 @@ pragma solidity >=0.5.0;
 // Link to contract source code:
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/crowdsale
 
+import './IERC20.sol';
+import './SafeMath.sol';
 
 contract Crowdsale {
 
+    using SafeMath for uint256;
+    //using SafeERC20 for IERC20;
 
-    mapping (address => uint) internal balances;
+    // The token being sold
+    IERC20 private _token;
 
     // The token being sold
     address private _tokenOwner;
@@ -27,6 +32,26 @@ contract Crowdsale {
 
     bool private _finalized;
 
+    uint256 private _openingTime;
+    uint256 private _closingTime;
+
+
+    constructor (address payable wallet, address token, uint256 openingTime, uint256 closingTime) public {
+        //require(rate > 0, "Crowdsale: rate is 0");
+        require(wallet != address(0), "Crowdsale: wallet is the zero address");
+        require(address(token) != address(0), "Crowdsale: token is the zero address");
+        require(openingTime >= block.number, "TimedCrowdsale: opening time is before current time");
+        // solhint-disable-next-line max-line-length
+        require(closingTime > openingTime, "TimedCrowdsale: opening time is not before closing time");
+
+        _openingTime = openingTime;
+        _closingTime = closingTime;
+
+        _rate = 6400; // 6400 tokens per 1 ETH
+        _wallet = wallet;
+        _token = IERC20(token);
+    }
+
 
     function finalize() public {
         require(!_finalized, "FinalizableCrowdsale: already finalized");
@@ -34,6 +59,45 @@ contract Crowdsale {
         _finalized = true;
 
     }
+
+    /**
+     * @return true if the crowdsale is finalized, false otherwise.
+    */
+    function finalized() public view returns (bool) {
+        return _finalized;
+    }
+
+    /**
+     * @return the crowdsale opening time.
+     */
+    function openingTime() public view returns (uint256) {
+        return _openingTime;
+    }
+
+    /**
+     * @return the crowdsale closing time.
+     */
+    function closingTime() public view returns (uint256) {
+        return _closingTime;
+    }
+
+    /**
+     * @return true if the crowdsale is open, false otherwise.
+     */
+    function isOpen() public view returns (bool) {
+        // solhint-disable-next-line not-rely-on-time
+        return block.number >= _openingTime && block.number <= _closingTime;
+    }
+
+    /**
+     * @dev Checks whether the period in which the crowdsale is open has already elapsed.
+     * @return Whether crowdsale period has elapsed
+     */
+    function hasClosed() public view returns (bool) {
+        // solhint-disable-next-line not-rely-on-time
+        return block.number > _closingTime;
+    }
+
 
 
     /**
@@ -57,11 +121,28 @@ contract Crowdsale {
         return _weiRaised;
     }
 
+    function createTokens() external payable  {
+        buyTokens(msg.sender);
+    }
+
     /**
      * @dev low level token purchase ***DO NOT OVERRIDE***
      * @param beneficiary Recipient of the token purchase
      */
+
+    /**
+        * @notice precondition beneficiary != address(0)
+        * @notice precondition msg.value != 0
+        * @notice precondition block.number >= _openingTime && block.number <= _closingTime
+        * @notice precondition _finalized
+        * @notice precondition _token.balances[address(this)] >= tokenAmount
+        * @notice postcondition _token.balances[beneficiary] == __verifier_old_uint(_token.balances[beneficiary]) + tokenAmount
+        * @notice postcondition _token.balances[address(this)] == __verifier_old_uint(_token.balances[address(this)]) - tokenAmount
+        * @notice postcondition address(this).balance == __verifier_old_uint(address(this).balance) + msg.value
+    */
     function buyTokens(address beneficiary) public  payable {
+        require(!_finalized, "FinalizableCrowdsale: already finalized");
+        require(isOpen(), "TimedCrowdsale: not open");
         uint256 weiAmount = msg.value;
         _preValidatePurchase(beneficiary, weiAmount);
 
@@ -69,7 +150,8 @@ contract Crowdsale {
         uint256 tokens = _getTokenAmount(weiAmount);
 
         // update state
-        _weiRaised = _weiRaised + weiAmount;
+         _weiRaised = _weiRaised.add(weiAmount);
+
 
         _processPurchase(beneficiary, tokens);
 
@@ -88,6 +170,10 @@ contract Crowdsale {
      * @param beneficiary Address performing the token purchase
      * @param weiAmount Value in wei involved in the purchase
      */
+    /**
+        * @notice precondition beneficiary != address(0)
+        * @notice precondition weiAmount != 0
+    */
     function _preValidatePurchase(address beneficiary, uint256 weiAmount) internal view {
         require(beneficiary != address(0), "Crowdsale: beneficiary is the zero address");
         require(weiAmount != 0, "Crowdsale: weiAmount is 0");
@@ -109,8 +195,15 @@ contract Crowdsale {
      * @param beneficiary Address performing the token purchase
      * @param tokenAmount Number of tokens to be emitted
      */
+    /**
+        * @notice precondition beneficiary != address(0)
+        * @notice precondition tokenAmount != 0
+        * @notice precondition _token.balances[address(this)] >= tokenAmount
+        * @notice postcondition _token.balances[beneficiary] == __verifier_old_uint(_token.balances[beneficiary]) + tokenAmount
+        * @notice postcondition _token.balances[address(this)] == __verifier_old_uint(_token.balances[address(this)]) - tokenAmount
+    */
     function _deliverTokens(address beneficiary, uint256 tokenAmount) internal {
-        _token.safeTransfer(beneficiary, tokenAmount);
+        _token.transfer(beneficiary, tokenAmount);
     }
 
     /**
@@ -119,6 +212,13 @@ contract Crowdsale {
      * @param beneficiary Address receiving the tokens
      * @param tokenAmount Number of tokens to be purchased
      */
+    /**
+        * @notice precondition beneficiary != address(0)
+        * @notice precondition tokenAmount != 0
+        * @notice precondition _token.balances[address(this)] >= tokenAmount
+        * @notice postcondition _token.balances[beneficiary] == __verifier_old_uint(_token.balances[beneficiary]) + tokenAmount
+        * @notice postcondition _token.balances[address(this)] == __verifier_old_uint(_token.balances[address(this)]) - tokenAmount
+    */
     function _processPurchase(address beneficiary, uint256 tokenAmount) internal {
         _deliverTokens(beneficiary, tokenAmount);
     }
@@ -145,6 +245,9 @@ contract Crowdsale {
     /**
      * @dev Determines how ETH is stored/forwarded on purchases.
      */
+    /**
+        * @notice postcondition address(this).balance == __verifier_old_uint(address(this).balance) + msg.value
+    */
     function _forwardFunds() internal {
         _wallet.transfer(msg.value);
     }

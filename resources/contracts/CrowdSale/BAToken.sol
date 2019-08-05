@@ -6,7 +6,12 @@ pragma solidity >=0.5.0;
 
 import "./StandardToken.sol";
 import "./SafeMath.sol";
-
+/**
+  @notice simulation BAToken.ethFundDeposit ==  Crowdsale._wallet
+  @notice simulation BAToken.fundingStartBlock == Crowdsale._openingTime
+  @notice simulation BAToken.fundingEndBlock == Crowdsale._closingTime
+  @notice simulation BAToken.isFinalized == Crowdsale._finalized
+ */
 contract BAToken is StandardToken, SafeMath {
 
 
@@ -36,7 +41,7 @@ contract BAToken is StandardToken, SafeMath {
 
     // constructor
     constructor(
-        address _ethFundDeposit,
+        address payable _ethFundDeposit,
         address _batFundDeposit,
         uint256 _fundingStartBlock,
         uint256 _fundingEndBlock) internal
