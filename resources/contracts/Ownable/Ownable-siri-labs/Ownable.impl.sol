@@ -10,11 +10,15 @@ contract Ownable_sirin_labs {
   address internal owner;
 
 
+  /**       @notice modifies owner
+  */
   constructor() public {
     owner = msg.sender;
   }
 
 
+  /**       @notice modifies owner
+  */
   function transferOwnership(address newOwner) public  {
     owner = newOwner;
   }
