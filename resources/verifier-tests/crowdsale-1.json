@@ -1,0 +1,5 @@
+{
+    "description": "BAToken (Basic Attention Token) crowdsale simulates OZ crowdsale",
+    "source": "CrowdSale/BAToken.sol",
+    "target": "CrowdSale/CrowdSale-spec.sol"
+}

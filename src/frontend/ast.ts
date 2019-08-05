@@ -82,7 +82,7 @@ export interface FunctionDefinition extends ContractMember {
 }
 
 export type StateMutability = 'payable' | 'nonpayable' | 'view';
-export type Visibility = 'external' | 'public' | 'private' | 'internal' ;
+export type Visibility = 'external' | 'public' | 'private' | 'internal';
 
 export interface VariableDeclaration extends ContractMember {
     nodeType: 'VariableDeclaration';
