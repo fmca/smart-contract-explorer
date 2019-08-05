@@ -1,5 +1,5 @@
 {
     "description": "Escrow_Stacktical simulates OZ Escrow",
-    "source": "Escrow-impl.sol",
-    "target": "Escrow-spec.sol"
+    "source": "Escrow/Escrow-impl.sol",
+    "target": "Escrow/Escrow-spec.sol"
 }

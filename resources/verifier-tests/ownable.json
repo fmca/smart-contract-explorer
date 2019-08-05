@@ -1,5 +1,5 @@
 {
     "description": "Ownable Sirin Lab simulates OZ Ownable",
-    "source": "Ownable-impl.sol",
-    "target": "Ownable-spec.sol"
+    "source": "Ownable/Ownable-impl.sol",
+    "target": "Ownable/Ownable-spec.sol"
 }

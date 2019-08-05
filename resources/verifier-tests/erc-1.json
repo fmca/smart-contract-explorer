@@ -1,5 +1,5 @@
 {
     "description": "ERC20-moloch simulates OZ ERC20",
-    "source": "ERC20-moloch.sol",
-    "target": "ERC20-spec.sol"
+    "source": "ERC/ERC20-moloch.sol",
+    "target": "ERC/ERC20-spec.sol"
 }

@@ -1,0 +1,5 @@
+{
+    "description": "ERC721-spec simulates OZ ERC721-impl",
+    "source": "ERC/ERC721-impl.sol",
+    "target": "ERC/ERC721-spec.sol"
+}

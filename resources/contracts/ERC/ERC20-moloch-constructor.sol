@@ -25,6 +25,7 @@ pragma solidity >=0.5.0;
  /**
  * @notice simulation  __verifier_eq(Token._balances, ERC20.balances)
  * @notice simulation __verifier_eq(Token._allowed, ERC20.allowances)
+ * @notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
  */
 contract Token {
     //using SafeMath for uint;
@@ -35,6 +36,10 @@ contract Token {
 
     uint internal _totalSupply;
 
+
+    constructor(uint supply) public {
+        mint(msg.sender, supply);
+    }
 
 
     /**
@@ -102,6 +107,7 @@ contract Token {
         @notice modifies _allowed[from]
      */
     function transferFrom(address from, address to, uint value) public {
+         require(_allowed[from][msg.sender] - value >= 0);
         _transfer(from, to, value);
         _approve(from, msg.sender, _allowed[from][msg.sender] - value);
     }
@@ -133,6 +139,7 @@ contract Token {
        @notice modifies _allowed[msg.sender]
      */
     function decreaseAllowance(address spender, uint subtractedValue) public {
+        require(_allowed[msg.sender][spender] - subtractedValue >= 0);
         _approve(msg.sender, spender, _allowed[msg.sender][spender] - subtractedValue);
     }
 
@@ -146,6 +153,7 @@ contract Token {
      */
     function _transfer(address from, address to, uint value) internal {
         require(to != address(0));
+        require(_balances[from] >= value);
 
         _balances[from] = _balances[from] - value;
         _balances[to] = _balances[to] + value;
@@ -175,6 +183,7 @@ contract Token {
      */
     function burn(address account, uint value) internal {
         require(account != address(0));
+        require(_balances[account] >= value);
 
         _totalSupply = _totalSupply - value;
         _balances[account] = _balances[account] - value;
@@ -209,4 +218,3 @@ contract Token {
         _approve(account, msg.sender, _allowed[account][msg.sender] - value);
     }
 }
-
