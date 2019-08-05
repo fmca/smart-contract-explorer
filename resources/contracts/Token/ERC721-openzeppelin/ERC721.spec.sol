@@ -71,8 +71,9 @@ contract ERC721_Spec {
     /** @notice precondition from == _tokenOwner[tokenId]
         @notice precondition to != address(0)
         @notice precondition _ownedTokensCount[from] >= 1
-        @notice postcondition  _ownedTokensCount[from] == __verifier_old_uint(_ownedTokensCount[from]) - 1
-        @notice postcondition  _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to]) + 1
+        @notice postcondition from != to || _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to])
+        @notice postcondition from == to || _ownedTokensCount[from] == __verifier_old_uint(_ownedTokensCount[from]) - 1
+        @notice postcondition from == to || _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to]) + 1
         @notice postcondition  _tokenOwner[tokenId] == to
         @notice modifies _ownedTokensCount[from]
         @notice modifies _ownedTokensCount[to]
@@ -87,8 +88,9 @@ contract ERC721_Spec {
     /** @notice precondition from == _tokenOwner[tokenId]
         @notice precondition to != address(0)
         @notice precondition _ownedTokensCount[from] >= 1
-        @notice postcondition  _ownedTokensCount[from] == __verifier_old_uint(_ownedTokensCount[from]) - 1
-        @notice postcondition  _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to]) + 1
+        @notice postcondition from != to || _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to])
+        @notice postcondition from == to || _ownedTokensCount[from] == __verifier_old_uint(_ownedTokensCount[from]) - 1
+        @notice postcondition from == to || _ownedTokensCount[to] == __verifier_old_uint(_ownedTokensCount[to]) + 1
         @notice postcondition  _tokenOwner[tokenId] == to
         @notice modifies _ownedTokensCount[from]
         @notice modifies _ownedTokensCount[to]
