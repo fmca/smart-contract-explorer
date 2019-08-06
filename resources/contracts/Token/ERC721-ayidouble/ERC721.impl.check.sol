@@ -45,8 +45,10 @@ contract ERC721_Impl {
     /// @notice modifies _tokenApprovals[tokenId]
     function approve(address to, uint256 tokenId) external {
         address owner = ownerOf(tokenId);
+        require(to != owner);
+        require(msg.sender == owner || isApprovedForAll(owner, msg.sender));
         _tokenApprovals[tokenId] = to;
-        // emit Approval(owner, to, tokenId);
+        //emit Approval(owner, to, tokenId);
     }
 
     // require(_exists(tokenId));
