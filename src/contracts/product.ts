@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
 import { Metadata, SourceInfo } from "../frontend/metadata";
-import { Body, Node, Statement, Expression } from '../frontend/ast';
+import { Block, Node, Statement, Expression, normalizedReturn } from '../frontend/ast';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
 import { fieldNames } from './pie';
@@ -84,18 +84,22 @@ function getBodyToExpr(metadata: Metadata) {
     const { name } = metadata;
     const ids = fieldNames(metadata);
 
-    return function bodyToExpr(body: Body): string {
-        const { statements } = body;
+    return function bodyToExpr(block: Block): string {
+        // const { statements: [ stmt, ...rest ] } = block;
+        // if (rest.length > 0 || Statement.isReturn(stmt))
+        //     throw Error('expected single return statement in observation function');
 
-        if (statements.length != 1)
-            throw Error('expected single statement in observation function');
+        debug(`block: %O`, block);
 
-        const [ stmt ] = statements;
+        const expr = normalizedReturn(block);
+        debug(`expr: %O`, expr)
 
-        if (!Statement.isReturn(stmt))
-            throw Error('expected return statement');
+        const prefixed = Expression.prefixIdentifiers(expr, name, ids);
+        debug(`prefixed: %O`, prefixed);
 
-        const expr = Expression.prefixIdentifiers(stmt.expression, name, ids);
-        return Node.toSExpr(expr);
+        const sexpr = Node.toSExpr(prefixed);
+        debug(`sexpr: %O`, sexpr);
+
+        return sexpr;
     }
 }

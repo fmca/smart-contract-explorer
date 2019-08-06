@@ -1,3 +1,5 @@
+import { Expr } from "./sexpr";
+import { State } from "../explore/states";
 
 type NodeType = 'SourceUnit'
     | 'PragmaDirective'
@@ -8,8 +10,11 @@ type NodeType = 'SourceUnit'
     | 'FunctionDefinition'
     | 'VariableDeclaration'
     | 'ParameterList'
+    | 'Block'
     | 'ElementaryTypeName'
     | 'Mapping'
+    | 'IfStatement'
+    | 'ExpressionStatement'
     | 'Return'
     | 'Identifier'
     | 'Literal'
@@ -75,10 +80,15 @@ export interface FunctionDefinition extends ContractMember {
     visibility: Visibility;
 
     name: string;
-    body: Body;
+    body: Block;
     parameters: Parameters;
     returnParameters: ReturnParameters;
     documentation: string;
+}
+
+export interface Block extends Node {
+    nodeType: 'Block';
+    statements: Statement[];
 }
 
 export type StateMutability = 'payable' | 'nonpayable' | 'view';
@@ -138,8 +148,16 @@ export interface Statement extends Node {
 
 }
 
-export interface Body extends Node {
-    statements: Statement[];
+export interface IfStatement extends Statement {
+    nodeType: 'IfStatement';
+    condition: Expression;
+    trueBody: Block;
+    falseBody: Block | null;
+}
+
+export interface ExpressionStatement extends Statement {
+    nodeType: 'ExpressionStatement';
+    expression: Expression;
 }
 
 export interface Return extends Statement {
@@ -183,7 +201,7 @@ export interface MemberAccess extends Operation {
     memberName: string;
 }
 
-export interface Assignment extends Expression {
+export interface Assignment extends Statement {
     nodeType: 'Assignment';
     operator: '=';
     rightHandSide: Expression;
@@ -192,17 +210,21 @@ export interface Assignment extends Expression {
 
 export interface BinaryOperation extends Operation {
     nodeType: 'BinaryOperation';
-    operator: '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>' ;
+    operator: BinaryOperator;
     leftExpression: Expression;
     rightExpression: Expression;
 }
 
+export type BinaryOperator = '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>';
+
 export interface UnaryOperation extends Operation {
     nodeType: 'UnaryOperation';
     prefix : boolean;
-    operator: '-' | '!' | '--' | '++' ;
+    operator: UnaryOperator;
     subExpression: Expression;
 }
+
+export type UnaryOperator = '-' | '!' | '--' | '++';
 
 export interface Conditional extends Expression {
     nodeType: 'Conditional';
@@ -284,8 +306,26 @@ export namespace FunctionDefinition {
 };
 
 export namespace Statement {
+
+    export function isAssignment(s: Statement): s is Assignment {
+        return s.nodeType === 'Assignment';
+    }
+
+    export function isIfStatement(s: Statement): s is IfStatement {
+        return s.nodeType === 'IfStatement';
+    }
+
+    export function isExpressionStatement(s: Statement): s is ExpressionStatement {
+        return s.nodeType === 'ExpressionStatement';
+    }
+
     export function isReturn(s: Statement): s is Return {
         return s.nodeType === 'Return';
+    }
+
+    export function return_(expression: Expression): Return {
+        const node = Node.get('Return');
+        return { ...node, expression };
     }
 }
 
@@ -293,15 +333,66 @@ export namespace Expression {
     export function prefixIdentifiers(expr: Expression, name: string, ids: string[]): Node {
         return new IdentifierPrefixer(name, ids).visit(expr);
     }
+
+    export function isUnary(e: Expression): e is UnaryOperation {
+        return e.nodeType === 'UnaryOperation';
+    }
+
+    export function isBinary(e: Expression): e is BinaryOperation {
+        return e.nodeType === 'BinaryOperation';
+    }
+
+    export function get<T extends NodeType>(nodeType: T, argumentTypes = null, typeDescriptions: TypeDescriptions = { typeIdentifier: '', typeString: '' }): Expression & { nodeType: T } {
+        const node = Node.get(nodeType);
+        return { ...node, argumentTypes, typeDescriptions };
+    }
+
+    export function op<T extends NodeType>(nodeType: T, isConstant = false, isLValue = false, isPure = false) {
+        const expr = get(nodeType);
+        return { ...expr, isConstant, isLValue, isPure };
+    }
+
+    export function unary(operator: UnaryOperator, subExpression: Expression, prefix = true): UnaryOperation {
+        const node = op('UnaryOperation');
+        return { ...node, operator, prefix, subExpression };
+    }
+
+    export function binary(operator: BinaryOperator, leftExpression: Expression, rightExpression: Expression): BinaryOperation {
+        const node = op('BinaryOperation');
+        return { ...node, operator, leftExpression, rightExpression };
+    }
+
+    export const not = (e: Expression) => unary('!', e);
+    export const and = (e1: Expression, e2: Expression) => binary('&&', e1, e2);
+    export const or = (e1: Expression, e2: Expression) => binary('||', e1, e2);
+    export const implies = (e1: Expression, e2: Expression) => or(not(e1), e2);
+
+    export function conjunction([expr, ...exprs]: Expression[]): Expression {
+        return exprs.reduce(and, expr);
+    }
+
+    export function disjunction([expr, ...exprs]: Expression[]): Expression {
+        return exprs.reduce(or, expr);
+    }
+
 }
 
 export namespace Node {
+
+    export function isExpression(e: Node): e is Expression {
+        return e.argumentTypes !== undefined;
+    }
+
     export function toSExpr(node: Node): string {
         return new NodeToSExpr().visit(node);
     }
 
     export function toContract(node: Node): string {
         return new NodeToContract().visit(node);
+    }
+
+    export function get<T extends NodeType>(nodeType: T, id = -1, src = ''): Node & { nodeType: T } {
+        return { nodeType, id, src } as Node & { nodeType: T };
     }
 }
 
@@ -310,6 +401,10 @@ function unimplemented<T>(node: Node): T {
 }
 
 class NodeVisitor<T> {
+
+    visitBlock(node: Block): T {
+        return unimplemented(node);
+    }
 
     visitIdentifier(node: Identifier): T {
         return unimplemented(node);
@@ -327,8 +422,16 @@ class NodeVisitor<T> {
         return unimplemented(node);
     }
 
+    visitIfStatement(node: IfStatement): T {
+        return unimplemented(node);
+    }
+
     visitReturn(node: Return): T {
         return unimplemented(node);
+    }
+
+    visitExpressionStatement(node: ExpressionStatement): T {
+        return unimplemented(node)
     }
 
     visitAssignment(node: Assignment): T {
@@ -353,6 +456,10 @@ class NodeVisitor<T> {
         switch (nodeType) {
             case 'Return':
                 return this.visitReturn(node as Return);
+            case 'IfStatement':
+                return this.visitIfStatement(node as IfStatement);
+            case 'Block':
+                return this.visitBlock(node as Block);
             case 'Identifier':
                 return this.visitIdentifier(node as Identifier);
             case 'IndexAccess':
@@ -490,10 +597,33 @@ class NodeToContract extends NodeVisitor<string> {
     }
 }
 
-class ExpressionSubstituter extends NodeVisitor<Expression> {
+class NodeSubstituter extends NodeVisitor<Node> {
 
-    substitute(expr: Expression): Expression {
-        return this.visit(expr);
+    visitBlock(block: Block): Node {
+        const statements = block.statements.map(s => this.visit(s));
+        return { ...block, statements };
+    }
+
+    visitReturn(stmt: Return): Node {
+        const expression = this.visit(stmt.expression);
+        return { ...stmt, expression };
+    }
+
+    visitExpressionStatement(stmt: ExpressionStatement) {
+        const expression = this.visit(stmt.expression);
+        return { ...stmt, expression };
+    }
+
+    visitAssignment(stmt: Assignment) {
+        const leftHandSide = this.visit(stmt.leftHandSide);
+        const rightHandSide = this.visit(stmt.rightHandSide);
+        return { ...stmt, leftHandSide, rightHandSide };
+    }
+
+    visitIfStatement(stmt: IfStatement): Node {
+        const trueBody = this.visit(stmt.trueBody)
+        const falseBody = stmt.falseBody === null ? null : this.visit(stmt.falseBody);
+        return { ...stmt, trueBody, falseBody }
     }
 
     visitIdentifier(node: Identifier) {
@@ -515,12 +645,6 @@ class ExpressionSubstituter extends NodeVisitor<Expression> {
         return { ...node, exper};
     }
 
-    visitAssignment(node: Assignment) {
-        const rightHandSide = this.visit(node.rightHandSide);
-        const leftHandSide = this.visit(node.leftHandSide);
-        return { ...node, leftHandSide, rightHandSide };
-    }
-
     visitBinaryOperation(node: BinaryOperation) {
         const rightExpression = this.visit(node.rightExpression);
         const leftExpression = this.visit(node.leftExpression);
@@ -540,7 +664,7 @@ class ExpressionSubstituter extends NodeVisitor<Expression> {
     }
 }
 
-class IdentifierPrefixer extends ExpressionSubstituter {
+class IdentifierPrefixer extends NodeSubstituter {
 
     constructor (public name: string, public ids: string[]) {
         super();
@@ -551,4 +675,74 @@ class IdentifierPrefixer extends ExpressionSubstituter {
             ? { ...id, name: `${this.name}.${id.name}` }
             : id;
     }
+}
+
+class ReturnNormalizer extends NodeSubstituter {
+
+    visitIfStatement(stmt: IfStatement) {
+        if (stmt.falseBody !== null)
+            throw Error(`Unexpected else branch: ${stmt.falseBody}`);
+
+        const lhs = stmt.condition;
+        const rhs = this.visit(stmt.trueBody);
+
+        if (!Node.isExpression(rhs))
+            throw Error(`Unexpected right-hand side node: ${rhs.nodeType}`);
+
+        return Expression.implies(lhs, rhs);
+    }
+
+    visitReturn(stmt: Return) {
+        return stmt.expression;
+    }
+
+    visitBlock(block: Block) {
+        const statements = [...block.statements];
+        const last = statements.pop();
+
+        if (last === undefined || !Statement.isReturn(last) || !statements.every(Statement.isIfStatement))
+            throw Error(`Unexpected block: ${block}`);
+
+        const lastExpr = this.visit(last);
+
+        if (!Node.isExpression(lastExpr))
+            throw Error(`Unexpected node: ${lastExpr}`);
+
+        if (statements.length === 0)
+            return lastExpr;
+
+        const nodes = statements.map(s => this.visit(s));
+
+        if (!nodes.every(e => Node.isExpression(e)))
+            throw Error(`Unexpected nodes: ${nodes}`);
+
+        const expressions = nodes as Expression[];
+        const conditions = collectConditions(expressions);
+        console.log(`conditions: %O`, conditions);
+
+        const excluded = Expression.not(Expression.disjunction(conditions));
+        expressions.push(Expression.implies(excluded, lastExpr));
+        const expression = Expression.conjunction(expressions);
+        return expression;
+    }
+}
+
+function collectConditions(exprs: Expression[]): Expression[] {
+    return exprs.map(expr => {
+        if (Expression.isBinary(expr)
+                && expr.operator === '||'
+                && Expression.isUnary(expr.leftExpression)
+                && expr.leftExpression.operator == '!' ) {
+            return expr.leftExpression.subExpression;
+        } else {
+            throw Error(`Unexpected expression: ${expr}`);
+        }
+    });
+}
+
+export function normalizedReturn(block: Block): Expression {
+    const node = new ReturnNormalizer().visit(block);
+    if (!Node.isExpression(node))
+        throw Error(`Unexpected node: ${node}`);
+    return node;
 }
