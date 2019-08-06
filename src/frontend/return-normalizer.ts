@@ -1,6 +1,4 @@
-import { NodeSubstituter } from './ast/substituter';
-import { Expression, not, disjunction, implies, conjunction, isExpression, isBinary, isUnary } from './ast/expression';
-import { Block, Return, IfStatement, isReturn, isIfStatement } from './ast/statement';
+import { NodeSubstituter, Expression, not, disjunction, implies, conjunction, isExpression, isBinary, isUnary, Block, Return, IfStatement, isReturn, isIfStatement } from '../solidity';
 
 export function normalizedReturn(block: Block): Expression {
     const node = new ReturnNormalizer().visit(block);

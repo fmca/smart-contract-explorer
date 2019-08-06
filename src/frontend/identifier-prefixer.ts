@@ -1,6 +1,4 @@
-import { Node } from './ast/node';
-import { NodeSubstituter } from './ast/substituter';
-import { Identifier, Expression } from './ast/expression';
+import { Node, NodeSubstituter, Identifier, Expression  } from '../solidity';
 
 export function prefixIdentifiers(expr: Expression, name: string, ids: string[]): Node {
     return new IdentifierPrefixer(name, ids).visit(expr);

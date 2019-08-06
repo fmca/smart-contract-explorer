@@ -5,7 +5,7 @@ import { Metadata, SourceInfo } from "../frontend/metadata";
 import { prefixIdentifiers } from '../frontend/identifier-prefixer';
 import { normalizedReturn } from '../frontend/return-normalizer';
 import { toSExpr } from '../frontend/node-to-sexpr';
-import { Block } from '../frontend/ast/statement';
+import { Block } from '../solidity';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
 import { fieldNames } from './pie';

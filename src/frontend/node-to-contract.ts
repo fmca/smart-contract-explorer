@@ -1,7 +1,4 @@
-import { Node } from './ast/node';
-import { NodeVisitor } from './ast/visitor';
-import { Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional } from './ast/expression';
-import { Assignment } from './ast/statement';
+import { Node, NodeVisitor, Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, Assignment } from '../solidity';
 
 export function toContract(node: Node): string {
     return new NodeToContract().visit(node);

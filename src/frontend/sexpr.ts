@@ -1,5 +1,4 @@
-import { Node } from './ast/node';
-import { IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from './ast/expression';
+import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from '../solidity';
 
 interface App extends Array<Expr> { }
 export type Expr = App | string;

@@ -1,6 +1,6 @@
 import { ABIDefinition, ABIDataTypes } from 'web3/eth/abi';
 import Contract from 'web3/eth/contract';
-import { SourceUnit, ContractMember, SourceUnitElement, ContractDefinition } from './ast/declaration';
+import { SourceUnit, ContractMember, SourceUnitElement, ContractDefinition } from '../solidity';
 import { UserDoc } from './solc';
 
 import { Debugger } from '../utils/debug';

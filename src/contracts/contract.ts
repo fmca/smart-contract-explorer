@@ -3,8 +3,7 @@ import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { isElementaryTypeName } from '../frontend/ast/type'
-import { VariableDeclaration, ContractMember, FunctionDefinition, Parameters, ReturnParameters } from "../frontend/ast/declaration";
+import { isElementaryTypeName, VariableDeclaration, ContractMember, FunctionDefinition, Parameters, ReturnParameters } from "../solidity";
 
 const { isVariableDeclaration } = ContractMember;
 const { getMethodSpec, getContractSpec } = Metadata;

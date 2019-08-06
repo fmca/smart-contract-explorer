@@ -1,5 +1,4 @@
-import { TypeName, ElementaryType } from '../frontend/ast/type';
-import { VariableDeclaration, ContractMember } from "../frontend/ast/declaration";
+import { TypeName, ElementaryType, VariableDeclaration, ContractMember } from "../solidity";
 import { Metadata } from "../frontend/metadata";
 
 const { isVariableDeclaration } = ContractMember;

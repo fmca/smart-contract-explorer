@@ -1,7 +1,6 @@
 import { toContract } from '../frontend/node-to-contract';
 import { toSExpr } from '../frontend/node-to-sexpr';
-import { IndexAccess, Identifier, BinaryOperation } from '../frontend/ast/expression';
-import { Assignment } from '../frontend/ast/statement';
+import { IndexAccess, Identifier, BinaryOperation, Assignment } from '../solidity';
 import assert from 'assert';
 
 describe('ast', function() {
