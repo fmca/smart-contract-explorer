@@ -45,7 +45,7 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
 
 async function internalize(file: string, dir: string): Promise<SourceInfo & { original: string }> {
     const name = path.basename(file, '.sol');
-    const loc = path.join(dir, `${name}-internalized.sol`);
+    const loc = path.join(dir, `${name}.internalized.sol`);
     const buffer = await fs.readFile(file);
     const original = buffer.toString();
     const content = original.replace(/\bpublic*\s*payable\b/g, 'internal')

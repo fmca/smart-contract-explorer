@@ -242,7 +242,7 @@ class Context {
 
 async function exemplify(file: string, dir: string): Promise<SourceInfo & { original: string }> {
     const name = path.basename(file, '.sol');
-    const loc = path.join(dir, `${name}-exemplified.sol`);
+    const loc = path.join(dir, `${name}.exemplified.sol`);
     const buffer = await fs.readFile(file);
     const original = buffer.toString();
     const content = original.replace(/\bexternal\b/g, 'public');
