@@ -72,6 +72,7 @@ export interface SourceLocation {
 }
 
 export function compile(input: Input): Output {
+    debug(`compile(%O)`, input);
     const json = JSON.stringify(input);
     const [ sourceName ] = Object.keys(input.sources);
     const { sources: { [sourceName]: { content }} } = input;
@@ -82,6 +83,6 @@ export function compile(input: Input): Output {
 
 
 function findImports (path: string) {
-    debug(`file name is: %s`, path);
-    return  {contents: fs.readFileSync(path, "utf8")};
+    debug(`findImports(%s)`, path);
+    return { contents: fs.readFileSync(path, "utf8") };
 }
