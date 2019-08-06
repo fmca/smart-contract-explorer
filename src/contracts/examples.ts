@@ -1,13 +1,15 @@
+import fs from 'fs-extra';
+import path from 'path';
 import { State } from '../explore/states';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
 import { Explorer, Transition } from '../explore/explorer';
-import { Metadata } from '../frontend/metadata';
+import { Metadata, SourceInfo } from '../frontend/metadata';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, SimulationContractInfo, ContractInfo, ExampleGenerator } from './contract';
+import { SimulationExamplesContract, ContractInfo, ExampleGenerator } from './contract';
 import * as Pie from './pie';
 import { SimulationCounterExample } from '../explore/counterexample';
 
@@ -22,9 +24,15 @@ interface Parameters {
     output: ContractInfo
 }
 
-interface Result extends SimulationContractInfo {
+interface Result {
+    contract: SourceInfo;
+    examples: AbstractExamples;
     fields: string[];
     seedFeatures: string[];
+    exemplified: {
+        source: SourceInfo,
+        target: SourceInfo
+    }
 }
 
 type Kind = 'positive' | 'negative';
@@ -34,6 +42,11 @@ export type AbstractExample = {
         contract: string;
         method: string;
     }
+}
+
+export type AbstractExamples = {
+    positive: AbstractExample[];
+    negative: AbstractExample[];
 }
 
 export type SimulationExample = {
@@ -101,17 +114,24 @@ export class Examples {
 
     static async generate(parameters: Parameters): Promise<Result> {
         const { paths, states, output: info } = parameters;
-        const source = await Compile.fromFile(paths.source);
-        const target = await Compile.fromFile(paths.target);
-        const contract = new SimulationExamplesContract(source, target, info, Examples.getExamples(states));
-        const { metadata, examples } = await contract.get();
+        const dir = path.dirname(info.path);
+        const se = await exemplify(paths.source, dir);
+        const te = await exemplify(paths.target, dir);
+        const exemplified = {
+            source: se,
+            target: te
+        };
+        const s = await Compile.fromString({ ...exemplified.source, content: se.original });
+        const t = await Compile.fromString({ ...exemplified.target, content: te.original });
+        const contract = new SimulationExamplesContract(s, t, info, Examples.getExamples(states));
+        const { examples } = contract;
 
         const fields = [
-            ...Pie.fieldDecls(source).map(f => `${source.name}.${f}`),
-            ...Pie.fieldDecls(target).map(f => `${target.name}.${f}`)
+            ...Pie.fieldDecls(s).map(f => `${s.name}.${f}`),
+            ...Pie.fieldDecls(t).map(f => `${t.name}.${f}`)
         ];
-        const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
-        return { metadata, examples, fields, seedFeatures };
+        const seedFeatures = getProductSeedFeatures(s, t).map(([f,_]) => f);
+        return { contract: await contract.getSourceInfo(), exemplified, examples, fields, seedFeatures };
     }
 
     static getExamples(states: number): ExampleGenerator {
@@ -218,4 +238,13 @@ class Context {
         }
     }
 
+}
+
+async function exemplify(file: string, dir: string): Promise<SourceInfo & { original: string }> {
+    const name = path.basename(file, '.sol');
+    const loc = path.join(dir, `${name}-exemplified.sol`);
+    const buffer = await fs.readFile(file);
+    const original = buffer.toString();
+    const content = original.replace(/\bexternal\b/g, 'public');
+    return { path: loc, content, original };
 }

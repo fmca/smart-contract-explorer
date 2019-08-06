@@ -34,6 +34,9 @@ function primitiveType(name: ElementaryType) {
         case 'bool':
             return 'Bool';
 
+        case 'bytes4':
+            return 'Int';
+
         case 'int':
             return 'Int';
 

@@ -46,11 +46,12 @@ async function main() {
 
         const output = { name: 'SimulationExamples', path: path.join(dir, 'SimulationExamples.sol') };
         const paths = { source: source!, target: target! };
-        const { metadata, examples: { positive, negative }, fields, seedFeatures } = await Examples.generate({ paths, output, states });
-        const { source: { path: p, content } } = metadata;
+        const { contract, examples: { positive, negative }, fields, seedFeatures, exemplified } = await Examples.generate({ paths, output, states });
 
         await fs.mkdirp(dir);
-        await fs.writeFile(p, content);
+        for (const { path, content } of [contract, ...Object.values(exemplified)])
+            await fs.writeFile(path, content);
+
         await fs.writeFile(path.join(dir, `positive-examples.txt`), positive.map(e => `${JSON.stringify(e)}\n`).join(''));
         await fs.writeFile(path.join(dir, `negative-examples.txt`), negative.map(e => `${JSON.stringify(e)}\n`).join(''));
         await fs.writeFile(path.join(dir, `fields.txt`), fields.join(`\n`) + '\n');

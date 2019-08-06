@@ -1,6 +1,6 @@
 import { Metadata, SourceInfo } from "../frontend/metadata";
 import { Operation } from "../explore/states";
-import { AbstractExample, SimulationExample } from "./examples";
+import { AbstractExample, SimulationExample, AbstractExamples } from "./examples";
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { isElementaryTypeName, VariableDeclaration, ContractMember, FunctionDefinition, Parameters, ReturnParameters } from "../solidity";
@@ -123,16 +123,6 @@ abstract class ProductContract extends Contract {
     abstract async getBody(): Promise<string[]>;
 }
 
-interface Examples {
-    positive: AbstractExample[];
-    negative: AbstractExample[];
-}
-
-export interface SimulationContractInfo {
-    metadata: Metadata;
-    examples: Examples;
-};
-
 export type ExampleGenerator = (s: Metadata, t: Metadata) => AsyncIterable<SimulationExample>;
 
 export interface ContractInfo {
@@ -141,16 +131,10 @@ export interface ContractInfo {
 }
 
 export class SimulationExamplesContract extends ProductContract {
-    public examples: Examples = { positive: [], negative: [] };
+    public examples: AbstractExamples = { positive: [], negative: [] };
 
     constructor(public source: Metadata, public target: Metadata, public info: ContractInfo, public gen: ExampleGenerator) {
         super(source, target, info);
-    }
-
-    async get(): Promise<SimulationContractInfo> {
-        const metadata = await this.getMetadata();
-        const { examples } = this;
-        return { metadata, examples };
     }
 
     async getBody(): Promise<string[]> {
