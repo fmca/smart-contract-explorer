@@ -1,6 +1,6 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
-import { toContract } from '../frontend/utils';
+import { toContract } from '../frontend/node-to-contract';
 import { Expr } from "../frontend/sexpr";
 import { Debugger } from '../utils/debug';
 

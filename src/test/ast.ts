@@ -1,4 +1,5 @@
-import { toSExpr, toContract } from '../frontend/utils';
+import { toContract } from '../frontend/node-to-contract';
+import { toSExpr } from '../frontend/node-to-sexpr';
 import { IndexAccess, Identifier, BinaryOperation } from '../frontend/ast/expression';
 import { Assignment } from '../frontend/ast/statement';
 import assert from 'assert';
