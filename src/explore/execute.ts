@@ -4,6 +4,7 @@ import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
 import { Address, Contract, Metadata } from '../frontend/metadata';
 import { BlockchainInterface } from '../utils/chain';
+import { Runtime } from 'inspector';
 
 const debug = Debugger(__filename);
 
@@ -38,19 +39,26 @@ export class Executor {
         return new State(contractId, trace, observation);
     }
 
-    async execute(state: State, invocation: Invocation): Promise<Effect> {
+    async execute(state: State, invocation: Invocation): Promise<Effect | ErrorResult> {
         const { contractId, trace: t } = state;
         const context = await this.createContext();
 
         await context.replayTrace(t);
-        const result = await context.invoke(invocation);
-        const operation = new Operation(invocation, result);
-        const operations = [...t.operations, operation];
-        const trace = new Trace(operations);
+        try {
+            const result = await context.invoke(invocation);
+            const operation = new Operation(invocation, result);
+            const operations = [...t.operations, operation];
+            const trace = new Trace(operations);
 
-        const observation = await this.getObservation(context);
-        const nextState = new State(contractId, trace, observation);
-        return { operation, state: nextState };
+            const observation = await this.getObservation(context);
+            const nextState = new State(contractId, trace, observation);
+            return { operation, state: nextState };
+
+        } catch (e) {
+            if (isErrorResult(e))
+                return e;
+            throw e;
+        }
     }
 
     async executeTrace(trace: Trace): Promise<State> {
@@ -80,15 +88,24 @@ export class Context {
         debug(`replaying trace: %s`, trace);
         const { operations } = trace;
         const invocations = operations.map(({ invocation }) => invocation);
-        return this.invokeSequence(invocations);
+        const result = await this.invokeSequence(invocations)
+        if (isErrorResult(result))
+            throw Error(`Unexpected error result: ${result.error}`);
+        return result;
     }
 
-    async invokeSequence(invocations: Invocation[]): Promise<Result> {
+    async invokeSequence(invocations: Invocation[]): Promise<Result | ErrorResult> {
         debug(`invoking sequence: %o`, invocations);
         let result = new Promise<Result>((resolve, _) => resolve(new Result()));
-        for (const invocation of invocations)
-            result = this.invoke(invocation);
-        return result;
+        try {
+            for (const invocation of invocations)
+                result = this.invoke(invocation);
+            return result;
+        } catch (e) {
+            if (!isErrorResult(e))
+                throw e;
+            return e;
+        }
     }
 
     async invoke(invocation: Invocation): Promise<Result> {
@@ -107,8 +124,25 @@ export class Context {
         const tx = this.contract.methods[name!](...inputs);
         const gas = await tx.estimateGas() * 10;
 
-        debug(`sending transaction from %o with gas %o`, from, gas);
-        await tx.send({ from, gas });
+        try {
+            debug(`sending transaction from %o with gas %o`, from, gas);
+            await tx.send({ from, gas });
+
+        } catch (e) {
+            if (!isRuntimeError(e))
+                throw e;
+
+            const results = Object.values(e.results);
+            if (results.length !== 1)
+                throw Error(`Unexpected result count: ${results.length}`);
+
+            const [ result ] = results;
+
+            if (result.error !== 'revert')
+                throw Error(`Unexpected error: ${result.error}`);
+
+            throw result;
+        }
         return new Result();
     }
 
@@ -135,4 +169,39 @@ export class Context {
 
         return new Observation(operations);
     }
+}
+
+interface RuntimeError {
+    name: string;
+    results: Results;
+    hashes: string[];
+    message: string;
+}
+
+interface Results {
+    [key: string]: TransactionResult;
+}
+
+type TransactionResult = ErrorResult;
+
+interface ErrorResult {
+    error: Error;
+    program_counter: number;
+    return: string;
+    reason: string;
+}
+
+type Error = 'revert';
+
+function isRuntimeError(error: any): error is RuntimeError {
+    return ['name', 'results', 'hashes', 'message'].every(key => error[key] !== undefined);
+}
+
+function isResults(results: any): results is Results {
+    const values = Object.values(results);
+    return values.every(isErrorResult);
+}
+
+export function isErrorResult(result: any): result is ErrorResult {
+    return result.reason !== undefined;
 }

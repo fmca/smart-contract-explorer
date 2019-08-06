@@ -2,13 +2,14 @@ import { Debugger } from '../utils/debug';
 import { Expr } from '../frontend/sexpr';
 import { State, Operation, Result, Trace, Observation } from '../explore/states';
 import * as Compile from '../frontend/compile';
-import { ExecutorFactory, Context } from '../explore/execute';
+import { ExecutorFactory, Context, isErrorResult } from '../explore/execute';
 import { Invocation } from '../explore/invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from './extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
+import { isError } from 'util';
 
 const debug = Debugger(__filename);
 
@@ -111,7 +112,12 @@ class ExtensionEvaluation extends Evaluation {
         const executor = this.executorFactory.getExecutor(extension);
         const state = ExtensionEvaluation.getState(extension, stateMethod);
         const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);
-        const { operation } = await executor.execute(state, invocation);
+        const result = await executor.execute(state, invocation);
+
+        if (isErrorResult(result))
+            throw Error(`Unexpected error result: ${result.error}`);
+
+        const { operation } = result;
         return operation;
     }
 

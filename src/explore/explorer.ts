@@ -1,5 +1,5 @@
 import { State, Operation } from './states';
-import { ExecutorFactory } from './execute';
+import { ExecutorFactory, isErrorResult } from './execute';
 import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from './invocations';
 import { Address, Metadata } from '../frontend/metadata';
@@ -43,7 +43,12 @@ export class Explorer {
                 if (!limiter.accept(pre, invocation))
                     continue;
 
-                const { operation, state: post } = await executer.execute(pre, invocation);
+                const result = await executer.execute(pre, invocation);
+
+                if (isErrorResult(result))
+                    continue;
+
+                const { operation, state: post } = result;
                 const transition = { pre, operation, post };
                 debug(transition);
                 yield transition;
