@@ -2,10 +2,10 @@ import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
 import { Metadata, SourceInfo } from "../frontend/metadata";
-import { FunctionDefinition, Return, Node } from '../frontend/ast';
-import * as Pie from './pie';
+import { Body, Node, Statement, Expression } from '../frontend/ast';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
+import { fieldNames } from './pie';
 
 const debug = Debugger(__filename);
 
@@ -52,65 +52,50 @@ async function internalize(file: string, dir: string): Promise<SourceInfo & { or
     return { path: loc, content, original };
 }
 
-export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,string][] {
+export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string, string][] {
+    const features: [string, string][] = [];
+    const specBodyToExpr = getBodyToExpr(spec);
+    const implBodyToExpr = getBodyToExpr(impl);
 
-    const spec_contractMembers = spec.members;
-    const impl_contractMembers = impl.members;
+    for (const m1 of Metadata.getFunctions(spec)) {
+        if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
+            continue;
 
-    const spec_fieldsNames = Pie.fieldNames(spec);
-    const impl_fieldsNames = Pie.fieldNames(impl);
+        const { name, body: b1 } = m1;
+        const m2 = Metadata.findFunction(name, impl);
 
-    const spec_contractName = spec.name;
-    const impl_contractName = impl.name;
+        if (m2 === undefined)
+            continue;
 
-    const seed_features : [string,string][] = [];
+        if (m2.visibility !== 'public' || m2.stateMutability !== 'view')
+            continue;
 
-    for (const spec_node of spec_contractMembers)
-    {
-        if(spec_node.nodeType === 'FunctionDefinition')
-        {
-            const spec_func = spec_node as FunctionDefinition;
-
-            if(spec_func.visibility === 'public' && spec_func.stateMutability === 'view')
-            {
-                for (const impl_node of impl_contractMembers)
-                {
-                    if(impl_node.nodeType === 'FunctionDefinition')
-                    {
-                        const impl_func = impl_node as FunctionDefinition;
-
-                        if(impl_func.name === spec_func.name && impl_func.visibility === 'public' && impl_func.stateMutability === 'view')
-                        {
-                            if(spec_func.body.statements.length != 1 || spec_func.body.statements.length != impl_func.body.statements.length)
-                                throw Error('expected single statement in observation function');
-
-                            const spec_statement = spec_func.body.statements[0];
-                            const impl_statement = impl_func.body.statements[0];
-
-                            if(spec_statement.nodeType != 'Return' || impl_statement.nodeType != 'Return')
-                                throw Error('expected return statement');
-
-                            const return_spec = spec_statement as Return;
-                            debug(`return_spec: %o`, return_spec);
-                            const return_impl = impl_statement as Return;
-                            debug(`return_impl: %o`, return_impl);
-
-
-                            const spec_expression = Node.addPrefixToNode(return_spec.expression,spec_contractName,spec_fieldsNames);
-                            const impl_expression = Node.addPrefixToNode(return_impl.expression,impl_contractName,impl_fieldsNames);
-
-                            const spec_exper = Node.toSExpr(spec_expression);
-                            const impl_exper = Node.toSExpr(impl_expression);
-
-                            const seed_feature = `(= ${spec_exper} ${impl_exper})`;
-
-                            seed_features.push([seed_feature,spec_func.name]);
-                        }
-                    }
-                }
-            }
-        }
+        const { body: b2 } = m2;
+        const e1 = specBodyToExpr(b1);
+        const e2 = implBodyToExpr(b2);
+        const feature = `(= ${e1} ${e2})`;
+        features.push([feature, name]);
     }
 
-    return seed_features;
+    return features;
+}
+
+function getBodyToExpr(metadata: Metadata) {
+    const { name } = metadata;
+    const ids = fieldNames(metadata);
+
+    return function bodyToExpr(body: Body): string {
+        const { statements } = body;
+
+        if (statements.length != 1)
+            throw Error('expected single statement in observation function');
+
+        const [ stmt ] = statements;
+
+        if (!Statement.isReturn(stmt))
+            throw Error('expected return statement');
+
+        const expr = Expression.prefixIdentifiers(stmt.expression, name, ids);
+        return Node.toSExpr(expr);
+    }
 }

@@ -262,6 +262,14 @@ export namespace FunctionDefinition {
         return method.name === '';
     }
 
+    export function visibility(method: FunctionDefinition) {
+        return method.visibility;
+    }
+
+    export function mutability(method: FunctionDefinition) {
+        return method.stateMutability;
+    }
+
     export function * parameters(method: FunctionDefinition) {
         const { parameters: { parameters } } = method;
         for (const parameter of parameters)
@@ -275,13 +283,21 @@ export namespace FunctionDefinition {
     }
 };
 
+export namespace Statement {
+    export function isReturn(s: Statement): s is Return {
+        return s.nodeType === 'Return';
+    }
+}
+
+export namespace Expression {
+    export function prefixIdentifiers(expr: Expression, name: string, ids: string[]): Node {
+        return new IdentifierPrefixer(name, ids).visit(expr);
+    }
+}
+
 export namespace Node {
     export function toSExpr(node: Node): string {
         return new NodeToSExpr().visit(node);
-    }
-
-    export function addPrefixToNode(node: Node, contractName: string, contractFields: string[]): Node {
-        return new AddPrefixToNode(contractName, contractFields).visit(node);
     }
 
     export function toContract(node: Node): string {
@@ -474,26 +490,13 @@ class NodeToContract extends NodeVisitor<string> {
     }
 }
 
-class AddPrefixToNode extends NodeVisitor<Expression> {
+class ExpressionSubstituter extends NodeVisitor<Expression> {
 
-    contractFields: string[];
-    contractName: string;
-
-    constructor (contractName: string, contractFields: string[])
-    {
-        super();
-        this.contractFields = contractFields;
-        this.contractName = contractName;
+    substitute(expr: Expression): Expression {
+        return this.visit(expr);
     }
 
     visitIdentifier(node: Identifier) {
-
-        if(this.contractFields.includes(node.name))
-        {   const newNode = node;
-            newNode.name = `${this.contractName}.${newNode.name}`
-            return newNode;
-        }
-
         return node;
     }
 
@@ -534,5 +537,18 @@ class AddPrefixToNode extends NodeVisitor<Expression> {
         const trueExpression = this.visit(node.trueExpression);
         const falseExpression = this.visit(node.falseExpression);
         return { ...node, condition, trueExpression, falseExpression };
+    }
+}
+
+class IdentifierPrefixer extends ExpressionSubstituter {
+
+    constructor (public name: string, public ids: string[]) {
+        super();
+    }
+
+    visitIdentifier(id: Identifier) {
+        return this.ids.includes(id.name)
+            ? { ...id, name: `${this.name}.${id.name}` }
+            : id;
     }
 }
