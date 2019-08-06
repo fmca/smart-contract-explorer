@@ -2,7 +2,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
 import { Metadata, SourceInfo } from "../frontend/metadata";
-import { Block, Node, Statement, Expression, normalizedReturn } from '../frontend/ast';
+import { normalizedReturn, toSExpr, prefixIdentifiers } from '../frontend/utils';
+import { Block } from '../frontend/ast/statement';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
 import { fieldNames } from './pie';
@@ -94,10 +95,10 @@ function getBodyToExpr(metadata: Metadata) {
         const expr = normalizedReturn(block);
         debug(`expr: %O`, expr)
 
-        const prefixed = Expression.prefixIdentifiers(expr, name, ids);
+        const prefixed = prefixIdentifiers(expr, name, ids);
         debug(`prefixed: %O`, prefixed);
 
-        const sexpr = Node.toSExpr(prefixed);
+        const sexpr = toSExpr(prefixed);
         debug(`sexpr: %O`, sexpr);
 
         return sexpr;

@@ -3,10 +3,10 @@ import { Operation } from "../explore/states";
 import { AbstractExample, SimulationExample } from "./examples";
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
-import { VariableDeclaration, ContractMember, TypeName, FunctionDefinition, Parameters, ReturnParameters } from "../frontend/ast";
+import { isElementaryTypeName } from '../frontend/ast/type'
+import { VariableDeclaration, ContractMember, FunctionDefinition, Parameters, ReturnParameters } from "../frontend/ast/declaration";
 
 const { isVariableDeclaration } = ContractMember;
-const { isElementaryTypeName } = TypeName;
 const { getMethodSpec, getContractSpec } = Metadata;
 
 const debug = Debugger(__filename);
@@ -338,7 +338,7 @@ export class SimulationCheckingContract extends ProductContract {
             const lhs = `${this.source.name}_ret_${i}`;
             const rhs = `${this.target.name}_ret_${i}`;
 
-            if (TypeName.isElementaryTypeName(typeName))
+            if (isElementaryTypeName(typeName))
                 expressions.push(`${lhs} == ${rhs}`);
             else
                 expressions.push(`__verifier_eq(${lhs}, ${rhs})`);

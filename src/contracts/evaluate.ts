@@ -9,8 +9,6 @@ import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from './extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
-import { Value } from '../explore/values';
-import { Expression } from '../frontend/ast';
 
 const debug = Debugger(__filename);
 

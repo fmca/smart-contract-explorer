@@ -1,5 +1,5 @@
 import { Method } from './metadata';
-import { SourceUnit } from './ast';
+import { SourceUnit } from './ast/declaration';
 import fs from 'fs-extra';
 import { Debugger } from './../utils/debug';
 

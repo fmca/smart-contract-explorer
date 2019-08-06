@@ -2,7 +2,6 @@ import fs from 'fs-extra';
 import { Debugger } from '../utils/debug';
 import * as Solc from './solc';
 import { Metadata, SourceInfo } from './metadata';
-import { SourceUnit } from './ast';
 
 const debug = Debugger(__filename);
 

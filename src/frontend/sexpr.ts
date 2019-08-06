@@ -1,4 +1,5 @@
-import { Node, IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from './ast';
+import { Node } from './ast/node';
+import { IndexAccess, Identifier, BinaryOperation, UnaryOperation, Literal, Conditional, Expression } from './ast/expression';
 
 interface App extends Array<Expr> { }
 export type Expr = App | string;
