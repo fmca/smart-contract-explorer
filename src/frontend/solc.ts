@@ -51,8 +51,25 @@ export interface Output {
             }
         }
     };
-    errors?: { formattedMessage: string }[];
+    errors?: Error[];
 };
+
+export interface Error {
+    component: string;
+    formattedMessage: string;
+    message: string;
+    type: ErrorType;
+    severity: Severity;
+    sourceLocation: SourceLocation;
+}
+
+export type ErrorType = 'Warning' | 'Error';
+export type Severity = 'warning' | 'error';
+export interface SourceLocation {
+    file: string;
+    start: number;
+    end: number;
+}
 
 export function compile(input: Input): Output {
     const json = JSON.stringify(input);

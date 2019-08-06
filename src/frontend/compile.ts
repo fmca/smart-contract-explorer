@@ -34,8 +34,12 @@ export function fromString(source: SourceInfo): Metadata {
 
 function handleErrors(output: Solc.Output): void {
     const { sources, errors } = output;
+    debug(`errors: %O`, errors);
 
-    if (errors !== undefined) {
+    if (errors === undefined)
+        return;
+
+    if (errors.some(({ severity }) => severity === 'error')) {
         const filenames = Object.keys(sources);
         const messages = [
             `could not compile contracts from ${filenames.join(', ')}`,
@@ -43,6 +47,9 @@ function handleErrors(output: Solc.Output): void {
         ]
         throw Error(messages.join('\n'));
     }
+
+    for (const { formattedMessage } of errors)
+        console.error(formattedMessage);
 }
 
 function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
