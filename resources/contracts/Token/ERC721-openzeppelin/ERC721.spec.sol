@@ -80,7 +80,7 @@ contract ERC721_Spec {
         @notice modifies _tokenOwner[tokenId]
         @notice modifies _tokenApprovals[tokenId]
     */
-    function transferFrom(address from, address to, uint tokenId) public payable {
+    function transferFrom(address from, address to, uint tokenId) public {
         _transferFrom(from, to, tokenId);
     }
 
