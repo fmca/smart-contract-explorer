@@ -1,6 +1,6 @@
 import { ABIDefinition, ABIDataTypes } from 'web3/eth/abi';
 import Contract from 'web3/eth/contract';
-import { SourceUnit, ContractMember, SourceUnitElement, ContractDefinition } from '../solidity';
+import { SourceUnit, ContractMember, SourceUnitElement, ContractDefinition, FunctionDefinition } from '../solidity';
 import { UserDoc } from './solc';
 
 import { Debugger } from '../utils/debug';
@@ -31,7 +31,7 @@ export interface MethodSpec {
 }
 
 export namespace Method {
-    export function equals(m1: Method, m2: Method): boolean {
+    export function equals(m1: FunctionDefinition, m2: FunctionDefinition): boolean {
         return JSON.stringify(m1) === JSON.stringify(m2);
     }
 }

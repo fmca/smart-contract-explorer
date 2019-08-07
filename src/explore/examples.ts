@@ -13,6 +13,8 @@ import * as Pie from '../sexpr/pie';
 import { SimulationCounterExample } from './counterexample';
 import { exemplify } from '../contracts/rewriting';
 import { ValueGenerator } from './values';
+import { FunctionMapping } from './mapping';
+import { InvocationGenerator } from './invocations';
 
 const debug = Debugger(__filename);
 
@@ -71,16 +73,21 @@ export class Examples {
         const context = new Context();
         const { limiters } = this;
         const workList: SimulationExample[] = [];
+        const mapping = FunctionMapping.getMapping(source, target);
+        const si = new InvocationGenerator([...mapping.sources()], this.explorer.accounts);
+        const ti = new InvocationGenerator([...mapping.targets()], this.explorer.accounts);
+        const sourceParams = { metadata: source, limiters, invocationGenerator: si };
+        const targetParams = { metadata: target, limiters, invocationGenerator: ti };
 
         debug(`exploring source states`);
 
-        for await (const transition of this.explorer.transitions({ metadata: source, limiters })) {
+        for await (const transition of this.explorer.transitions(sourceParams)) {
             context.addSource(transition);
         }
 
         debug(`exploring target states`);
 
-        for await (const transition of this.explorer.transitions({ metadata: target, limiters })) {
+        for await (const transition of this.explorer.transitions(targetParams)) {
             const { post: t } = transition;
             context.addTarget(transition);
 

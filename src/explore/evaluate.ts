@@ -3,7 +3,7 @@ import { Expr } from '../sexpr/expression';
 import { State, Operation, Result, Trace, Observation } from './states';
 import * as Compile from '../frontend/compile';
 import { ExecutorFactory, Context, isErrorResult } from './execute';
-import { Invocation } from './invocations';
+import { Invocation, InvocationGenerator } from './invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
@@ -108,7 +108,8 @@ class ExtensionEvaluation extends Evaluation {
         const { id: { contract, method: stateMethod } } = example;
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
-        const executor = this.executorFactory.getExecutor(extension);
+        const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+        const executor = this.executorFactory.getExecutor(invocationGenerator, extension);
         const state = ExtensionEvaluation.getState(extension, stateMethod);
         const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);
         const result = await executor.execute(state, invocation);
@@ -129,8 +130,8 @@ class ExtensionEvaluation extends Evaluation {
         return state;
     }
 
-    static getInvocation({ abi }: Metadata, methodName: string): Invocation {
-        const method = abi.find(({ name }) => name === methodName);
+    static getInvocation(metadata: Metadata, methodName: string): Invocation {
+        const method = Metadata.findFunction(methodName, metadata);
         if (method === undefined)
             throw Error(`method ${methodName} not found`);
         return new Invocation(method);
@@ -150,7 +151,8 @@ class CachingEvaluation extends Evaluation {
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
         const { metadata, context: { contract: { options: { address }}}} = await this.getExample(example);
         const context = await this.getExpression(expression, metadata);
-        const { contract: { options: { jsonInterface: [method] }} } = context;
+        const { metadata: m } = context;
+        const [method] = [...Metadata.getFunctions(m)];
         const invocation = new Invocation(method, address);
         const result = await context.invokeReadOnly(invocation);
         const operation = new Operation(invocation, result);
@@ -164,9 +166,10 @@ class CachingEvaluation extends Evaluation {
             debug(`caching example: %o`, example);
             const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
-            const executor = this.executorFactory.getExecutor(metadata);
+            const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+            const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
             const context = await executor.createContext();
-            const method = metadata.abi.find(({ name }) => name === methodName);
+            const method = Metadata.findFunction(methodName, metadata);
             if (method === undefined)
                 throw Error(`unknown method: ${methodName}`);
             const invocation = new Invocation(method);
@@ -183,7 +186,8 @@ class CachingEvaluation extends Evaluation {
         if (!this.expressionCache.has(key)) {
             debug(`caching expression: %o`, expression);
             const metadata = await expressionEvaluator(expression, examples);
-            const executor = this.executorFactory.getExecutor(metadata);
+            const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+            const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
             const context = await executor.createContext();
             this.expressionCache.set(key, context);
         }

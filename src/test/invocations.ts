@@ -2,7 +2,7 @@ import * as Compile from '../frontend/compile';
 import * as Chain from '../utils/chain';
 import assert from 'assert';
 import { InvocationGenerator } from '../explore/invocations';
-import { Address } from '../frontend/metadata';
+import { Address, Metadata } from '../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
@@ -25,7 +25,7 @@ describe('invocation generation', function() {
 
     it (`includes only public members`, async function() {
         for await (const { method: { name } } of generator.invocations()) {
-            assert.ok( name === 'get' || name === 'set' );
+            assert.ok( name === 'get' || name === 'set' , `unexpected method: ${name}`);
         }
     });
 
@@ -63,6 +63,6 @@ describe('invocation generation', function() {
 async function getGenerator(content: string, accounts: Address[]) {
     const path = `c.sol`;
     const metadata = await Compile.fromString({ path, content });
-    const generator = new InvocationGenerator(metadata, accounts);
+    const generator = new InvocationGenerator([...Metadata.getFunctions(metadata)], accounts);
     return generator;
 }

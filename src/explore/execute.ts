@@ -22,14 +22,19 @@ export class ExecutorFactory {
         this.accounts = chain.accounts;
      }
 
-    getExecutor(metadata: Metadata): Executor {
+    getExecutor(invocationGenerator: InvocationGenerator, metadata: Metadata): Executor {
         const [ account ] = this.accounts;
-        return new Executor(this.creator, this.accounts, metadata, account);
+        return new Executor(this.creator, invocationGenerator, this.accounts, metadata, account);
     }
 }
 
 export class Executor {
-    constructor(public creator: ContractCreator, public accounts: Address[], public metadata: Metadata, public account: Address) { }
+    constructor(
+        public creator: ContractCreator,
+        public invocationGenerator: InvocationGenerator,
+        public accounts: Address[],
+        public metadata: Metadata,
+        public account: Address) { }
 
     async initial(): Promise<State> {
         const context = await this.createContext();
@@ -70,19 +75,19 @@ export class Executor {
     }
 
     async getObservation(context: Context): Promise<Observation> {
-        const observers = new InvocationGenerator(this.metadata, this.accounts).observers();
+        const observers = this.invocationGenerator.observers();
         const observation = await context.observe(observers);
         return observation;
     }
 
     async createContext(): Promise<Context> {
         const contract = await this.creator.create(this.metadata);
-        return new Context(contract, this.account);
+        return new Context(contract, this.metadata, this.account);
     }
 }
 
 export class Context {
-    constructor(public contract: Contract, public account: Address) { }
+    constructor(public contract: Contract, public metadata: Metadata, public account: Address) { }
 
     async replayTrace(trace: Trace): Promise<Result> {
         debug(`replaying trace: %s`, trace);
@@ -141,6 +146,7 @@ export class Context {
             if (result.error !== 'revert')
                 throw Error(`Unexpected error: ${result.error}`);
 
+            debug(`throwing: %o`, result);
             throw result;
         }
         return new Result();
@@ -203,5 +209,5 @@ function isResults(results: any): results is Results {
 }
 
 export function isErrorResult(result: any): result is ErrorResult {
-    return result.reason !== undefined;
+    return result.error !== undefined;
 }

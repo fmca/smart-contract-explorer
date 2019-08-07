@@ -9,6 +9,7 @@ const debug = Debugger(__filename);
 
 interface Parameters {
     metadata: Metadata;
+    invocationGenerator: InvocationGenerator;
     limiters: LimiterFactory;
 };
 
@@ -19,7 +20,9 @@ export type Transition = {
 };
 
 export class Explorer {
-    constructor(public executorFactory: ExecutorFactory, public accounts: Address[]) { }
+    constructor(
+        public executorFactory: ExecutorFactory,
+        public accounts: Address[]) { }
 
     async * states(params: Parameters): AsyncIterable<State> {
         for await (const { post } of this.transitions(params))
@@ -27,26 +30,28 @@ export class Explorer {
     }
 
     async * transitions(params: Parameters): AsyncIterable<Transition> {
-        const { metadata, limiters } = params;
+        const { metadata, limiters, invocationGenerator } = params;
         const limiter = limiters.get();
-        const executer = this.executorFactory.getExecutor(metadata);
-        const invGen = new InvocationGenerator(metadata, this.accounts);
+        const executer = this.executorFactory.getExecutor(invocationGenerator, metadata);
         const initial = await this.initial(params);
         const workList = [ initial ];
+
         debug({ post: initial });
         yield { post: initial };
 
         while (workList.length > 0) {
             const pre = workList.shift()!;
 
-            for await (const invocation of invGen.mutators()) {
+            for await (const invocation of invocationGenerator.mutators()) {
                 if (!limiter.accept(pre, invocation))
                     continue;
 
                 const result = await executer.execute(pre, invocation);
 
-                if (isErrorResult(result))
+                if (isErrorResult(result)) {
+                    debug(`error result: %o`, result);
                     continue;
+                }
 
                 const { operation, state: post } = result;
                 const transition = { pre, operation, post };
@@ -58,8 +63,8 @@ export class Explorer {
     }
 
     async initial(params: Parameters): Promise<State> {
-        const { metadata } = params;
-        const executer = this.executorFactory.getExecutor(metadata);
+        const { metadata, invocationGenerator } = params;
+        const executer = this.executorFactory.getExecutor(invocationGenerator, metadata);
         const state = await executer.initial();
         return state;
     }

@@ -1,7 +1,7 @@
 import { Address } from "../frontend/metadata";
 import { Debugger } from '../utils/debug';
 import { cross } from 'd3-array';
-import { Mapping, isMapping, getKeyTypesAndValueType } from "../solidity";
+import { Mapping, isMapping, getKeyTypesAndValueType, TypeName, isElementaryTypeName } from "../solidity";
 
 const debug = Debugger(__filename);
 
@@ -49,15 +49,17 @@ export class ValueGenerator {
 
     * mapIndicies(mapping: Mapping): Iterable<Value[]> {
         const { keyTypes } = getKeyTypesAndValueType(mapping);
-
-        // TODO update method signatures to Solidity AST types
-        const keyValues = this.valuesOfTypes(keyTypes.map(k => k.typeDescriptions.typeString));
+        const keyValues = this.valuesOfTypes(keyTypes);
 
         for (const indicies of keyValues)
             yield indicies;
     }
 
-    valuesOfType(type: string): Iterable<Value> {
+    valuesOfType(typeName: TypeName): Iterable<Value> {
+        if (!isElementaryTypeName(typeName))
+            throw Error(`expected elementary type, but got: ${typeName}`);
+
+        const { name: type } = typeName;
 
         if (type.match(/u?int\d*/))
             return this.intValues();
@@ -71,13 +73,13 @@ export class ValueGenerator {
         throw Error(`unexpected type: ${type}`);
     }
 
-    * valuesOfTypes(types: string[]): Iterable<Value[]> {
-        if (types.length === 0) {
+    * valuesOfTypes(typeNames: TypeName[]): Iterable<Value[]> {
+        if (typeNames.length === 0) {
             yield [];
             return;
         }
 
-        const values = types.map(type => this.valuesOfType(type));
+        const values = typeNames.map(t => this.valuesOfType(t));
 
         for (const tuple of (cross as any)(...values)) {
             yield tuple;

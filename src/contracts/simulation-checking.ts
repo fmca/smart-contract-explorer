@@ -2,21 +2,21 @@ import { Metadata } from "../frontend/metadata";
 import { isElementaryTypeName, VariableDeclaration, FunctionDefinition, Parameters, ReturnParameters } from "../solidity";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
+import { FunctionMapping } from "../explore/mapping";
 
 const { getMethodSpec, getContractSpec } = Metadata;
 
 export class SimulationCheckingContract extends ProductContract {
-    constructor(public source: Metadata, public target: Metadata, public info: ContractInfo) {
-        super(source, target, info);
+
+    constructor(public mapping: FunctionMapping, public info: ContractInfo) {
+        super(mapping.sourceMetadata, mapping.targetMetadata, info);
     }
 
     async getBody(): Promise<string[]> {
-        const { source, target } = this;
         const lines: string[] = [];
 
-        for (const { name, visibility } of Metadata.getFunctions(target))
-            if (Metadata.findFunction(name, source) !== undefined && (visibility === 'public' || visibility === 'external'))
-                lines.push(...this.getMethod(name));
+        for (const { source, target } of this.mapping.entries())
+            lines.push(...this.getMethod(source, target));
 
         return lines;
     }
@@ -34,15 +34,11 @@ export class SimulationCheckingContract extends ProductContract {
         ];
     }
 
-    getMethod(name: string): string[] {
-        if (name === undefined || name === '')
-            return this.getConstructor(name);
+    getMethod(source: FunctionDefinition, target: FunctionDefinition): string[] {
+        const { name } = target;
 
-        const source = Metadata.findFunction(name, this.source);
-        const target = Metadata.findFunction(name, this.target);
-
-        if (source === undefined || target === undefined)
-            throw Error(`Expected function named ${name}`);
+        if (name === '')
+            return this.getConstructor(source, target);
 
         const { modifies: srcMods } = getMethodSpec(this.source, name);
         const spec = getMethodSpec(this.target, name);
@@ -93,25 +89,12 @@ export class SimulationCheckingContract extends ProductContract {
         ];
     }
 
-    getConstructor(name: string): string[] {
-        const source = Metadata.findFunction(name, this.source);
-        const target = Metadata.findFunction(name, this.target);
-
-        if (source === undefined || target === undefined)
-            throw Error(`Expected function named ${name}`);
-
-        const parameters: Parameters = {
-            id: -1,
-            src: '',
-            nodeType: 'ParameterList',
-            parameters: [...FunctionDefinition.parameters(target)]
-        };
-
+    getConstructor(source: FunctionDefinition, target: FunctionDefinition): string[] {
         return [
             ``,
             `${Contract.signature(target)}`,
             ...block(4)(
-                Contract.callMethod(this.source.name, { ...source, parameters }),
+                Contract.callMethod(this.source.name, { ...source, parameters: target.parameters }),
                 Contract.callMethod(this.target.name, target)
             ),
             `{ }`

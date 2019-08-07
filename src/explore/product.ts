@@ -10,6 +10,7 @@ import { SimulationCheckingContract, ContractInfo } from '../contracts';
 import { fieldNames } from '../sexpr/pie';
 import { internalize } from '../contracts/rewriting';
 import { Expr } from '../sexpr/expression';
+import { FunctionMapping } from './mapping';
 
 const debug = Debugger(__filename);
 
@@ -40,7 +41,8 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
     };
     const s = { ...await Compile.fromFile(source), source: si };
     const t = { ...await Compile.fromFile(target), source: ti };
-    const contract = await new SimulationCheckingContract(s, t, o).getSourceInfo();
+    const mapping = FunctionMapping.getMapping(s, t);
+    const contract = await new SimulationCheckingContract(mapping, o).getSourceInfo();
     return { contract, internalized };
 }
 

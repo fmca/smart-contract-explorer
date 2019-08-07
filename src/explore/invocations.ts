@@ -1,11 +1,15 @@
-import { Method, Metadata, Address } from '../frontend/metadata';
+import { Debugger } from '../utils/debug';
+const debug = Debugger(__filename);
+
+import { Method, Address } from '../frontend/metadata';
 import { Value, Values, ValueGenerator } from './values';
+import { FunctionDefinition } from '../solidity';
 
 export class Invocation {
     public inputs: Value[];
-    constructor(public method: Method, ...args: Value[]) {
-        const { name, inputs } = method;
-        const count = inputs === undefined ? 0 : inputs.length;
+    constructor(public method: FunctionDefinition, ...args: Value[]) {
+        const { name, parameters: { parameters } } = method;
+        const count = parameters.length;
         if (args.length !== count)
             throw Error(`method ${name} requires ${count} parameters`);
         this.inputs = args;
@@ -33,20 +37,24 @@ export class Invocation {
 export class InvocationGenerator {
     valueGenerator: ValueGenerator;
 
-    constructor(public metadata: Metadata, public accounts: Address[]) {
+    constructor(public methods: FunctionDefinition[], public accounts: Address[]) {
         this.valueGenerator = new ValueGenerator(accounts);
     }
 
-    * invocationsWith(accept: (method: Method) => boolean): Iterable<Invocation> {
-        const { abi } = this.metadata;
-        for (const method of abi) {
+    * invocationsWith(accept: (_: FunctionDefinition) => boolean): Iterable<Invocation> {
+        for (const method of this.methods) {
             if (!accept(method))
                 continue;
 
-            if (method.type === 'constructor')
+            // ignore constructors
+            if (method.name === '')
                 continue;
 
-            const types = method.inputs === undefined ? [] : method.inputs.map(m => m.type);
+            if (method.visibility === 'private')
+                continue;
+
+            const types = method.parameters.parameters.map(({ typeName }) => typeName);
+
             for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
                 const invocation = new Invocation(method, ...inputs);
                 yield invocation;
@@ -67,7 +75,7 @@ export class InvocationGenerator {
     }
 }
 
-function isMutator({ stateMutability }: Method): boolean {
+function isMutator({ stateMutability }: FunctionDefinition): boolean {
     return stateMutability == undefined
         || !['pure', 'view'].includes(stateMutability);
 }
