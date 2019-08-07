@@ -22,7 +22,7 @@ function expressionEvaluationContract(expression: Expr, examples: Metadata) {
     const solExpr = fieldsToGetters(toContract(node));
     return `pragma solidity ^0.5.0;
 import "${path}";
-contract C { function f(${name} x) public pure returns (bool) { return ${solExpr}; } }`;
+contract C { function f(${name} x) public view returns (bool) { return ${solExpr}; } }`;
 }
 
 function fieldsToGetters(expression: string) {
