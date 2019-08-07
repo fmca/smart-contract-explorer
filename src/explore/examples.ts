@@ -1,18 +1,18 @@
-import fs from 'fs-extra';
 import path from 'path';
-import { State } from '../explore/states';
-import { ExecutorFactory } from '../explore/execute';
-import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
-import { Explorer, Transition } from '../explore/explorer';
+import { State } from './states';
+import { ExecutorFactory } from './execute';
+import { LimiterFactory, StateCountLimiterFactory } from './limiter';
+import { Explorer, Transition } from './explorer';
 import { Metadata, SourceInfo } from '../frontend/metadata';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, ContractInfo, ExampleGenerator } from './contract';
-import * as Pie from './pie';
-import { SimulationCounterExample } from '../explore/counterexample';
-import { exemplify } from './rewriting';
+import { SimulationExamplesContract, ContractInfo, ExampleGenerator } from '../contracts';
+import * as Pie from '../sexpr/pie';
+import { SimulationCounterExample } from './counterexample';
+import { exemplify } from '../contracts/rewriting';
+import { ValueGenerator } from './values';
 
 const debug = Debugger(__filename);
 
@@ -124,7 +124,12 @@ export class Examples {
         };
         const s = { ...await Compile.fromFile(paths.source), source: se };
         const t = { ...await Compile.fromFile(paths.target), source: te };
-        const contract = new SimulationExamplesContract(s, t, info, Examples.getExamples(states));
+
+        const chain = await Chain.get();
+        const { accounts } = chain;
+        const exampleGen = Examples.getExamples(chain, states);
+        const values = new ValueGenerator(accounts);
+        const contract = new SimulationExamplesContract(s, t, info, exampleGen, values);
         const { examples } = contract;
 
         const fields = [
@@ -135,9 +140,8 @@ export class Examples {
         return { contract: await contract.getSourceInfo(), exemplified, examples, fields, seedFeatures };
     }
 
-    static getExamples(states: number): ExampleGenerator {
+    static getExamples(chain: Chain.BlockchainInterface, states: number): ExampleGenerator {
         return async function*(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
-            const chain = await Chain.get();
             const examples = new Examples(chain, states);
             for await (const example of examples.simulationExamples(source, target))
                 yield example;

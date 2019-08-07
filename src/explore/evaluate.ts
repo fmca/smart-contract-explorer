@@ -1,12 +1,12 @@
 import { Debugger } from '../utils/debug';
 import { Expr } from '../sexpr/expression';
-import { State, Operation, Result, Trace, Observation } from '../explore/states';
+import { State, Operation, Result, Trace, Observation } from './states';
 import * as Compile from '../frontend/compile';
-import { ExecutorFactory, Context, isErrorResult } from '../explore/execute';
-import { Invocation } from '../explore/invocations';
+import { ExecutorFactory, Context, isErrorResult } from './execute';
+import { Invocation } from './invocations';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
-import { extendWithPredicate, expressionEvaluator } from './extension';
+import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
 

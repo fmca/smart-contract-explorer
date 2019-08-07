@@ -3,7 +3,7 @@
 require('source-map-support').install();
 
 import yargs from 'yargs';
-import { Evaluator } from '../contracts/evaluate';
+import { Evaluator } from '../explore/evaluate';
 
 yargs.usage(`usage: $0`)
     .strict()

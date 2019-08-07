@@ -6,7 +6,7 @@ import yargs from 'yargs';
 import path from 'path';
 import fs from 'fs-extra';
 import cp from 'child_process';
-import { getSimulationCheckContract } from '../contracts/product';
+import { getSimulationCheckContract } from '../explore/product';
 import { lines } from '../utils/lines';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)

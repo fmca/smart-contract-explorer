@@ -1,6 +1,7 @@
 import { Address } from "../frontend/metadata";
 import { Debugger } from '../utils/debug';
 import { cross } from 'd3-array';
+import { Mapping, isMapping, getKeyTypesAndValueType } from "../solidity";
 
 const debug = Debugger(__filename);
 
@@ -44,6 +45,16 @@ export class ValueGenerator {
     * boolValues(): Iterable<Value> {
         for (const v of [true,false])
             yield v;
+    }
+
+    * mapIndicies(mapping: Mapping): Iterable<Value[]> {
+        const { keyTypes } = getKeyTypesAndValueType(mapping);
+
+        // TODO update method signatures to Solidity AST types
+        const keyValues = this.valuesOfTypes(keyTypes.map(k => k.typeDescriptions.typeString));
+
+        for (const indicies of keyValues)
+            yield indicies;
     }
 
     valuesOfType(type: string): Iterable<Value> {

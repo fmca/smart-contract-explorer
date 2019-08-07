@@ -4,7 +4,7 @@ require('source-map-support').install();
 
 import yargs from 'yargs';
 import path from 'path';
-import { Examples } from '../contracts/examples';
+import { Examples } from '../explore/examples';
 import fs from 'fs-extra';
 import { SimulationCounterExample } from '../explore/counterexample';
 

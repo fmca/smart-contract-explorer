@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import assert, { fail } from 'assert';
-import { Examples } from '../contracts/examples';
+import { Examples } from '../explore/examples';
 import { SimulationCounterExample } from '../explore/counterexample';
 
 const resources = path.resolve(__dirname, '..', '..', 'resources');
