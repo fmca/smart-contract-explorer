@@ -1,5 +1,5 @@
-import { State } from './states';
-import { Invocation } from './invocations';
+import { State } from '../model/state';
+import { Invocation } from '../model/invocations';
 
 export interface Limiter {
     accept(state: State, invocation: Invocation): boolean;

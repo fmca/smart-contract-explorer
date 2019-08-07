@@ -1,20 +1,20 @@
 import path from 'path';
-import { State } from './states';
-import { ExecutorFactory } from './execute';
-import { LimiterFactory, StateCountLimiterFactory } from './limiter';
-import { Explorer, Transition } from './explorer';
+import { State } from '../model/state';
+import { ExecutorFactory } from '../explore/execute';
+import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
+import { Explorer, Transition } from '../explore/explorer';
 import { Metadata, SourceInfo } from '../frontend/metadata';
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, ContractInfo, ExampleGenerator } from '../contracts';
+import { SimulationExamplesContract, ContractInfo } from '../contracts';
 import * as Pie from '../sexpr/pie';
 import { SimulationCounterExample } from './counterexample';
 import { exemplify } from '../contracts/rewriting';
-import { ValueGenerator } from './values';
+import { ValueGenerator } from '../model/values';
 import { FunctionMapping } from './mapping';
-import { InvocationGenerator } from './invocations';
+import { InvocationGenerator } from '../model';
 
 const debug = Debugger(__filename);
 
@@ -58,7 +58,40 @@ export type SimulationExample = {
     kind: Kind;
 };
 
-export class Examples {
+export async function generateExamples(parameters: Parameters): Promise<Result> {
+    const { paths, states, output: info } = parameters;
+    const dir = path.dirname(info.path);
+
+    const exemplified = {
+        source: await exemplify(paths.source, dir),
+        target: await exemplify(paths.target, dir)
+    };
+
+    const source = await Compile.fromString(exemplified.source);
+    const target = await Compile.fromString(exemplified.target);
+
+    const chain = await Chain.get();
+    const { accounts } = chain;
+
+    const generator = new ExampleGenerator(chain, states)
+    const fn = () => generator.simulationExamples(source, target);
+
+    const values = new ValueGenerator(accounts);
+
+    const c = new SimulationExamplesContract(source, target, info, fn, values);
+    const examples = await c.getAbstractExamples();
+    const contract = await c.getSourceInfo();
+
+    const fields = [
+        ...Pie.fieldDecls(source).map(f => `${source.name}.${f}`),
+        ...Pie.fieldDecls(target).map(f => `${target}.${f}`)
+    ];
+    const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
+
+    return { contract, exemplified, examples, fields, seedFeatures };
+}
+
+export class ExampleGenerator {
     explorer: Explorer;
     limiters: LimiterFactory;
 
@@ -118,41 +151,6 @@ export class Examples {
         }
 
         debug(`generated negative examples`);
-    }
-
-    static async generate(parameters: Parameters): Promise<Result> {
-        const { paths, states, output: info } = parameters;
-        const dir = path.dirname(info.path);
-        const se = await exemplify(paths.source, dir);
-        const te = await exemplify(paths.target, dir);
-        const exemplified = {
-            source: se,
-            target: te
-        };
-        const s = { ...await Compile.fromFile(paths.source), source: se };
-        const t = { ...await Compile.fromFile(paths.target), source: te };
-
-        const chain = await Chain.get();
-        const { accounts } = chain;
-        const exampleGen = Examples.getExamples(chain, states);
-        const values = new ValueGenerator(accounts);
-        const contract = new SimulationExamplesContract(s, t, info, exampleGen, values);
-        const examples = await contract.getAbstractExamples();
-
-        const fields = [
-            ...Pie.fieldDecls(s).map(f => `${s.name}.${f}`),
-            ...Pie.fieldDecls(t).map(f => `${t.name}.${f}`)
-        ];
-        const seedFeatures = getProductSeedFeatures(s, t).map(([f,_]) => f);
-        return { contract: await contract.getSourceInfo(), exemplified, examples, fields, seedFeatures };
-    }
-
-    static getExamples(chain: Chain.BlockchainInterface, states: number): ExampleGenerator {
-        return async function*(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
-            const examples = new Examples(chain, states);
-            for await (const example of examples.simulationExamples(source, target))
-                yield example;
-        };
     }
 }
 

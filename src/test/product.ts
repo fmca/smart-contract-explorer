@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import * as Compile from './../frontend/compile';
-import { getProductSeedFeatures } from '../explore/product'
+import { getProductSeedFeatures } from '../simulation/product'
 import assert from 'assert';
 
 

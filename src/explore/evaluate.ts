@@ -1,13 +1,13 @@
 import { Debugger } from '../utils/debug';
 import { Expr } from '../sexpr/expression';
-import { State, Operation, Result, Trace, Observation } from './states';
+import { State, Operation, Result, Trace, Observation } from '../model';
 import * as Compile from '../frontend/compile';
 import { ExecutorFactory, Context, isErrorResult } from './execute';
-import { Invocation, InvocationGenerator } from './invocations';
+import { Invocation, InvocationGenerator } from '../model';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
-import { AbstractExample } from './examples';
+import { AbstractExample } from '../simulation/examples';
 import { lines } from '../utils/lines';
 
 const debug = Debugger(__filename);

@@ -1,7 +1,7 @@
-import { State, Operation } from './states';
+import { State, Operation } from '../model';
 import { ExecutorFactory, isErrorResult } from './execute';
 import { LimiterFactory } from './limiter';
-import { InvocationGenerator } from './invocations';
+import { InvocationGenerator } from '../model';
 import { Address, Metadata } from '../frontend/metadata';
 import { Debugger } from '../utils/debug';
 

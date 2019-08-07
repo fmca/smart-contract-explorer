@@ -1,10 +1,9 @@
-import { State, Trace, Observation, Operation, Result } from './states';
-import { Invocation, InvocationGenerator } from './invocations';
+import { State, Trace, Observation, Operation, Result } from '../model';
+import { Invocation, InvocationGenerator } from '../model';
 import { ContractCreator } from './creator';
 import { Debugger } from '../utils/debug';
 import { Address, Contract, Metadata } from '../frontend/metadata';
 import { BlockchainInterface } from '../utils/chain';
-import { Runtime } from 'inspector';
 
 const debug = Debugger(__filename);
 

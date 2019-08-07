@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import cp from 'child_process';
 import path from 'path';
 import assert from 'assert';
-import { getSimulationCheckContract } from '../explore/product';
+import { getSimulationCheckContract } from '../simulation/product';
 
 const resources = path.resolve(__dirname, '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');

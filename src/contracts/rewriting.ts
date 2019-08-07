@@ -18,6 +18,7 @@ export async function exemplify(sourcePath: string, targetDir: string): Promise<
     const dirname = path.dirname(sourcePath);
     return replaceWithSuffix(sourcePath, targetDir, 'exemplified',
         [/\bexternal\b/g, 'public'],
+        [/\binternal\b/g, 'public'],
         [/(?<=\bimport\b\s*("|'))[.][/]([^"']+)(?=("|'))/g, `${dirname}/$2`]);
 }
 

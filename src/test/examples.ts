@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
 import assert, { fail } from 'assert';
-import { Examples } from '../explore/examples';
-import { SimulationCounterExample } from '../explore/counterexample';
+import { generateExamples } from '../simulation/examples';
+import { SimulationCounterExample } from '../simulation/counterexample';
 
 const resources = path.resolve(__dirname, '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
@@ -35,11 +35,11 @@ describe('explorer integration', function() {
             };
 
             if (expectFailure) {
-                await assert.rejects(async () => await Examples.generate({ paths, output, states }), SimulationCounterExample);
+                await assert.rejects(async () => await generateExamples({ paths, output, states }), SimulationCounterExample);
 
             } else {
                 await assert.doesNotReject(async () => {
-                    const result = await Examples.generate({ paths, output, states });
+                    const result = await generateExamples({ paths, output, states });
                     const { examples: { positive, negative }, fields, seedFeatures } = result;
 
                     if (expectedFields !== undefined)

@@ -149,4 +149,10 @@ export namespace FunctionDefinition {
         for (const parameter of parameters)
             yield parameter;
     }
+
+    export function isMutator({ stateMutability }: FunctionDefinition) {
+        return stateMutability == undefined
+            || !['pure', 'view'].includes(stateMutability);
+    }
+
 };

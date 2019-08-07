@@ -2,7 +2,7 @@ import { Metadata } from "../frontend/metadata";
 import { isElementaryTypeName, VariableDeclaration, FunctionDefinition, Parameters, ReturnParameters } from "../solidity";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
-import { FunctionMapping } from "../explore/mapping";
+import { FunctionMapping } from "../simulation/mapping";
 
 const { getMethodSpec, getContractSpec } = Metadata;
 

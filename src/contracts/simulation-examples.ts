@@ -1,17 +1,16 @@
 import { Metadata } from "../frontend/metadata";
-import { AbstractExample, SimulationExample, AbstractExamples } from "../explore/examples";
+import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
 import { isElementaryTypeName, VariableDeclaration, isMapping } from "../solidity";
-import { ValueGenerator } from "../explore/values";
+import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
-
-export type ExampleGenerator = (s: Metadata, t: Metadata) => AsyncIterable<SimulationExample>;
 
 export class SimulationExamplesContract extends ProductContract {
     examples?: (SimulationExample & AbstractExample)[];
 
     constructor(public source: Metadata, public target: Metadata,
-            public info: ContractInfo, public gen: ExampleGenerator,
+            public info: ContractInfo,
+            public generator: () => AsyncIterable<SimulationExample>,
             public values: ValueGenerator) {
 
         super(source, target, info);
@@ -25,7 +24,7 @@ export class SimulationExamplesContract extends ProductContract {
         const { path } = this.info;
         const counts = { positive: 0, negative: 0 };
 
-        for await (const example of this.gen(this.source, this.target)) {
+        for await (const example of this.generator()) {
             const { kind } = example;
             const method = `${kind}Example${counts[kind]++}`;
             const abstract = { id: { contract: path, method }};

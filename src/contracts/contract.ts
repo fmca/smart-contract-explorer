@@ -1,6 +1,5 @@
 import { Metadata, SourceInfo } from "../frontend/metadata";
-import { Operation } from "../explore/states";
-import { SimulationExample } from "../explore/examples";
+import { Operation } from "../model";
 import * as Compile from '../frontend/compile';
 import { Debugger } from '../utils/debug';
 import { VariableDeclaration, FunctionDefinition } from "../solidity";

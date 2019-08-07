@@ -1,7 +1,7 @@
 import * as Compile from '../frontend/compile';
 import * as Chain from '../utils/chain';
 import assert from 'assert';
-import { InvocationGenerator } from '../explore/invocations';
+import { InvocationGenerator } from '../model';
 import { Address, Metadata } from '../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
