@@ -65,7 +65,10 @@ class SimpleFunctionMapping extends FunctionMapping {
 
             // signatures are not compatible
             if (!SimpleFunctionMapping.compatible(source, target))
-                throw Error(`Incompatible signatures for function: ${target.name}`);
+                continue;
+
+                // TODO should this be an error instead?
+                // throw Error(`Incompatible signatures for function: ${target.name}`);
 
             const entry = { source, target };
             this._entries.push(entry);

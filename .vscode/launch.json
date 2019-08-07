@@ -11,9 +11,13 @@
             "program": "${workspaceFolder}/dist/cli/examples.js",
             "args": [
                 "--source",
-                "../resources/HelloWorld2.sol",
+                "${workspaceFolder}/resources/contracts/Token/ERC20-molochventures/ERC20.impl.sol",
                 "--target",
-                "../resources/HelloAfrica2.sol"
+                "${workspaceFolder}/resources/contracts/Token/ERC20-openzeppelin/ERC20.spec.sol",
+                "--output",
+                ".ignore",
+                "--states",
+                "50"
             ]
         },
         {

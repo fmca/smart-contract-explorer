@@ -84,7 +84,7 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 
     const fields = [
         ...Pie.fieldDecls(source).map(f => `${source.name}.${f}`),
-        ...Pie.fieldDecls(target).map(f => `${target}.${f}`)
+        ...Pie.fieldDecls(target).map(f => `${target.name}.${f}`)
     ];
     const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
 
