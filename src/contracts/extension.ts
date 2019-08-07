@@ -1,8 +1,9 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
 import { toContract } from '../frontend/node-to-contract';
-import { Expr } from "../frontend/sexpr";
+import { Expr } from "../sexpr/expression";
 import { Debugger } from '../utils/debug';
+import { toNode } from '../frontend/expr-to-node';
 
 const debug = Debugger(__filename);
 
@@ -17,7 +18,7 @@ export async function expressionEvaluator(expression: Expr, examples: Metadata):
 
 function expressionEvaluationContract(expression: Expr, examples: Metadata) {
     const { name, source: { path } } = examples;
-    const node = Expr.toNode(expression);
+    const node = toNode(expression);
     const solExpr = fieldsToGetters(toContract(node));
     return `pragma solidity ^0.5.0;
 import "${path}";
@@ -29,7 +30,7 @@ function fieldsToGetters(expression: string) {
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {
-    const nodeAst = Expr.toNode(feature);
+    const nodeAst = toNode(feature);
     const strFeature = toContract(nodeAst);
     const [newContract, funNames] = await extendWithFeatures(contract,[strFeature]);
 

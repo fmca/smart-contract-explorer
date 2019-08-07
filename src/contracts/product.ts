@@ -9,6 +9,7 @@ import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
 import { fieldNames } from './pie';
 import { internalize } from './rewriting';
+import { Expr } from '../sexpr/expression';
 
 const debug = Debugger(__filename);
 
@@ -65,11 +66,47 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
         const { body: b2 } = m2;
         const e1 = specBodyToExpr(b1);
         const e2 = implBodyToExpr(b2);
-        const feature = `(= ${e1} ${e2})`;
+        const feature = simplify(`(= ${e1} ${e2})`);
         features.push([feature, name]);
     }
 
     return features;
+}
+
+function simplify(s: string): string {
+    let e = Expr.parse(s);
+    e = fix(simplifyMapEqualities, e);
+    const r = Expr.toString(e);
+    debug(`simplify(%o): %o`, s, r);
+    return r;
+}
+
+function simplifyMapEqualities(expr: Expr): Expr {
+    if (!Expr.isApp(expr))
+        return expr;
+
+    const [ op, x, y ] = expr;
+
+    if (Expr.isApp(op) || op !== '=')
+        return expr;
+
+    if (!Expr.isApp(x) || x[0] !== 'index')
+        return expr;
+
+    if (!Expr.isApp(y) || y[0] !== 'index')
+        return expr;
+
+    return ['=', x[1], y[1]];
+}
+
+function fix(f: (_: Expr) => Expr, expr: Expr): Expr {
+    let next = expr;
+    do {
+        expr = next;
+        next = f(expr);
+    } while (!Expr.equals(next, expr));
+
+    return expr;
 }
 
 function getBodyToExpr(metadata: Metadata) {

@@ -1,5 +1,5 @@
 import { Debugger } from '../utils/debug';
-import { Expr } from '../frontend/sexpr';
+import { Expr } from '../sexpr/expression';
 import { State, Operation, Result, Trace, Observation } from '../explore/states';
 import * as Compile from '../frontend/compile';
 import { ExecutorFactory, Context, isErrorResult } from '../explore/execute';
@@ -9,7 +9,6 @@ import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from './extension';
 import { AbstractExample } from './examples';
 import { lines } from '../utils/lines';
-import { isError } from 'util';
 
 const debug = Debugger(__filename);
 
