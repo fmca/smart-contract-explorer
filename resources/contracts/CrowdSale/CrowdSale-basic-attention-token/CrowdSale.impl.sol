@@ -22,7 +22,7 @@ contract BAToken is StandardToken, SafeMath {
     string public version = "1.0";
 
     // contracts
-    address public ethFundDeposit;      // deposit address for ETH for Brave International
+    address payable public ethFundDeposit;      // deposit address for ETH for Brave International
     address public batFundDeposit;      // deposit address for Brave International use and BAT User Fund
 
     // crowdsale parameters
@@ -82,7 +82,7 @@ contract BAToken is StandardToken, SafeMath {
       if(block.number <= fundingEndBlock && totalSupply != tokenCreationCap) revert();
       // move to operational
       isFinalized = true;
-      if(!ethFundDeposit.send(this.balance)) revert();  // send the eth to Brave International
+      if(!ethFundDeposit.send(address(this).balance)) revert();  // send the eth to Brave International
     }
 
     /// @dev Allows contributors to recover their ether in the case of a failed funding campaign.
@@ -96,7 +96,7 @@ contract BAToken is StandardToken, SafeMath {
       balances[msg.sender] = 0;
       totalSupply = safeSubtract(totalSupply, batVal); // extra safe
       uint256 ethVal = batVal / tokenExchangeRate;     // should be safe; previous revert()s covers edges
-      LogRefund(msg.sender, ethVal);               // log it 
+      emit LogRefund(msg.sender, ethVal);               // log it
       if (!msg.sender.send(ethVal)) revert();       // if you're using a contract; make sure it works with .send gas limits
     }
 

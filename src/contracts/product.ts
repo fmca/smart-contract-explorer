@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import path from 'path';
 import * as Compile from '../frontend/compile';
 import { Metadata, SourceInfo } from "../frontend/metadata";
@@ -9,6 +8,7 @@ import { Block } from '../solidity';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from './contract';
 import { fieldNames } from './pie';
+import { internalize } from './rewriting';
 
 const debug = Debugger(__filename);
 
@@ -37,23 +37,12 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
         source: si,
         target: ti
     };
-    const s = await Compile.fromString({ ...internalized.source, content: si.original });
-    const t = await Compile.fromString({ ...internalized.target, content: ti.original });
+    const s = { ...await Compile.fromFile(source), source: si };
+    const t = { ...await Compile.fromFile(target), source: ti };
     const contract = await new SimulationCheckingContract(s, t, o).getSourceInfo();
     return { contract, internalized };
 }
 
-async function internalize(file: string, dir: string): Promise<SourceInfo & { original: string }> {
-    const name = path.basename(file, '.sol');
-    const loc = path.join(dir, `${name}.internalized.sol`);
-    const buffer = await fs.readFile(file);
-    const original = buffer.toString();
-    const content = original.replace(/\bpublic*\s*payable\b/g, 'internal')
-                            .replace(/\bexternal*\s*payable\b/g, 'internal')
-                            .replace(/\bpublic\b/g, 'internal')
-                            .replace(/\bexternal\b/g, 'internal');
-    return { path: loc, content, original };
-}
 
 export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string, string][] {
     const features: [string, string][] = [];

@@ -12,6 +12,7 @@ import { getProductSeedFeatures, } from './product';
 import { SimulationExamplesContract, ContractInfo, ExampleGenerator } from './contract';
 import * as Pie from './pie';
 import { SimulationCounterExample } from '../explore/counterexample';
+import { exemplify } from './rewriting';
 
 const debug = Debugger(__filename);
 
@@ -121,8 +122,8 @@ export class Examples {
             source: se,
             target: te
         };
-        const s = await Compile.fromString({ ...exemplified.source, content: se.original });
-        const t = await Compile.fromString({ ...exemplified.target, content: te.original });
+        const s = { ...await Compile.fromFile(paths.source), source: se };
+        const t = { ...await Compile.fromFile(paths.target), source: te };
         const contract = new SimulationExamplesContract(s, t, info, Examples.getExamples(states));
         const { examples } = contract;
 
@@ -238,13 +239,4 @@ class Context {
         }
     }
 
-}
-
-async function exemplify(file: string, dir: string): Promise<SourceInfo & { original: string }> {
-    const name = path.basename(file, '.sol');
-    const loc = path.join(dir, `${name}.exemplified.sol`);
-    const buffer = await fs.readFile(file);
-    const original = buffer.toString();
-    const content = original.replace(/\bexternal\b/g, 'public');
-    return { path: loc, content, original };
 }
