@@ -130,7 +130,7 @@ export class Examples {
         const exampleGen = Examples.getExamples(chain, states);
         const values = new ValueGenerator(accounts);
         const contract = new SimulationExamplesContract(s, t, info, exampleGen, values);
-        const { examples } = contract;
+        const examples = await contract.getAbstractExamples();
 
         const fields = [
             ...Pie.fieldDecls(s).map(f => `${s.name}.${f}`),

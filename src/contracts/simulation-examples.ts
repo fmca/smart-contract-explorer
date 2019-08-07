@@ -8,7 +8,7 @@ import { Contract, ContractInfo, block } from "./contract";
 export type ExampleGenerator = (s: Metadata, t: Metadata) => AsyncIterable<SimulationExample>;
 
 export class SimulationExamplesContract extends ProductContract {
-    public examples: AbstractExamples = { positive: [], negative: [] };
+    examples?: (SimulationExample & AbstractExample)[];
 
     constructor(public source: Metadata, public target: Metadata,
             public info: ContractInfo, public gen: ExampleGenerator,
@@ -17,18 +17,37 @@ export class SimulationExamplesContract extends ProductContract {
         super(source, target, info);
     }
 
-    async getBody(): Promise<string[]> {
+    async getExamples(): Promise<(SimulationExample & AbstractExample)[]> {
+        if (this.examples !== undefined)
+            return this.examples;
+
+        this.examples = [];
         const { path } = this.info;
-        const methods: string[][] = [];
-        const positive: AbstractExample[] = [];
-        const negative: AbstractExample[] = [];
+        const counts = { positive: 0, negative: 0 };
 
         for await (const example of this.gen(this.source, this.target)) {
             const { kind } = example;
-            const method = `${kind}Example${methods.length}`;
+            const method = `${kind}Example${counts[kind]++}`;
+            const abstract = { id: { contract: path, method }};
+            this.examples.push({ ...example, ...abstract });
+        }
+        return this.examples;
+    }
+
+    async getAbstractExamples(): Promise<AbstractExamples> {
+        const examples = await this.getExamples();
+        const positive = examples.filter(e => e.kind === 'positive').map(({ id }) => ({ id }));
+        const negative = examples.filter(e => e.kind === 'negative').map(({ id }) => ({ id }));
+        return { positive, negative };
+    }
+
+    async getBody(): Promise<string[]> {
+        const methods: string[][] = [];
+
+        for await (const example of await this.getExamples()) {
+            const { method } = example.id;
             const lines = this.getMethod(example, method);
             methods.push(lines);
-            (kind === 'positive' ? positive : negative).push({ id: { contract: path, method }});
         }
 
         for (const metadata of [this.source, this.target]) {
@@ -38,7 +57,6 @@ export class SimulationExamplesContract extends ProductContract {
             }
         }
 
-        this.examples = { positive, negative };
         return methods.flat();
     }
 
