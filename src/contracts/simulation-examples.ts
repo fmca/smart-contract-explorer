@@ -1,9 +1,10 @@
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping } from "../solidity";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
+import { type } from "../sexpr/pie";
 
 export class SimulationExamplesContract extends ProductContract {
     examples?: (SimulationExample & AbstractExample)[];
@@ -49,42 +50,65 @@ export class SimulationExamplesContract extends ProductContract {
             methods.push(lines);
         }
 
-        for (const metadata of [this.source, this.target]) {
-            for (const variable of Metadata.getVariables(metadata)) {
-                const lines = this.getAccessor(metadata, variable);
+        for (const metadata of [this.source, this.target])
+            for (const lines of this.storageAccessorMethodDefinitions(metadata))
                 methods.push(lines);
-            }
-        }
 
         return methods.flat();
     }
 
-    getAccessor(metadata: Metadata, variable: VariableDeclaration): string[] {
-        const { name: source } = metadata;
-        const { name } = variable;
-        const { expr, type } = this.getTypedObserverExpr(metadata, variable);
-
-        return [
-            ``,
-            `function ${source}$${name}() public view returns (${type}) {`,
-            ...block(4)(`return ${expr};`),
-            `}`
-        ];
+    * storageAccessorPaths(): Iterable<string> {
+        for (const metadata of [this.source, this.target]) {
+            for (const variable of Metadata.getVariables(metadata)) {
+                const prefix = `${metadata.name}$${variable.name}`;
+                yield this.storageAccessorPath(prefix, variable.typeName);
+            }
+        }
     }
 
-    getTypedObserverExpr(metadata: Metadata, variable: VariableDeclaration) {
-        const { name: source } = metadata;
+    storageAccessorPath(prefix: string, typeName: TypeName): string {
+
+        if (isElementaryTypeName(typeName))
+            return `${prefix}: ${type(typeName)}`;
+
+        if (!isMapping(typeName))
+            throw Error(`Unexpected type name: ${typeName}`);
+
+        const { keyType, valueType } = typeName;
+
+        if (!isElementaryTypeName(keyType))
+            throw Error(`Unexpected type name: ${keyType}`);
+
+        return this.storageAccessorPath(`${prefix}[__verifier_idx_${keyType.name}]`, valueType);
+    }
+
+    * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
+        for (const { source, name, expr, type } of this.storageAccessors(metadata))
+            yield [
+                ``,
+                `function ${source}$${name}() public view returns (${type}) {`,
+                ...block(4)(`return ${expr};`),
+                `}`
+            ];
+    }
+
+    * storageAccessors(metadata: Metadata) {
+        for (const variable of Metadata.getVariables(metadata))
+            yield this.storageAccessor(metadata.name, variable);
+    }
+
+    storageAccessor(source: string, variable: VariableDeclaration) {
         const { name, typeName } = variable;
 
         if (isElementaryTypeName(typeName))
-            return { expr: `${source}.${name}`, type: typeName.name };
+            return { source, name, expr: `${source}.${name}`, type: typeName.name };
 
         if (isMapping(typeName)) {
             const idxss = [...this.values.mapIndicies(typeName)];
             const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `[${i}]`).join('')}`);;
             const expr = `keccak256(abi.encode(${elems.join(', ')}))`;
             const type = `bytes32`;
-            return { expr, type };
+            return { source, name, expr, type };
         }
 
         throw Error(`Unexpected type name: ${typeName}`);
