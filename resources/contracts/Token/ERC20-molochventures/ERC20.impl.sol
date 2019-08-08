@@ -25,7 +25,8 @@ pragma solidity >=0.5.0;
  /**
  * @notice simulation  __verifier_eq(Token._balances, ERC20.balances)
  * @notice simulation __verifier_eq(Token._allowed, ERC20.allowances)
- * @notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
+ * notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
+ * @notice invariant Token._totalSupply ==  __verifier_sum_uint(Token._balances)
  */
 contract Token {
     //using SafeMath for uint;
@@ -162,6 +163,8 @@ contract Token {
      * proper events are emitted.
      * @param account The account that will receive the created tokens.
      * @param value The amount that will be created.
+     * @notice modifies _balances[account]
+     * @notice modifies _totalSupply
      */
     function mint(address account, uint value) internal {
         require(account != address(0));
@@ -176,6 +179,8 @@ contract Token {
      * account.
      * @param account The account whose tokens will be burnt.
      * @param value The amount that will be burnt.
+     * @notice modifies _balances[account]
+     * @notice modifies _totalSupply
      */
     function burn(address account, uint value) internal {
         require(account != address(0));
