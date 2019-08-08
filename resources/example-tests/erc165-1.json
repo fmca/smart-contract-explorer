@@ -1,5 +1,5 @@
 {
-    "description": "ERC165 example generation test",
+    "description": "ERC165 examples generation test",
     "source": "Interface/ERC165-eip/ERC165.impl.sol",
     "target": "Interface/ERC165-openzeppelin/ERC165.spec.sol",
     "fields": [

@@ -1,5 +1,5 @@
 {
-    "description": "ERC20 example generation test",
+    "description": "ERC20 examples generation test",
     "source": "Token/ERC20-molochventures/ERC20.impl.sol",
     "target": "Token/ERC20-openzeppelin/ERC20.spec.sol",
     "fields": [
