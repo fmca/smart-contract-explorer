@@ -9,7 +9,6 @@ import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
 import { SimulationExamplesContract, ContractInfo } from '../contracts';
-import * as Pie from '../sexpr/pie';
 import { SimulationCounterExample } from './counterexample';
 import { exemplify } from '../contracts/rewriting';
 import { ValueGenerator } from '../model/values';
@@ -82,11 +81,7 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const examples = await c.getAbstractExamples();
     const contract = await c.getSourceInfo();
 
-    const fields = [
-        ...Pie.fieldDecls(source).map(f => `${source.name}.${f}`),
-        ...Pie.fieldDecls(target).map(f => `${target.name}.${f}`),
-        ...c.storageAccessorPaths()
-    ];
+    const fields = [...c.storageAccessorsForPie()];
     const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
 
     return { contract, exemplified, examples, fields, seedFeatures };

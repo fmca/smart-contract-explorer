@@ -57,11 +57,19 @@ export class SimulationExamplesContract extends ProductContract {
         return methods.flat();
     }
 
-    * storageAccessorPaths(): Iterable<string> {
+    * storageAccessorsForPie(): Iterable<string> {
         for (const metadata of [this.source, this.target]) {
             for (const variable of Metadata.getVariables(metadata)) {
-                const prefix = `${metadata.name}$${variable.name}`;
-                yield this.storageAccessorPath(prefix, variable.typeName);
+                if (variable.constant)
+                    continue;
+
+                const { name, typeName } = variable;
+                const prefix = `${metadata.name}$${name}`;
+
+                yield `${prefix}: ${type(typeName)}`;
+
+                if (!isElementaryTypeName(typeName))
+                    yield this.storageAccessorPath(prefix, variable.typeName);
             }
         }
     }

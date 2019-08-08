@@ -1,4 +1,4 @@
-import { TypeName, ElementaryType, VariableDeclaration, ContractMember } from "../solidity";
+import { TypeName, ElementaryType, ContractMember } from "../solidity";
 import { Metadata } from "../frontend/metadata";
 
 const { isVariableDeclaration } = ContractMember;
@@ -7,16 +7,6 @@ export function fieldNames({ members }: Metadata): string[] {
     return members.filter(isVariableDeclaration)
         .filter(f => f.stateVariable)
         .map(({ name }) => name);
-}
-
-export function fieldDecls({ members }: Metadata): string[] {
-    return members.filter(isVariableDeclaration)
-        .filter(f => f.stateVariable)
-        .map(fieldDecl);
-}
-
-export function fieldDecl({ name, typeName }: VariableDeclaration): string {
-    return `${name}: ${type(typeName)}`;
 }
 
 export function type(typeName: TypeName): string {
