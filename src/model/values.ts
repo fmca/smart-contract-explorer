@@ -35,6 +35,11 @@ export class ValueGenerator {
             yield v;
     }
 
+    * bytesValues(): Iterable<Value> {
+        for (const v of ["0x00000000","0x00000001","0x00000002"])
+            yield v;
+    }
+
     * addressValues(): Iterable<Value> {
         // TODO: consider which accounts
 
@@ -69,6 +74,9 @@ export class ValueGenerator {
 
         if (type === 'bool')
             return this.boolValues();
+
+        if (type.match(/bytes\d*/))
+            return this.bytesValues();
 
         throw Error(`unexpected type: ${type}`);
     }
