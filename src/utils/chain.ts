@@ -7,8 +7,14 @@ export interface BlockchainInterface {
     create(abi: Method[]): Contract;
 }
 
-export async function get(): Promise<BlockchainInterface> {
-    const provider = ganache.provider();
+interface Options {
+    mnemonic?: string;
+}
+
+export async function get(params: Options = {}): Promise<BlockchainInterface> {
+    const { mnemonic = 'anticonstitutionnellement' } = params;
+    const options = { ...params, mnemonic };
+    const provider = ganache.provider(options);
     provider.setMaxListeners(100);
     const web3 = new Web3(provider);
     const accounts = await web3.eth.getAccounts();
