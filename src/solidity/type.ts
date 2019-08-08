@@ -16,7 +16,9 @@ export interface ElementaryTypeName extends TypeNameBase {
     name: ElementaryType;
 }
 
-export type ElementaryType = 'uint256' | 'uint' | 'int' | 'string' | 'bytes' | 'address' | 'bool' | 'bytes4';
+export type IntegerType = 'uint256' | 'uint' | 'int';
+
+export type ElementaryType = IntegerType | 'string' | 'bytes' | 'address' | 'bool' | 'bytes4';
 
 export interface Mapping extends TypeNameBase {
     nodeType: 'Mapping';
@@ -26,6 +28,10 @@ export interface Mapping extends TypeNameBase {
 
 export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName {
     return node.nodeType === 'ElementaryTypeName';
+}
+
+export function isIntegerType(name: ElementaryType): name is IntegerType {
+    return ['uint256', 'uint', 'int'].includes(name);
 }
 
 export function isMapping(node: TypeName): node is Mapping {

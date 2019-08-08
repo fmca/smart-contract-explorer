@@ -1,6 +1,6 @@
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName } from "../solidity";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
@@ -68,16 +68,20 @@ export class SimulationExamplesContract extends ProductContract {
 
                 yield `${prefix}: ${type(typeName)}`;
 
-                if (!isElementaryTypeName(typeName))
-                    yield this.storageAccessorPath(prefix, variable.typeName);
+                if (!isElementaryTypeName(typeName)) {
+                    const path = this.storageAccessorPath(prefix, variable.typeName);
+
+                    if (path !== undefined)
+                        yield path;
+                }
             }
         }
     }
 
-    storageAccessorPath(prefix: string, typeName: TypeName): string {
+    storageAccessorPath(prefix: string, typeName: TypeName): string | undefined {
 
         if (isElementaryTypeName(typeName))
-            return `${prefix}: ${type(typeName)}`;
+            return isIntegerType(typeName.name) ? `${prefix}: ${type(typeName)}` : undefined;
 
         if (!isMapping(typeName))
             throw Error(`Unexpected type name: ${typeName}`);

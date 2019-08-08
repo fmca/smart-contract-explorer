@@ -9,7 +9,7 @@ const pragmas = `pragma solidity ^0.5.0;`;
 
 describe('simulation examples', function() {
 
-    it ('all fields are listed', async function() {
+    it ('all fields listed', async function() {
         await testFields(
             { name: `S`, body: `int x;` },
             { name: `T`, body: `int y; int z;` },
@@ -17,21 +17,35 @@ describe('simulation examples', function() {
         );
     });
 
-    it ('mappings are listed with accessors', async function() {
+    it ('int mappings listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (int => int) x;` },
             { name: `T`, body: `int y;` },
             [`S$x: Map[Int,Int]`, `S$x[__verifier_idx_int]: Int`, `T$y: Int`]
         );
+    });
+
+    it ('address mappings listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (address => int) x;` },
             { name: `T`, body: `int y;` },
             [`S$x: Map[Address,Int]`, `S$x[__verifier_idx_address]: Int`, `T$y: Int`]
         );
+    });
+
+    it ('nested mappings listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (address => mapping (int => int)) x;` },
             { name: `T`, body: `int y;` },
             [`S$x: Map[Address,Map[Int,Int]]`, `S$x[__verifier_idx_address][__verifier_idx_int]: Int`, `T$y: Int`]
+        );
+    });
+
+    it ('only mappings to int listed with accessors', async function() {
+        await testFields(
+            { name: `S`, body: `mapping (address => address) x;` },
+            { name: `T`, body: `int y;` },
+            [`S$x: Map[Address,Address]`, `T$y: Int`]
         );
     });
 
