@@ -1,0 +1,24 @@
+{
+    "description": "ERC20 example generation test",
+    "source": "Token/ERC20-molochventures/ERC20.impl.sol",
+    "target": "Token/ERC20-openzeppelin/ERC20.spec.sol",
+    "fields": [
+        "Token._balances: Map[Address,Int]",
+        "Token._allowed: Map[Address,Map[Address,Int]]",
+        "Token._totalSupply: Int",
+        "ERC20.balances: Map[Address,Int]",
+        "ERC20.allowances: Map[Address,Map[Address,Int]]",
+        "ERC20.minters: Map[Address,Bool]",
+        "ERC20.burners: Map[Address,Bool]"
+    ],
+    "seedFeatures": [
+        "(= Token._balances ERC20.balances)",
+        "(= Token._allowed ERC20.allowances)"
+    ]
+}
+
+
+
+
+
+

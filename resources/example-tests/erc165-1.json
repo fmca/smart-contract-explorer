@@ -1,0 +1,12 @@
+{
+    "description": "ERC165 example generation test",
+    "source": "Interface/ERC165-eip/ERC165.impl.sol",
+    "target": "Interface/ERC165-openzeppelin/ERC165.spec.sol",
+    "fields": [
+        "ERC165MappingImplementation.supportedInterfaces: Map[bytes4, Bool]",
+        "ERC165_Spec._supportedInterfaces: Map[bytes4, Bool]"
+    ],
+    "seedFeatures": [
+        "(= ERC165MappingImplementation.supportedInterfaces ERC165_Spec._supportedInterfaces)"
+    ]
+}
