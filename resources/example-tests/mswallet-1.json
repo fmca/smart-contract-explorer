@@ -1,0 +1,27 @@
+{
+    "description": "Whitelist examples generation test",
+    "source": "MultiSigWallet/MultiSigWallet-consensys/MultiSigWallet.impl.sol",
+    "target": "MultiSigWallet/MultiSigWallet-oxchild-apis/MultiSigWallet.spec.sol",
+    "fields": [
+        "MultiSigWallet_APIS.is_owner: Map[Address,Bool]",
+        "MultiSigWallet_APIS.owners: Array[Address]",
+        "MultiSigWallet_APIS.withdrawals: Map[Int,Withdrawal]",
+        "MultiSigWallet_APIS.withdrawalConfirmations: Map[Int,Map[Address,Bool]]",
+        "MultiSigWallet_APIS.withdrawalCount: Int",
+        "MultiSigWallet_APIS.required: Int",
+        "MultiSigWallet.is_owner: Map[Address,Bool]",
+        "MultiSigWallet.owners: Array[Address]",
+        "MultiSigWallet.transactions: Map[Int,Withdrawal]",
+        "MultiSigWallet.confirmations: Map[Int,Map[Address,Bool]]",
+        "MultiSigWallet.transactionCount: Int",
+        "MultiSigWallet.required: Int"
+    ],
+    "seedFeatures": [
+        "(= MultiSigWallet_APIS.is_owner MultiSigWallet.is_owner)",
+        "(= MultiSigWallet_APIS.owners MultiSigWallet.owners)",
+        "(= MultiSigWallet_APIS.withdrawals MultiSigWallet.transactions)",
+        "(= MultiSigWallet_APIS.withdrawalConfirmations MultiSigWallet.confirmations)",
+        "(= MultiSigWallet_APIS.withdrawalCount MultiSigWallet.transactionCount)",
+        "(= MultiSigWallet_APIS.required MultiSigWallet.required)"
+    ]
+}

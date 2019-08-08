@@ -1,0 +1,14 @@
+{
+    "description": "Whitelist examples generation test",
+    "source": "Roles/Whitelisted-hanzo/Whitelisted.impl.sol",
+    "target": "Roles/Whitelisted-openzeppelin/Whitelisted.spec.sol",
+    "fields": [
+        "WhitelistedRole._whitelisteds: Map[Address,Bool]",
+        "WhitelistedRole.owner: Address",
+        "Whitelist.whitelist: Map[Address,Bool]",
+        "Whitelist.owner: Address"
+    ],
+    "seedFeatures": [
+        "(= Whitelist.whitelist WhitelistedRole._whitelisteds)"
+    ]
+}
