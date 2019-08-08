@@ -85,8 +85,8 @@ export namespace Metadata {
     export function getContractSpec(metadata: Metadata): ContractSpec {
         const { name, userdoc: { notice } } = metadata;
         debug(`notice(%s): %O`, name, notice);
-        const specs = notice.split(/(?=simulation)|(?=invariant)/);
-        const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
+        const specs = notice.trim().split(/(?=simulation)|(?=invariant)/);
+        const strip = (s: string) => s.replace(/[^\s]*\s+/,'').replace(/\s+/g, ' ').trim();
         const invariants = specs.filter(s => s.startsWith('invariant')).map(strip);
         const simulations = specs.filter(s => s.startsWith('simulation')).map(strip);
         const spec = { invariants, simulations };
