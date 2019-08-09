@@ -30,7 +30,7 @@ contract Escrow_Stacktical {
     function withdraw(address payable _payee) public  {
         uint256 payment = deposits[_payee];
 
-        assert(address(this).balance >= payment);
+        require(address(this).balance >= payment);
 
         deposits[_payee] = 0;
 
