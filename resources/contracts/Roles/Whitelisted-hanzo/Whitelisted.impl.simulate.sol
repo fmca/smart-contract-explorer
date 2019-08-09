@@ -42,9 +42,6 @@ contract Whitelist  {
 
 
     function isWhitelisted(address account) public view returns (bool) {
-        if (length == 0) {
-            return false;
-        }
         return whitelist[account];
     }
 }

@@ -1,5 +1,6 @@
 {
-    "description": "Hanzo Whitelisted simulates OZ Whitelisted role",
+    "description": "Hanzo Whitelisted does not simulate OZ Whitelisted role",
     "source": "Roles/Whitelisted-hanzo/Whitelisted.impl.sol",
-    "target": "Roles/Whitelisted-openzeppelin/Whitelisted.spec.sol"
+    "target": "Roles/Whitelisted-openzeppelin/Whitelisted.spec.sol",
+    "valid": false
 }
