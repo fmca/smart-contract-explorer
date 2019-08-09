@@ -104,7 +104,7 @@ export namespace Metadata {
         const key = Object.keys(methods).find(key => key.split('(')[0] === name);
 
         if (key === undefined)
-            return empty;
+            return getInternalMethodSpec(metadata,name);
 
         const { notice = '' } = methods[key];
         const specs = notice.split(/(?=modifies)|(?=precondition)|(?=postcondition)/);
@@ -131,5 +131,39 @@ export namespace Metadata {
         for (const node of metadata.ast.nodes)
             if (SourceUnitElement.isContractDefinition(node))
                 yield node;
+    }
+
+    function getInternalMethodSpec(metadata: Metadata, name: string): MethodSpec {
+
+        const empty: MethodSpec = { modifies: [], preconditions: [], postconditions: [] };
+
+        const { members: members } = metadata;
+        
+        const methodMembers = members.filter(m => m.nodeType === 'FunctionDefinition')
+
+        const methods = methodMembers.filter(m => m.name === name)
+
+        if (methods.length != 1)
+            return empty;
+
+        const method = methods[0]
+
+        if (method.documentation  === null)
+            return empty;
+
+        const documentation = method.documentation as string
+
+        const rmstart = (s: string) => s.replace(/\n*\s*/,'');
+        const documentations = documentation.split(/(?=\n)/).map(rmstart);
+
+        const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
+        
+        const specs = documentations.filter(s => s.startsWith('@notice')).map(strip);
+        const modifies = specs.filter(s => s.startsWith('modifies')).map(strip);
+        const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
+        const postconditions = specs.filter(s => s.startsWith('postcondition')).map(strip);
+        const spec = { modifies, preconditions, postconditions };
+        debug(`spec(%s): %O`, name, spec)
+        return spec;
     }
 }

@@ -159,7 +159,7 @@ contract Token {
      * proper events are emitted.
      * @param to The account that will receive the created tokens.
      * @param val The amount that will be created.
-     * @notice modifies _balances[to]
+     *    @notice modifies _balances[to]
      * @notice modifies _totalSupply
      */
     function mint(address to, uint val) internal {
@@ -175,7 +175,7 @@ contract Token {
      * account.
      * @param from The account whose tokens will be burnt.
      * @param val The amount that will be burnt.
-     * @notice modifies _balances[from]
+     *    @notice modifies _balances[from]
      * @notice modifies _totalSupply
      */
     function burn(address from, uint val) internal {
