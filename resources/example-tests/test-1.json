@@ -3,10 +3,10 @@
     "source": "Test1_impl.sol",
     "target": "Test1_spec.sol",
     "fields": [
-        "Test1_spec.a1: Int",
-        "Test1_spec.b1: Int",
-        "Test1_impl.a2: Int",
-        "Test1_impl.b2: Int"
+        "Test1_spec$a1: Int",
+        "Test1_spec$b1: Int",
+        "Test1_impl$a2: Int",
+        "Test1_impl$b2: Int"
     ],
     "seedFeatures": [
         "(= Test1_impl.a2 Test1_spec.a1)"

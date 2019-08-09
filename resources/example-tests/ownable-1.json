@@ -3,8 +3,8 @@
     "source": "Ownable/Ownable-siri-labs/Ownable.impl.sol",
     "target": "Ownable/Ownable-openzeppelin/Ownable.spec.sol",
     "fields": [
-        "Ownable_sirin_labs.owner: Address",
-        "Ownable._owner: Address"
+        "Ownable_sirin_labs$owner: Address",
+        "Ownable$_owner: Address"
     ],
     "seedFeatures": [
         "(= Ownable_sirin_labs.owner Ownable._owner)"
