@@ -31,7 +31,7 @@ function internalizeTransform(dirname: string) {
     return function (content: string) {
         content = internalizePublicAndExternal(content);
         content = moveImports(dirname, content);
-        // content = qualifyStructs(content);
+        content = qualifyStructs(content);
         return content;
     }
 }
@@ -65,9 +65,14 @@ function publicizeInternalAndExternal(content: string) {
 
 function qualifyStructs(content: string) {
     const name = getContractName(content);
-    const matches = content.match(/(?<=\bstruct\b\s+)([^\s{])+(?=[\s{])/g);
-    const structs = matches === null ? [] : [...matches];
+    const structs = content.match(/(?<=\bstruct\b\s+)([^\s{])+(?=[\s{])/g);
+
+    if (structs === null)
+        return content;
+
     const regexp = new RegExp(`\\b(${structs.join('|')})\\b`, 'g');
+
+    debug(`replacing structs: %o`, structs);
     const replaced = content.replace(regexp, `${name}$$$1`);
     return replaced;
 }
