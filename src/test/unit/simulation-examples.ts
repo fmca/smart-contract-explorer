@@ -1,8 +1,8 @@
 import assert from 'assert';
-import { SimulationExamplesContract } from '../contracts';
-import * as Compile from '../frontend/compile';
-import { ValueGenerator } from '../model';
-import { SimulationExample } from '../simulation/examples';
+import { SimulationExamplesContract } from '../../contracts';
+import * as Compile from '../../frontend/compile';
+import { ValueGenerator } from '../../model';
+import { SimulationExample } from '../../simulation/examples';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 

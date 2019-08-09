@@ -1,10 +1,10 @@
 import fs from 'fs-extra';
 import path from 'path';
 import assert, { fail } from 'assert';
-import { generateExamples } from '../simulation/examples';
-import { SimulationCounterExample } from '../simulation/counterexample';
+import { generateExamples } from '../../simulation/examples';
+import { SimulationCounterExample } from '../../simulation/counterexample';
 
-const resources = path.resolve(__dirname, '..', '..', 'resources');
+const resources = path.resolve(__dirname, '..', '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
 const tests = path.resolve(resources, 'example-tests');
 

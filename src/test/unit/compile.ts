@@ -1,4 +1,4 @@
-import * as Compile from '../frontend/compile';
+import * as Compile from '../../frontend/compile';
 import assert from 'assert';
 
 const pragmas = `pragma solidity ^0.5.0;`;

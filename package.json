@@ -11,9 +11,8 @@
   "scripts": {
     "build": "tsc",
     "postinstall": "npm run build",
-    "test:unittests": "mocha dist/test/**/*.js --exclude '**/examples*,**/verifier*'",
-    "test:examples": "mocha dist/test/examples.js",
-    "test:verifier": "mocha dist/test/verifier.js",
+    "test:unit": "mocha dist/test/unit/**/*.js",
+    "test:integration": "mocha dist/test/integration/**/*.js",
     "pretest:infer": "cd LoopInvGen && opam install . && dune build",
     "test:infer": "cd LoopInvGen && ./_build/default/test/Runner.exe $(which z3)",
     "test": "npm-run-all test:*"

@@ -1,4 +1,4 @@
-import * as Chain from '../utils/chain';
+import * as Chain from '../../utils/chain';
 import assert from 'assert';
 
 describe('chain', function() {

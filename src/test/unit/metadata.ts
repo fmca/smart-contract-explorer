@@ -1,5 +1,5 @@
-import * as Compile from '../frontend/compile';
-import { Metadata, ContractSpec } from '../frontend/metadata';
+import * as Compile from '../../frontend/compile';
+import { Metadata, ContractSpec } from '../../frontend/metadata';
 import assert from 'assert';
 
 const pragmas = `pragma solidity ^0.5.0;`;

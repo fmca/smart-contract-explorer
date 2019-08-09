@@ -1,5 +1,5 @@
-import { Expr } from '../sexpr/expression';
-import { toNode } from '../frontend/expr-to-node';
+import { Expr } from '../../sexpr/expression';
+import { toNode } from '../../frontend/expr-to-node';
 import assert from 'assert';
 
 const util = require('util');
