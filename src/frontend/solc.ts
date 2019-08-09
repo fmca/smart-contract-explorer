@@ -24,7 +24,7 @@ export interface Input {
 };
 
 export interface Notice {
-    notice: string;
+    notice?: string;
 }
 
 export interface UserDoc extends Notice {

@@ -31,16 +31,19 @@ export interface Result {
 }
 
 export async function getSimulationCheckContract(parameters: Parameters): Promise<Result> {
-    const { paths: { source, target }, output: o } = parameters;
+    const { paths, output: o } = parameters;
     const dir = path.dirname(o.path);
-    const si = await internalize(source, dir);
-    const ti = await internalize(target, dir);
     const internalized = {
-        source: si,
-        target: ti
-    };
-    const s = { ...await Compile.fromFile(source), source: si };
-    const t = { ...await Compile.fromFile(target), source: ti };
+        source: await internalize(paths.source, dir),
+        target: await internalize(paths.target, dir)
+    }
+
+    const source = await Compile.fromFile(paths.source);
+    const target = await Compile.fromFile(paths.target);
+
+    const s = { ...source, source: internalized.source };
+    const t = { ...target, source: internalized.target };
+
     const mapping = FunctionMapping.getMapping(s, t);
     const contract = await new SimulationCheckingContract(mapping, o).getSourceInfo();
     return { contract, internalized };

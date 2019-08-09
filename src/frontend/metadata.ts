@@ -83,7 +83,7 @@ export namespace Metadata {
     }
 
     export function getContractSpec(metadata: Metadata): ContractSpec {
-        const { name, userdoc: { notice } } = metadata;
+        const { name, userdoc: { notice = '' } } = metadata;
         debug(`notice(%s): %O`, name, notice);
         const specs = notice.trim().split(/(?=simulation)|(?=invariant)/);
         const strip = (s: string) => s.replace(/[^\s]*\s+/,'').replace(/\s+/g, ' ').trim();
@@ -106,7 +106,7 @@ export namespace Metadata {
         if (key === undefined)
             return empty;
 
-        const { notice } = methods[key];
+        const { notice = '' } = methods[key];
         const specs = notice.split(/(?=modifies)|(?=precondition)|(?=postcondition)/);
         const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
         const modifies = specs.filter(s => s.startsWith('modifies')).map(strip);
