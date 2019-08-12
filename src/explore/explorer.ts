@@ -1,5 +1,5 @@
 import { State, Operation } from '../model';
-import { ExecutorFactory, isErrorResult } from './execute';
+import { ExecutorFactory } from './execute';
 import { LimiterFactory } from './limiter';
 import { InvocationGenerator } from '../model';
 import { Address, Metadata } from '../frontend/metadata';
@@ -32,7 +32,7 @@ export class Explorer {
     async * transitions(params: Parameters): AsyncIterable<Transition> {
         const { metadata, limiters, invocationGenerator } = params;
         const limiter = limiters.get();
-        const executer = this.executorFactory.getExecutor(invocationGenerator, metadata);
+        const executer = this.executorFactory.getExecutor(invocationGenerator,metadata);
         const initial = await this.initial(params);
         const workList = [ initial ];
 
@@ -47,11 +47,6 @@ export class Explorer {
                     continue;
 
                 const result = await executer.execute(pre, invocation);
-
-                if (isErrorResult(result)) {
-                    debug(`error result: %o`, result);
-                    continue;
-                }
 
                 const { operation, state: post } = result;
                 const transition = { pre, operation, post };

@@ -46,7 +46,7 @@ export interface ContractMember extends Node {
 export interface FunctionDefinition extends ContractMember {
     nodeType: 'FunctionDefinition';
 
-    kind: string;
+    kind: FunctionKind;
     stateMutability: StateMutability;
     visibility: Visibility;
 
@@ -57,6 +57,7 @@ export interface FunctionDefinition extends ContractMember {
     documentation: string;
 }
 
+export type FunctionKind = 'constructor' | 'function';
 export type StateMutability = 'payable' | 'nonpayable' | 'view';
 export type Visibility = 'external' | 'public' | 'private' | 'internal';
 
@@ -127,7 +128,7 @@ export namespace VariableDeclaration {
 
 export namespace FunctionDefinition {
     export function isConstructor(method: FunctionDefinition) {
-        return method.name === '';
+        return method.kind === 'constructor';
     }
 
     export function visibility(method: FunctionDefinition) {

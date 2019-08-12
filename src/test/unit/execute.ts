@@ -2,7 +2,7 @@ import * as Chain from '../../utils/chain';
 import * as Compile from '../../frontend/compile';
 import assert from 'assert';
 import { ExecutorFactory } from '../../explore/execute';
-import { InvocationGenerator, Trace, Invocation, Result, Value } from '../../model';
+import { InvocationGenerator, Trace, Invocation, Value, NormalResult } from '../../model';
 import { Metadata, SourceInfo } from '../../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
@@ -54,9 +54,7 @@ describe('execute', function() {
         await testSequence(`a.sol`, 2, 'inc', 'inc', 'get');
     });
 
-    it('invokes constructors with arguments', async function() {
-        await testSequence(`b.sol`, 0, 'get');
-    });
+    it('invokes constructors with arguments');
 
 });
 
@@ -70,7 +68,7 @@ async function testSequence(path: string, value: Value, ...names: string[]) {
     await context.invokeSequence(invocations);
     const actual = await context.invoke(last!);
 
-    const expected = new Result(value);
+    const expected = new NormalResult(value);
     assert.deepEqual(actual, expected);
 }
 
@@ -83,11 +81,10 @@ function getInvocation(path: string, name: string, ...args: Value[]) {
 
 async function getContext(metadata: Metadata) {
     const chain = await Chain.get();
-    const { accounts } = chain;
     const executerFactory = new ExecutorFactory(chain);
     const methods = [...Metadata.getFunctions(metadata)];
-    const invocationGenerator = new InvocationGenerator(methods, accounts);
+    const invocationGenerator = new InvocationGenerator(methods, chain.accounts);
     const executer = executerFactory.getExecutor(invocationGenerator, metadata);
-    const context = await executer.createContext();
+    const context = await executer.createInstance();
     return context;
 }

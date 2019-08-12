@@ -5,7 +5,7 @@ export class Operation {
     constructor(public invocation: Invocation, public result: Result) {}
 
     toString() {
-        return this.result.values.length < 1
+        return this.result.isVoid()
             ? `${this.invocation}`
             : `${this.invocation} => ${this.result}`;
     }
@@ -15,10 +15,10 @@ export class Operation {
             && this.result.equals(that.result);
     }
 
-    static deserialize(obj: { [K in keyof Operation]: Operation[K] }): Operation {
-        const { invocation: i, result: r } = obj;
-        const invocation = Invocation.deserialize(i);
-        const result = Result.deserialize(r);
-        return new Operation(invocation, result);
-    }
+    // static deserialize(obj: { [K in keyof Operation]: Operation[K] }): Operation {
+    //     const { invocation: i, result: r } = obj;
+    //     const invocation = Invocation.deserialize(i);
+    //     const result = Result.deserialize(r);
+    //     return new Operation(invocation, result);
+    // }
 }

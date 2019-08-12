@@ -17,10 +17,10 @@ export class State {
         return new State(contractId, Trace.empty(), observation);
     }
 
-    static deserialize(obj: { [K in keyof State]: State[K] }): State {
-        const { contractId, trace: t, observation: o } = obj;
-        const trace = Trace.deserialize(t);
-        const observation = Observation.deserialize(o);
-        return new State(contractId, trace, observation);
-    }
+    // static deserialize(obj: { [K in keyof State]: State[K] }): State {
+    //     const { contractId, trace: t, observation: o } = obj;
+    //     const trace = Trace.deserialize(t);
+    //     const observation = Observation.deserialize(o);
+    //     return new State(contractId, trace, observation);
+    // }
 }

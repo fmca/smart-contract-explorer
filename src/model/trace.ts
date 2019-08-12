@@ -18,9 +18,9 @@ export class Trace {
         return new Trace([]);
     }
 
-    static deserialize(obj: { [K in keyof Trace]: Trace[K] }): Trace {
-        const { operations: ops } = obj;
-        const operations = ops.map(Operation.deserialize);
-        return new Trace(operations);
-    }
+    // static deserialize(obj: { [K in keyof Trace]: Trace[K] }): Trace {
+    //     const { operations: ops } = obj;
+    //     const operations = ops.map(Operation.deserialize);
+    //     return new Trace(operations);
+    // }
 }

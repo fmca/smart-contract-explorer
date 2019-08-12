@@ -1,14 +1,15 @@
 import { Debugger } from '../utils/debug';
 import { Expr } from '../sexpr/expression';
-import { State, Operation, Result, Trace, Observation } from '../model';
+import { State, Operation, Trace, Observation, NormalResult } from '../model';
 import * as Compile from '../frontend/compile';
-import { ExecutorFactory, Context, isErrorResult } from './execute';
+import { ExecutorFactory } from './execute';
 import { Invocation, InvocationGenerator } from '../model';
 import * as Chain from '../utils/chain';
-import { Metadata } from '../frontend/metadata';
+import { Metadata, Address } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
 import { AbstractExample } from '../simulation/examples';
 import { lines } from '../utils/lines';
+import { ContractInstance } from './instance';
 
 const debug = Debugger(__filename);
 
@@ -46,13 +47,19 @@ export class Evaluator {
     async processRequest(request: Request): Promise<Response> {
         const { example, expression } = request;
         const operation = await this.evaluation.evaluate(example, expression);
-        const { result: { values: [ result ] } } = operation;
-        debug(`result: %o`, result);
 
-        if (typeof(result) !== 'boolean')
+        const { result } = operation;
+
+        if (!(result instanceof NormalResult))
+            throw Error(`Expected normal result`);
+
+        const { values: [ value ] } = result;
+        debug(`result: %o`, value);
+
+        if (typeof(value) !== 'boolean')
             throw Error(`Expected Boolean-valued expression`);
 
-        return { result };
+        return { result: value };
     }
 
     parseRequest(line: string): Request {
@@ -75,11 +82,13 @@ export class Evaluator {
 }
 
 abstract class Evaluation {
+    accounts: Address[];
     executorFactory: ExecutorFactory;
     metadataCache = new Map<string, Metadata>();
 
     constructor(chain: Chain.BlockchainInterface) {
         this.executorFactory = new ExecutorFactory(chain);
+        this.accounts = chain.accounts;
     }
 
     abstract async evaluate(example: AbstractExample, expression: Expr): Promise<Operation>;
@@ -108,22 +117,19 @@ class ExtensionEvaluation extends Evaluation {
         const { id: { contract, method: stateMethod } } = example;
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
-        const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+        const methods = [...Metadata.getFunctions(metadata)];
+        const invocationGenerator = new InvocationGenerator(methods, this.accounts);
         const executor = this.executorFactory.getExecutor(invocationGenerator, extension);
         const state = ExtensionEvaluation.getState(extension, stateMethod);
         const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);
         const result = await executor.execute(state, invocation);
-
-        if (isErrorResult(result))
-            throw Error(`Unexpected error result: ${result.error}`);
-
         const { operation } = result;
         return operation;
     }
 
     static getState(metadata: Metadata, methodName: string): State {
         const invocation = ExtensionEvaluation.getInvocation(metadata, methodName);
-        const operation = new Operation(invocation, new Result());
+        const operation = new Operation(invocation, new NormalResult());
         const trace = new Trace([operation]);
         const observation = new Observation([]);
         const state = new State('', trace, observation);
@@ -138,23 +144,23 @@ class ExtensionEvaluation extends Evaluation {
     }
 }
 
-type CachedExample = { metadata: Metadata, context: Context };
+type CachedExample = { metadata: Metadata, instance: ContractInstance };
+type CachedExpression = { metadata: Metadata, instance: ContractInstance };
 
 class CachingEvaluation extends Evaluation {
     exampleCache = new Map<string, CachedExample>();
-    expressionCache = new Map<string, Context>();
+    expressionCache = new Map<string, CachedExpression>();
 
     constructor(chain: Chain.BlockchainInterface) {
         super(chain);
     }
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
-        const { metadata, context: { contract: { options: { address }}}} = await this.getExample(example);
-        const context = await this.getExpression(expression, metadata);
-        const { metadata: m } = context;
+        const { metadata, instance: { contract: { options: { address }}}} = await this.getExample(example);
+        const { instance, metadata: m } = await this.getExpression(expression, metadata);
         const [method] = [...Metadata.getFunctions(m)];
         const invocation = new Invocation(method, address);
-        const result = await context.invokeReadOnly(invocation);
+        const result = await instance.invokeReadOnly(invocation);
         const operation = new Operation(invocation, result);
         return operation;
     }
@@ -166,15 +172,16 @@ class CachingEvaluation extends Evaluation {
             debug(`caching example: %o`, example);
             const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
-            const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+            const methods = [...Metadata.getFunctions(metadata)];
+            const invocationGenerator = new InvocationGenerator(methods, this.accounts);
             const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
-            const context = await executor.createContext();
+            const instance = await executor.createInstance();
             const method = Metadata.findFunction(methodName, metadata);
             if (method === undefined)
                 throw Error(`unknown method: ${methodName}`);
             const invocation = new Invocation(method);
-            await context.invoke(invocation);
-            this.exampleCache.set(key, { metadata, context });
+            await instance.invoke(invocation);
+            this.exampleCache.set(key, { metadata, instance });
         }
 
         return this.exampleCache.get(key)!;
@@ -186,10 +193,11 @@ class CachingEvaluation extends Evaluation {
         if (!this.expressionCache.has(key)) {
             debug(`caching expression: %o`, expression);
             const metadata = await expressionEvaluator(expression, examples);
-            const invocationGenerator = new InvocationGenerator([...Metadata.getFunctions(metadata)], this.executorFactory.accounts);
+            const methods = [...Metadata.getFunctions(metadata)];
+            const invocationGenerator = new InvocationGenerator(methods, this.accounts);
             const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
-            const context = await executor.createContext();
-            this.expressionCache.set(key, context);
+            const instance = await executor.createInstance();
+            this.expressionCache.set(key, { metadata, instance });
         }
 
         return this.expressionCache.get(key)!;

@@ -7,6 +7,7 @@ import { FunctionDefinition } from '../solidity';
 
 export class Invocation {
     public inputs: Value[];
+
     constructor(public method: FunctionDefinition, ...args: Value[]) {
         const { name, parameters: { parameters } } = method;
         const count = parameters.length;
@@ -16,12 +17,17 @@ export class Invocation {
     }
 
     toString() {
-        return `${this.method.name}(${this.inputs.join(', ')})`;
+        const name = this.isConstructor() ? 'constructor' : this.method.name;
+        return `${name}(${this.inputs.join(', ')})`;
     }
 
     equals(that: Invocation): boolean {
         return Method.equals(this.method, that.method)
             && Values.equals(this.inputs, that.inputs);
+    }
+
+    isConstructor(): boolean {
+        return FunctionDefinition.isConstructor(this.method);
     }
 
     isMutator(): boolean {

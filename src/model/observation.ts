@@ -22,9 +22,9 @@ export class Observation {
         return true;
     }
 
-    static deserialize(obj: { [K in keyof Observation]: Observation[K] }): Observation {
-        const { operations: ops } = obj;
-        const operations = ops.map(Operation.deserialize);
-        return new Observation(operations);
-    }
+    // static deserialize(obj: { [K in keyof Observation]: Observation[K] }): Observation {
+    //     const { operations: ops } = obj;
+    //     const operations = ops.map(Operation.deserialize);
+    //     return new Observation(operations);
+    // }
 }
