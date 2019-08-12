@@ -6,7 +6,7 @@ import { isRuntimeError } from './errors';
 const debug = Debugger(__filename);
 
 export class ContractInstance {
-    constructor(public contract: Contract, public account: Address) { }
+    constructor(public contract: Promise<Contract>, public account: Address) { }
 
     async invokeSequence(invocations: Invocation[]): Promise<Result> {
         debug(`invoking sequence: %o`, invocations);
@@ -26,13 +26,14 @@ export class ContractInstance {
     }
 
     async invokeMutator(invocation: Invocation): Promise<Result> {
+        const contract = await this.contract;
         const { method, inputs } = invocation;
         const { name } = method;
         const from = this.account;
 
         debug(`invoking mutator method: %s`, invocation);
 
-        const tx = this.contract.methods[name!](...inputs);
+        const tx = contract.methods[name!](...inputs);
         const gas = await tx.estimateGas() * 10;
 
         debug(`sending transaction from %o with gas %o`, from, gas);
@@ -44,11 +45,12 @@ export class ContractInstance {
     }
 
     async invokeReadOnly(invocation: Invocation): Promise<Result> {
+        const contract = await this.contract;
         const { method, inputs } = invocation;
         const { name } = method;
 
         debug(`invoking readonly method: %s`, invocation);
-        const values = await this.contract.methods[name!](...inputs).call();
+        const values = await contract.methods[name!](...inputs).call();
         debug("values: %o", values);
         const result = new NormalResult(values);
         debug("result: %o", result);

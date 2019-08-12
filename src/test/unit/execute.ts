@@ -54,7 +54,9 @@ describe('execute', function() {
         await testSequence(`a.sol`, 2, 'inc', 'inc', 'get');
     });
 
-    it('invokes constructors with arguments');
+    it('invokes constructors with arguments', async function() {
+        await testSequence(`b.sol`, 0, `get`);
+    });
 
 });
 
@@ -79,12 +81,13 @@ function getInvocation(path: string, name: string, ...args: Value[]) {
     return invocation
 }
 
-async function getContext(metadata: Metadata) {
+async function getContext(metadata: Metadata, ...values: Value[]) {
     const chain = await Chain.get();
     const executerFactory = new ExecutorFactory(chain);
     const methods = [...Metadata.getFunctions(metadata)];
     const invocationGenerator = new InvocationGenerator(methods, chain.accounts);
     const executer = executerFactory.getExecutor(invocationGenerator, metadata);
-    const context = await executer.createInstance();
+    const [ invocation ] = invocationGenerator.constructors();
+    const context = await executer.create(invocation);
     return context;
 }

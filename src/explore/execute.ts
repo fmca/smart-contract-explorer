@@ -1,4 +1,4 @@
-import { State, Trace, Observation, Operation, Result } from '../model';
+import { State, Trace, Observation, Operation, Result, NormalResult } from '../model';
 import { Invocation, InvocationGenerator } from '../model';
 import { ContractInstantiation } from './instantiate';
 import { Debugger } from '../utils/debug';
@@ -33,12 +33,16 @@ export class Executor {
         public invocationGenerator: InvocationGenerator,
         public metadata: Metadata) { }
 
-    async initial(): Promise<State> {
-        const instance = await this.createInstance();
-        const observation = await this.getObservation(instance);
-        const { source: { path: contractId }} = this.metadata;
-        const trace = new Trace([]);
-        return new State(contractId, trace, observation);
+    async * initials(): AsyncIterable<State> {
+        for (const invocation of this.invocationGenerator.constructors()) {
+            const instance = await this.create(invocation);
+            const result = new NormalResult();
+            const operation = new Operation(invocation, result);
+            const trace = new Trace([operation]);
+            const observation = await this.getObservation(instance);
+            const { source: { path: contractId }} = this.metadata;
+            yield new State(contractId, trace, observation);
+        }
     }
 
     async execute(state: State, invocation: Invocation): Promise<Effect> {
@@ -55,14 +59,18 @@ export class Executor {
         return { operation, state: nextState };
     }
 
-    async createInstance(): Promise<ContractInstance> {
-        return this.creator.instantiate(this.metadata);
+    async create(invocation: Invocation): Promise<ContractInstance> {
+        if (!invocation.isConstructor)
+            throw Error(`Expected constructor invocation`);
+
+        const { inputs } = invocation;
+        return this.creator.instantiate(this.metadata, ...inputs);
     }
 
     async replay(trace: Trace): Promise<ContractInstance> {
         debug(`replaying trace: %s`, trace);
-        const instance = await this.createInstance();
-        const { operations } = trace;
+        const { operations: [{ invocation }, ...operations] } = trace;
+        const instance = await this.create(invocation);
         const invocations = operations.map(({ invocation }) => invocation);
         await instance.invokeSequence(invocations);
         return instance;

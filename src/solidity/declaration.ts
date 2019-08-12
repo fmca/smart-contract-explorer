@@ -1,4 +1,4 @@
-import { Node } from './node';
+import { Node, node, NodeType } from './node';
 import { Block } from './statement';
 import { TypeDescriptions, TypeName } from './type';
 
@@ -51,10 +51,10 @@ export interface FunctionDefinition extends ContractMember {
     visibility: Visibility;
 
     name: string;
-    body: Block;
+    body: Block | null;
     parameters: Parameters;
     returnParameters: ReturnParameters;
-    documentation: string;
+    documentation: string | null;
 }
 
 export type FunctionKind = 'constructor' | 'function';
@@ -127,6 +127,27 @@ export namespace VariableDeclaration {
 };
 
 export namespace FunctionDefinition {
+
+    export function get(name: string,
+            kind: FunctionKind = 'function',
+            parameters: VariableDeclaration[] = [],
+            returnParameters: VariableDeclaration[] = [],
+            stateMutability: StateMutability = 'nonpayable',
+            visibility: Visibility = 'public',
+            documentation: string | null = null): FunctionDefinition {
+        return {
+            ...node('FunctionDefinition'),
+            name,
+            kind,
+            parameters: { ...node('ParameterList'), parameters },
+            returnParameters: { ...node('ParameterList'), parameters: returnParameters },
+            stateMutability,
+            visibility,
+            body: null,
+            documentation
+        }
+    }
+
     export function isConstructor(method: FunctionDefinition) {
         return method.kind === 'constructor';
     }
@@ -151,9 +172,9 @@ export namespace FunctionDefinition {
             yield parameter;
     }
 
-    export function isMutator({ stateMutability }: FunctionDefinition) {
-        return stateMutability == undefined
-            || !['pure', 'view'].includes(stateMutability);
+    export function isMutator(method: FunctionDefinition) {
+        const { stateMutability } = method;
+        return method.kind === 'function' && !['pure', 'view'].includes(stateMutability);
     }
 
 };

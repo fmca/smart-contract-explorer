@@ -3,7 +3,7 @@ const debug = Debugger(__filename);
 
 import {  Address } from '../frontend/metadata';
 import { ValueGenerator } from './values';
-import { FunctionDefinition } from '../solidity';
+import { FunctionDefinition, node } from '../solidity';
 import { Invocation } from './invocations';
 
 export class InvocationGenerator {
@@ -16,10 +16,6 @@ export class InvocationGenerator {
     * invocationsWith(accept: (_: FunctionDefinition) => boolean): Iterable<Invocation> {
         for (const method of this.methods) {
             if (!accept(method))
-                continue;
-
-            // ignore constructors
-            if (method.name === '')
                 continue;
 
             if (method.visibility === 'private')
@@ -36,6 +32,13 @@ export class InvocationGenerator {
 
     invocations(): Iterable<Invocation> {
         return this.invocationsWith(() => true);
+    }
+
+    constructors(): Iterable<Invocation> {
+        if (!this.methods.some(FunctionDefinition.isConstructor))
+            return [new Invocation(FunctionDefinition.get('', 'constructor'))];
+
+        return this.invocationsWith(FunctionDefinition.isConstructor);
     }
 
     mutators(): Iterable<Invocation> {

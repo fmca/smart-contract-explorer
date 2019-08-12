@@ -33,11 +33,14 @@ export class Explorer {
         const { metadata, limiters, invocationGenerator } = params;
         const limiter = limiters.get();
         const executer = this.executorFactory.getExecutor(invocationGenerator,metadata);
-        const initial = await this.initial(params);
-        const workList = [ initial ];
 
-        debug({ post: initial });
-        yield { post: initial };
+        const workList: State[] = [ ];
+
+        for await (const initial of this.initials(params)) {
+            debug({ post: initial });
+            yield { post: initial };
+            workList.push(initial);
+        }
 
         while (workList.length > 0) {
             const pre = workList.shift()!;
@@ -57,10 +60,9 @@ export class Explorer {
         }
     }
 
-    async initial(params: Parameters): Promise<State> {
+    initials(params: Parameters): AsyncIterable<State> {
         const { metadata, invocationGenerator } = params;
         const executer = this.executorFactory.getExecutor(invocationGenerator, metadata);
-        const state = await executer.initial();
-        return state;
+        return executer.initials();
     }
 }

@@ -69,6 +69,10 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
             continue;
 
         const { body: b2 } = m2;
+
+        if (b1 === null || b2 === null)
+            throw Error(`Unexpected null block(s)`);
+
         const e1 = specBodyToExpr(b1);
         const e2 = implBodyToExpr(b2);
         const feature = simplify(`(= ${e1} ${e2})`);
