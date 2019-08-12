@@ -10,6 +10,7 @@ import { extendWithPredicate, expressionEvaluator } from '../contracts/extension
 import { AbstractExample } from '../simulation/examples';
 import { lines } from '../utils/lines';
 import { ContractInstance } from './instance';
+import { ContractInstantiation } from './instantiate';
 
 const debug = Debugger(__filename);
 
@@ -83,11 +84,9 @@ export class Evaluator {
 
 abstract class Evaluation {
     accounts: Address[];
-    executorFactory: ExecutorFactory;
     metadataCache = new Map<string, Metadata>();
 
     constructor(chain: Chain.BlockchainInterface) {
-        this.executorFactory = new ExecutorFactory(chain);
         this.accounts = chain.accounts;
     }
 
@@ -108,9 +107,11 @@ abstract class Evaluation {
 }
 
 class ExtensionEvaluation extends Evaluation {
+    executorFactory: ExecutorFactory;
 
     constructor(chain: Chain.BlockchainInterface) {
         super(chain);
+        this.executorFactory = new ExecutorFactory(chain);
     }
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
@@ -150,9 +151,11 @@ type CachedExpression = { metadata: Metadata, instance: ContractInstance };
 class CachingEvaluation extends Evaluation {
     exampleCache = new Map<string, CachedExample>();
     expressionCache = new Map<string, CachedExpression>();
+    creator: ContractInstantiation;
 
     constructor(chain: Chain.BlockchainInterface) {
         super(chain);
+        this.creator = new ContractInstantiation(chain);
     }
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
@@ -172,10 +175,7 @@ class CachingEvaluation extends Evaluation {
             debug(`caching example: %o`, example);
             const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
-            const methods = [...Metadata.getFunctions(metadata)];
-            const invocationGenerator = new InvocationGenerator(methods, this.accounts);
-            const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
-            const instance = await executor.createInstance();
+            const instance = await this.creator.instantiate(metadata);
             const method = Metadata.findFunction(methodName, metadata);
             if (method === undefined)
                 throw Error(`unknown method: ${methodName}`);
@@ -193,10 +193,7 @@ class CachingEvaluation extends Evaluation {
         if (!this.expressionCache.has(key)) {
             debug(`caching expression: %o`, expression);
             const metadata = await expressionEvaluator(expression, examples);
-            const methods = [...Metadata.getFunctions(metadata)];
-            const invocationGenerator = new InvocationGenerator(methods, this.accounts);
-            const executor = this.executorFactory.getExecutor(invocationGenerator, metadata);
-            const instance = await executor.createInstance();
+            const instance = await this.creator.instantiate(metadata);
             this.expressionCache.set(key, { metadata, instance });
         }
 

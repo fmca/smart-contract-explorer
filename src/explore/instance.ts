@@ -37,6 +37,9 @@ export class ContractInstance {
 
         debug(`sending transaction from %o with gas %o`, from, gas);
         await tx.send({ from, gas });
+
+        // TODO maybe don’t ignore the return value?
+
         return new NormalResult();
     }
 
