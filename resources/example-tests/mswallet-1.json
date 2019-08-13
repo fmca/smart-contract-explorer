@@ -17,11 +17,11 @@
         "MultiSigWallet$required: Int"
     ],
     "seedFeatures": [
-        "(= MultiSigWallet_APIS.is_owner MultiSigWallet.is_owner)",
-        "(= MultiSigWallet_APIS.owners MultiSigWallet.owners)",
-        "(= MultiSigWallet_APIS.withdrawals MultiSigWallet.transactions)",
-        "(= MultiSigWallet_APIS.withdrawalConfirmations MultiSigWallet.confirmations)",
-        "(= MultiSigWallet_APIS.withdrawalCount MultiSigWallet.transactionCount)",
-        "(= MultiSigWallet_APIS.required MultiSigWallet.required)"
+        "(= MultiSigWallet_APIS$is_owner MultiSigWallet$is_owner)",
+        "(= MultiSigWallet_APIS$owners MultiSigWallet$owners)",
+        "(= MultiSigWallet_APIS$withdrawals MultiSigWallet$transactions)",
+        "(= MultiSigWallet_APIS$withdrawalConfirmations MultiSigWallet$confirmations)",
+        "(= MultiSigWallet_APIS$withdrawalCount MultiSigWallet$transactionCount)",
+        "(= MultiSigWallet_APIS$required MultiSigWallet$required)"
     ]
 }

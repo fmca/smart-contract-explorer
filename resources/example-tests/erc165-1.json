@@ -7,6 +7,6 @@
         "ERC165_Spec$_supportedInterfaces: Map[Int,Bool]"
     ],
     "seedFeatures": [
-        "(= ERC165MappingImplementation.supportedInterfaces ERC165_Spec._supportedInterfaces)"
+        "(= ERC165MappingImplementation$supportedInterfaces ERC165_Spec$_supportedInterfaces)"
     ]
 }

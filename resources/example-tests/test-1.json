@@ -9,6 +9,6 @@
         "Test1_impl$b2: Int"
     ],
     "seedFeatures": [
-        "(= Test1_impl.a2 Test1_spec.a1)"
+        "(= Test1_impl$a2 Test1_spec$a1)"
     ]
 }

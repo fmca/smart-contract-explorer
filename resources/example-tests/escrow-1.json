@@ -9,6 +9,6 @@
         "Escrow_Stacktical$deposits: Map[Address,Int]"
     ],
     "seedFeatures": [
-        "(= Escrow_Stacktical.deposits Escrow.deposits)"
+        "(= Escrow_Stacktical$deposits Escrow$deposits)"
     ]
 }

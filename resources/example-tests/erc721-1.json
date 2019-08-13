@@ -15,9 +15,9 @@
         "ERC721_Spec$_tokenOwner: Map[Int,Address]"
     ],
     "seedFeatures": [
-        "(= ERC721_Impl._tokenOwner ERC721_Spec._tokenOwner)",
-        "(= ERC721_Impl._tokenApprovals ERC721_Spec._tokenApprovals)",
-        "(= ERC721_Impl._ownedTokensCount ERC721_Spec._ownedTokensCount)",
-        "(= ERC721_Impl._operatorApprovals ERC721_Spec._operatorApprovals)"
+        "(= ERC721_Impl$_tokenOwner ERC721_Spec$_tokenOwner)",
+        "(= ERC721_Impl$_tokenApprovals ERC721_Spec$_tokenApprovals)",
+        "(= ERC721_Impl$_ownedTokensCount ERC721_Spec$_ownedTokensCount)",
+        "(= ERC721_Impl$_operatorApprovals ERC721_Spec$_operatorApprovals)"
     ]
 }

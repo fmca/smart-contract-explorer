@@ -11,6 +11,6 @@
         
     ],
     "seedFeatures": [
-        "(= (and (or (not (= Whitelist.length 0)) false) (or (not (not (= Whitelist.length 0))) (index Whitelist.whitelist account))) (index WhitelistedRole._whitelisteds account))"
+        "(= (and (or (not (= Whitelist$length 0)) false) (or (not (not (= Whitelist$length 0))) (index Whitelist$whitelist account))) (index WhitelistedRole$_whitelisteds account))"
     ]
 }

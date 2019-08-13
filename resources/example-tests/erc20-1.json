@@ -16,8 +16,8 @@
         "Token$_totalSupply: Int"
     ],
     "seedFeatures": [
-        "(= Token._balances ERC20.balances)",
-        "(= Token._allowed ERC20.allowances)"
+        "(= Token$_balances ERC20$balances)",
+        "(= Token$_allowed ERC20$allowances)"
     ]
 }
 

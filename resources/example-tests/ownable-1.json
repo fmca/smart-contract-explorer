@@ -7,6 +7,6 @@
         "Ownable$_owner: Address"
     ],
     "seedFeatures": [
-        "(= Ownable_sirin_labs.owner Ownable._owner)"
+        "(= Ownable_sirin_labs$owner Ownable$_owner)"
     ]
 }
