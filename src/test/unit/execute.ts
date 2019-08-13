@@ -54,21 +54,27 @@ describe('execute', function() {
     });
 
     it('invokes function sequences', async function() {
-        await testSequence('a.sol', 42, [], ['f']);
-        await testSequence('a.sol', 0, [], ['get']);
-        await testSequence('a.sol', 42, [], ['f'], ['f']);
-        await testSequence('a.sol', 2, [], ['inc'], ['inc'], ['get']);
+        await Promise.all([
+            testSequence('a.sol', 42, [], ['f']),
+            testSequence('a.sol', 0, [], ['get']),
+            testSequence('a.sol', 42, [], ['f'], ['f']),
+            testSequence('a.sol', 2, [], ['inc'], ['inc'], ['get'])
+        ]);
     });
 
     it('invokes constructors with arguments', async function() {
-        await testSequence('b.sol', 0, [0], ['get']);
-        await testSequence('b.sol', 42, [42], ['get']);
-        await testSequence('b.sol', 45, [42], ['inc', [3]], ['get']);
+        await Promise.all([
+            testSequence('b.sol', 0, [0], ['get']),
+            testSequence('b.sol', 42, [42], ['get']),
+            testSequence('b.sol', 45, [42], ['inc', [3]], ['get'])
+        ]);
     });
 
     it('handles transaction reverting', async function() {
-        await testSequence('c.sol', undefined, [], ['get']);
-        await testSequence('c.sol', 1, [], ['inc'], ['get']);
+        await Promise.all([
+            testSequence('c.sol', undefined, [], ['get']),
+            testSequence('c.sol', 1, [], ['inc'], ['get'])
+        ]);
     });
 
 });
