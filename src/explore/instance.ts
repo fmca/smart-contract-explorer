@@ -1,8 +1,8 @@
 import { Debugger } from '../utils/debug';
 import { Contract, Address } from '../frontend/metadata';
-import { Result, Invocation, Observation, Operation, NormalResult, ErrorResult } from '../model';
+import { Result, Invocation, Observation, Operation, NormalResult, ErrorResult, Value } from '../model';
 import { isRuntimeError } from './errors';
-import { Transaction, sendTransaction, getTransaction } from '../utils/chain';
+import { Transaction, sendTransaction, getTransaction, callFunction } from '../utils/chain';
 
 const debug = Debugger(__filename);
 
@@ -37,16 +37,12 @@ export class ContractInstance {
     }
 
     async invokeReadOnly(invocation: Invocation): Promise<Result> {
-        const contract = await this.contract;
-        const { method, inputs } = invocation;
-        const { name } = method;
-
         debug(`invoking readonly method: %s`, invocation);
-        const values = await contract.methods[name!](...inputs).call();
-        debug("values: %o", values);
+        const contract = await this.contract;
+        const { method: { name }, inputs } = invocation;
+        const values = await callFunction<Value>(contract, name, ...inputs);
         const result = new NormalResult(values);
         debug("result: %o", result);
-
         return result;
     }
 

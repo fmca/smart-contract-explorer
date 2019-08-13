@@ -41,7 +41,10 @@ export function getContract(chain: BlockchainInterface, abi: ABIDefinition[]): C
 
 export async function getTransaction<T>(contract: Contract, from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
     debug(`computing gas for transaction: %s`, name);
-    const transaction = contract.methods[name!](...inputs);
+    const target = contract.methods[name!];
+    if (typeof(target) !== 'function')
+        throw Error(`Unknown function: '${name}'`);
+    const transaction = target(...inputs);
     const gas = await transaction.estimateGas() * 10;
     return { transaction, from, gas };
 }
@@ -56,4 +59,12 @@ export async function getDeployTransaction(contract: Contract, from: Address, da
 export async function sendTransaction<T>({ transaction, from, gas }: Transaction<T>): Promise<T> {
     debug(`sending transaction from %o with gas %o`, from, gas);
     return transaction.send({ from, gas });
+}
+
+export async function callFunction<T>(contract: Contract, name: string, ...inputs: Value[]): Promise<T> {
+    debug(`calling function: %s`, name);
+    const target = contract.methods[name!];
+    if (typeof(target) !== 'function')
+        throw Error(`Unknown function: '${name}'`);
+    return target(...inputs).call();
 }

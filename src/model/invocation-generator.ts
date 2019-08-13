@@ -46,6 +46,6 @@ export class InvocationGenerator {
     }
 
     observers(): Iterable<Invocation> {
-        return this.invocationsWith(m => !FunctionDefinition.isMutator(m));
+        return this.invocationsWith(FunctionDefinition.isReadOnly);
     }
 }

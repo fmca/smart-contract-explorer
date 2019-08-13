@@ -173,8 +173,13 @@ export namespace FunctionDefinition {
     }
 
     export function isMutator(method: FunctionDefinition) {
-        const { stateMutability } = method;
-        return method.kind === 'function' && !['pure', 'view'].includes(stateMutability);
+        const { kind, stateMutability } = method;
+        return kind === 'function' && !['pure', 'view'].includes(stateMutability);
+    }
+
+    export function isReadOnly(method: FunctionDefinition) {
+        const { kind, stateMutability } = method;
+        return kind === 'function' && ['pure', 'view'].includes(stateMutability);
     }
 
 };
