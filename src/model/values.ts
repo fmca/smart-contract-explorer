@@ -19,14 +19,19 @@ export namespace Value {
     }
 
     export function encode(v: Value): number | boolean | Address {
+        debug(`encoding value: %o`, v);
+
         if (isElementaryValue(v))
             return v.value;
+
+        if (isArrayValue(v))
+            throw Error(`TODO: encoding array values`);
 
         throw Error(`Unexpected value: ${v}`);
     }
 
     export function parse(v: string, outputs: { name: string, type: string }[] | undefined): Value[] {
-        debug(`parsing %o from %o`, v, outputs);
+        debug(`parsing values %o from %o`, v, outputs);
 
         if (outputs === undefined || outputs.length <= 0) {
             if (v.trim() !== '')
@@ -42,9 +47,17 @@ export namespace Value {
     }
 
     export function parseValue(v: string, type: string): Value {
-        if (type === 'int256') {
-            const value = parseInt(v);
-            return { type, value };
+        debug(`parsing value %o of %o`, v, type);
+
+        if (type.match(/.*int.*|bool/)) {
+            const value = JSON.parse(v) as number | boolean;
+            const t = type as ElementaryType;
+            return { value, type: t };
+        }
+
+        if (type === 'address') {
+            const value = parseInt(v, 16);
+            return { value, type };
         }
 
         throw Error(`Unexpected type: ${type}`);

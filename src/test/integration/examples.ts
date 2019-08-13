@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import assert, { fail } from 'assert';
+import assert from 'assert';
 import { generateExamples } from '../../simulation/examples';
 import { SimulationCounterExample } from '../../simulation/counterexample';
 

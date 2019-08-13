@@ -34,7 +34,9 @@ export class NormalResult extends Result {
     }
 
     toString() {
-        return Values.toString(this.values);
+        return this.values.length > 1
+            ? `(${this.values.map(Value.toString).join(', ')})`
+            : Value.toString(this.values[0]);
     }
 
     equals(that: Result): boolean {
