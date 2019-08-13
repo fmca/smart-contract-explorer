@@ -1,8 +1,9 @@
 import { Debugger } from '../utils/debug';
 import { Contract, Metadata } from '../frontend/metadata';
-import { BlockchainInterface } from '../utils/chain';
+import { BlockchainInterface, getDeployTransaction } from '../utils/chain';
 import { ContractInstance } from './instance';
 import { Value } from '../model';
+import { sendTransaction } from '../utils/chain';
 
 const debug = Debugger(__filename);
 
@@ -12,17 +13,10 @@ export class ContractInstantiation {
 
     async instantiate(metadata: Metadata, ...args: Value[]) {
         const contract = this.getContract(metadata);
-
         const { bytecode: data } = metadata;
-        const tx = contract.deploy({ data, arguments: args });
-
         const { accounts: [ from ] } = this.chain;
-        const gas = await tx.estimateGas() + 1;
-        debug(`gas: %o`, gas);
-
-        const instance = tx.send({ from, gas });
-        debug(`from: %o`, from);
-
+        const transaction = getDeployTransaction(contract, from, data, ...args);
+        const instance = transaction.then(sendTransaction);
         return new ContractInstance(instance, from);
     }
 
