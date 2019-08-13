@@ -4,6 +4,7 @@ import assert from 'assert';
 import { ExecutorFactory } from '../../explore/execute';
 import { InvocationGenerator, Trace, Invocation, Value, NormalResult } from '../../model';
 import { Metadata, SourceInfo } from '../../frontend/metadata';
+import { ContractInstantiation } from '../../explore/instantiate';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 const sources: SourceInfo[] = [];
@@ -29,6 +30,7 @@ contract B {
     int x;
     constructor(int y) public { x = y; }
     function get() public view returns (int) { return x; }
+    function inc(int y) public { x += y; }
 }
 `});
 
@@ -42,22 +44,23 @@ describe('execute', function() {
     });
 
     it('invokes function sequences', async function() {
-        await testSequence(`a.sol`, 42, `f`);
-        await testSequence(`a.sol`, 0, `get`);
-        await testSequence(`a.sol`, 42, 'f', 'f');
-        await testSequence(`a.sol`, 2, 'inc', 'inc', 'get');
+        await testSequence('a.sol', 42, [], ['f']);
+        await testSequence('a.sol', 0, [], ['get']);
+        await testSequence('a.sol', 42, [], ['f'], ['f']);
+        await testSequence('a.sol', 2, [], ['inc'], ['inc'], ['get']);
     });
 
     it('invokes constructors with arguments', async function() {
-        await testSequence(`b.sol`, 0, `get`);
+        await testSequence('b.sol', 0, [0], ['get']);
+        await testSequence('b.sol', 42, [42], ['get']);
+        await testSequence('b.sol', 45, [42], ['inc', [3]], ['get']);
     });
 
 });
 
-async function testSequence(path: string, value: Value, ...names: string[]) {
-    const instance = await getInstance(metadata[path]);
-    const invocations = names.map(f => getInvocation(path, f));
-
+async function testSequence(path: string, value: Value, args: Value[], ...calls: ([string] | [string,Value[]])[]) {
+    const instance = await getInstance(metadata[path], ...args);
+    const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values));
     const last = invocations.pop();
 
     if (last === undefined)
@@ -72,20 +75,16 @@ async function testSequence(path: string, value: Value, ...names: string[]) {
     assert.deepEqual(actual, expected);
 }
 
-function getInvocation(path: string, name: string, ...args: Value[]) {
+function getInvocation(path: string, name: string, ...values: Value[]) {
     const method = Metadata.findFunction(name, metadata[path]);
     assert.notEqual(method, undefined);
-    const invocation = new Invocation(method!, ...args);
+    const invocation = new Invocation(method!, ...values);
     return invocation;
 }
 
 async function getInstance(metadata: Metadata, ...values: Value[]) {
     const chain = await Chain.get();
-    const executerFactory = new ExecutorFactory(chain);
-    const methods = [...Metadata.getFunctions(metadata)];
-    const invocationGenerator = new InvocationGenerator(methods, chain.accounts);
-    const executer = executerFactory.getExecutor(invocationGenerator, metadata);
-    const [ invocation ] = invocationGenerator.constructors();
-    const instance = await executer.create(invocation);
+    const instantiation = new ContractInstantiation(chain);
+    const instance = instantiation.instantiate(metadata, ...values);
     return instance;
 }
