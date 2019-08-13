@@ -95,11 +95,12 @@ export namespace Metadata {
     }
 
     export function getMethodSpec(metadata: Metadata, name: string): MethodSpec {
+        debug(`getMethodSpec(%o, %O)`, name, metadata);
+
         const { userdoc: { methods } } = metadata;
-        const empty: MethodSpec = { modifies: [], preconditions: [], postconditions: [] };
 
         if (name === undefined)
-            return empty;
+            return emptySpec();
 
         const key = Object.keys(methods).find(key => key.split('(')[0] === name);
 
@@ -134,22 +135,15 @@ export namespace Metadata {
     }
 
     function getInternalMethodSpec(metadata: Metadata, name: string): MethodSpec {
+        debug(`getInternalSpec(%o, %O)`, name, metadata);
 
-        const empty: MethodSpec = { modifies: [], preconditions: [], postconditions: [] };
+        const method = Metadata.findFunction(name, metadata);
 
-        const { members: members } = metadata;
-        
-        const methodMembers = members.filter(m => m.nodeType === 'FunctionDefinition')
-
-        const methods = methodMembers.filter(m => m.name === name)
-
-        if (methods.length != 1)
-            return empty;
-
-        const method = methods[0]
+        if (method === undefined)
+            return emptySpec();
 
         if (method.documentation  === null)
-            return empty;
+            return emptySpec();
 
         const documentation = method.documentation as string
 
@@ -157,7 +151,7 @@ export namespace Metadata {
         const documentations = documentation.split(/(?=\n)/).map(rmstart);
 
         const strip = (s: string) => s.replace(/[^\s]*\s+/,'');
-        
+
         const specs = documentations.filter(s => s.startsWith('@notice')).map(strip);
         const modifies = specs.filter(s => s.startsWith('modifies')).map(strip);
         const preconditions = specs.filter(s => s.startsWith('precondition')).map(strip);
@@ -165,5 +159,9 @@ export namespace Metadata {
         const spec = { modifies, preconditions, postconditions };
         debug(`spec(%s): %O`, name, spec)
         return spec;
+    }
+
+    function emptySpec() {
+        return { modifies: [], preconditions: [], postconditions: [] };
     }
 }
