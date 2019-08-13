@@ -15,6 +15,8 @@ export class InvocationGenerator {
 
     * invocationsWith(accept: (_: FunctionDefinition) => boolean): Iterable<Invocation> {
         for (const method of this.methods) {
+            debug(`considering method: %o`, method.name);
+
             if (!accept(method))
                 continue;
 
@@ -22,6 +24,8 @@ export class InvocationGenerator {
                 continue;
 
             const types = method.parameters.parameters.map(({ typeName }) => typeName);
+
+            debug(`parameter types: %O`, types);
 
             for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
                 const invocation = new Invocation(method, ...inputs);

@@ -36,11 +36,15 @@ export class Explorer {
 
         const workList: State[] = [ ];
 
+        debug(`exploring initial states`);
+
         for await (const initial of this.initials(params)) {
             debug({ post: initial });
             yield { post: initial };
             workList.push(initial);
         }
+
+        debug(`exploring transitions`);
 
         while (workList.length > 0) {
             const pre = workList.shift()!;

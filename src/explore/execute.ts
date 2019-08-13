@@ -34,7 +34,12 @@ export class Executor {
         public metadata: Metadata) { }
 
     async * initials(): AsyncIterable<State> {
+        debug(`generating initial states`);
+
         for (const invocation of this.invocationGenerator.constructors()) {
+
+            debug(`generating state from: %s`, invocation);
+
             const instance = await this.create(invocation);
             const result = new NormalResult();
             const operation = new Operation(invocation, result);

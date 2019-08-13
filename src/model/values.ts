@@ -61,8 +61,11 @@ export class ValueGenerator {
     }
 
     valuesOfType(typeName: TypeName): Iterable<Value> {
+        const { typeDescriptions: { typeString } } = typeName;
+        debug(`type string: %o`, typeString);
+
         if (!isElementaryTypeName(typeName))
-            throw Error(`expected elementary type, but got: ${typeName}`);
+            throw Error(`expected elementary type, but got: ${typeString}`);
 
         const { name: type } = typeName;
 
