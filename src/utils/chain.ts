@@ -3,6 +3,7 @@ import { Address, Contract, Method } from '../frontend/metadata';
 import { TransactionObject } from 'web3/eth/types';
 import { Value } from '../model';
 import { Debugger } from '../utils/debug';
+import { ABIDefinition } from 'web3/eth/abi';
 const ganache = require("ganache-core");
 const debug = Debugger(__filename);
 
@@ -30,6 +31,12 @@ export interface Transaction<T> {
     transaction: TransactionObject<T>;
     from: Address;
     gas: number;
+}
+
+export function getContract(chain: BlockchainInterface, abi: ABIDefinition[]): Contract {
+    const contract = chain.create(abi);
+    (contract as any).transactionConfirmationBlocks = 1;
+    return contract;
 }
 
 export async function getTransaction<T>(contract: Contract, from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
