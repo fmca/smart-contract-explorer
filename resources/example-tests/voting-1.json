@@ -1,0 +1,5 @@
+{
+    "description": "Voting examples generation test",
+    "source": "Voting/Voting-LaurenSpiegel/Voting.impl.sol",
+    "target": "Voting/Voting-Voting-Dapp/Voting.spec.sol"
+}
