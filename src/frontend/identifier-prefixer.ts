@@ -12,7 +12,7 @@ class IdentifierPrefixer extends NodeSubstituter {
 
     visitIdentifier(id: Identifier) {
         return this.ids.includes(id.name)
-            ? { ...id, name: `${this.name}.${id.name}` }
+            ? { ...id, name: `${this.name}$${id.name}` }
             : id;
     }
 }
