@@ -1,12 +1,12 @@
 {
     "description": "Escrow examples generation test",
-    "source": "Escrow/Escrow-stacktical/Escrow.impl.no-owner.sol",
+    "source": "Escrow/Escrow-stacktical/Escrow.impl.sol",
     "target": "Escrow/Escrow-openzeppelin/Escrow.spec.no-owner.sol",
     "fields": [
         "Escrow$deposits[__verifier_idx_address]: Int",
         "Escrow$deposits: Map[Address,Int]",
         "Escrow_Stacktical$deposits[__verifier_idx_address]: Int",
-        "Escrow_Stacktical$deposits: Map[Address,Int]"   
+        "Escrow_Stacktical$deposits: Map[Address,Int]"
     ],
     "seedFeatures": [
         "(= Escrow_Stacktical.deposits Escrow.deposits)"
