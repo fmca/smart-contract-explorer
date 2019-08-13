@@ -18,9 +18,9 @@ export class ContractInstance {
 
     async invoke(invocation: Invocation): Promise<Result> {
         try {
-            return invocation.isMutator()
+            return await (invocation.isMutator()
                 ? this.invokeMutator(invocation)
-                : this.invokeReadOnly(invocation);
+                : this.invokeReadOnly(invocation));
 
         } catch (e) {
             return this.handleErrors(e);
@@ -69,6 +69,8 @@ export class ContractInstance {
     }
 
     handleErrors(e: any): Result {
+        debug(`caught: %O`, e);
+
         if (!isRuntimeError(e))
         throw e;
 

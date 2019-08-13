@@ -1,8 +1,7 @@
 import * as Chain from '../../utils/chain';
 import * as Compile from '../../frontend/compile';
 import assert from 'assert';
-import { ExecutorFactory } from '../../explore/execute';
-import { InvocationGenerator, Trace, Invocation, Value, NormalResult } from '../../model';
+import { Invocation, Value, NormalResult, ErrorResult } from '../../model';
 import { Metadata, SourceInfo } from '../../frontend/metadata';
 import { ContractInstantiation } from '../../explore/instantiate';
 
@@ -34,6 +33,17 @@ contract B {
 }
 `});
 
+sources.push({
+    path: `c.sol`,
+    content: `
+${pragmas}
+contract C {
+    int x;
+    function get() public view returns (int) { require(x > 0); return x; }
+    function inc() public { x++; }
+}
+`});
+
 const metadata: { [path: string]: Metadata } = {};
 
 describe('execute', function() {
@@ -56,9 +66,14 @@ describe('execute', function() {
         await testSequence('b.sol', 45, [42], ['inc', [3]], ['get']);
     });
 
+    it('handles transaction reverting', async function() {
+        await testSequence('c.sol', undefined, [], ['get']);
+        await testSequence('c.sol', 1, [], ['inc'], ['get']);
+    });
+
 });
 
-async function testSequence(path: string, value: Value, args: Value[], ...calls: ([string] | [string,Value[]])[]) {
+async function testSequence(path: string, value: Value | undefined, args: Value[], ...calls: ([string] | [string,Value[]])[]) {
     const instance = await getInstance(metadata[path], ...args);
     const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values));
     const last = invocations.pop();
@@ -71,7 +86,7 @@ async function testSequence(path: string, value: Value, args: Value[], ...calls:
 
     const actual = await instance.invoke(last);
 
-    const expected = new NormalResult(value);
+    const expected = value === undefined ? new ErrorResult('revert') : new NormalResult(value);
     assert.deepEqual(actual, expected);
 }
 

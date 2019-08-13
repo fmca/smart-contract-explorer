@@ -6,7 +6,7 @@ export abstract class Result {
 }
 
 export class ErrorResult extends Result {
-    constructor(public error: string, public reason: string) {
+    constructor(public error: string, public reason: string | undefined = undefined) {
         super();
     }
 
