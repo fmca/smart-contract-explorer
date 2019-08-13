@@ -18,9 +18,6 @@ contract A {
     int x;
     function inc() public { x++; }
     function get() public view returns (int) { return x; }
-
-    int dummy;
-    function barrier() public { dummy = 0; }
 }
 `});
 
@@ -32,9 +29,6 @@ contract B {
     int x;
     constructor(int y) public { x = y; }
     function get() public view returns (int) { return x; }
-
-    int dummy;
-    function barrier() public { dummy = 0; }
 }
 `});
 
@@ -61,14 +55,18 @@ describe('execute', function() {
 });
 
 async function testSequence(path: string, value: Value, ...names: string[]) {
-    const context = await getContext(metadata[path]);
+    const instance = await getInstance(metadata[path]);
     const invocations = names.map(f => getInvocation(path, f));
 
-    // TODO improve interface so that barrier is not required
     const last = invocations.pop();
-    invocations.push(getInvocation(path, `barrier`));
-    await context.invokeSequence(invocations);
-    const actual = await context.invoke(last!);
+
+    if (last === undefined)
+        throw Error(`Expected invocations`);
+
+    if (invocations.length > 0)
+        await instance.invokeSequence(invocations);
+
+    const actual = await instance.invoke(last);
 
     const expected = new NormalResult(value);
     assert.deepEqual(actual, expected);
@@ -78,16 +76,16 @@ function getInvocation(path: string, name: string, ...args: Value[]) {
     const method = Metadata.findFunction(name, metadata[path]);
     assert.notEqual(method, undefined);
     const invocation = new Invocation(method!, ...args);
-    return invocation
+    return invocation;
 }
 
-async function getContext(metadata: Metadata, ...values: Value[]) {
+async function getInstance(metadata: Metadata, ...values: Value[]) {
     const chain = await Chain.get();
     const executerFactory = new ExecutorFactory(chain);
     const methods = [...Metadata.getFunctions(metadata)];
     const invocationGenerator = new InvocationGenerator(methods, chain.accounts);
     const executer = executerFactory.getExecutor(invocationGenerator, metadata);
     const [ invocation ] = invocationGenerator.constructors();
-    const context = await executer.create(invocation);
-    return context;
+    const instance = await executer.create(invocation);
+    return instance;
 }
