@@ -29,6 +29,8 @@ export class InvocationGenerator {
 
             for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
                 const invocation = new Invocation(method, ...inputs);
+
+                debug(`invocation: %s`, invocation);
                 yield invocation;
             }
         }

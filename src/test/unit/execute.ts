@@ -4,6 +4,7 @@ import assert from 'assert';
 import { Invocation, Value, NormalResult, ErrorResult } from '../../model';
 import { Metadata, SourceInfo } from '../../frontend/metadata';
 import { ContractInstantiation } from '../../explore/instantiate';
+import { ElementaryType } from '../../solidity';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 const sources: SourceInfo[] = [];
@@ -79,9 +80,10 @@ describe('execute', function() {
 
 });
 
-async function testSequence(path: string, value: Value | undefined, args: Value[], ...calls: ([string] | [string,Value[]])[]) {
-    const instance = await getInstance(metadata[path], ...args);
-    const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values));
+async function testSequence(path: string, value: number | undefined, args: number[], ...calls: ([string] | [string,number[]])[]) {
+    const type: ElementaryType = 'int';
+    const instance = await getInstance(metadata[path], ...args.map(value => ({ type, value })));
+    const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values.map(value => ({ type, value }))));
     const last = invocations.pop();
 
     if (last === undefined)
@@ -92,7 +94,7 @@ async function testSequence(path: string, value: Value | undefined, args: Value[
 
     const actual = await instance.invoke(last);
 
-    const expected = value === undefined ? new ErrorResult('revert') : new NormalResult(value);
+    const expected = value === undefined ? new ErrorResult('revert') : new NormalResult({ type: 'int256', value });
     assert.deepEqual(actual, expected);
 }
 

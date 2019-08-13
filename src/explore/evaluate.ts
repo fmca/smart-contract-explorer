@@ -160,10 +160,10 @@ class CachingEvaluation extends Evaluation {
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
         const { metadata, instance: { contract }} = await this.getExample(example);
-        const { options: { address }} = await contract;
+        const { options: { address: value }} = await contract;
         const { instance, metadata: m } = await this.getExpression(expression, metadata);
         const [method] = [...Metadata.getFunctions(m)];
-        const invocation = new Invocation(method, address);
+        const invocation = new Invocation(method, { type: 'address', value });
         const result = await instance.invokeReadOnly(invocation);
         const operation = new Operation(invocation, result);
         return operation;

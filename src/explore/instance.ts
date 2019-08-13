@@ -40,10 +40,23 @@ export class ContractInstance {
         debug(`invoking readonly method: %s`, invocation);
         const contract = await this.contract;
         const { method: { name }, inputs } = invocation;
-        const values = await callFunction<Value>(contract, name, ...inputs);
-        const result = new NormalResult(values);
+        const values = inputs.map(Value.encode);
+        const returns = await callFunction<string>(contract, name, ...values);
+        debug(`return values: %o`, returns);
+        const parsed = await this.readValues(name, returns);
+        debug(`parsed values: %o`, parsed);
+        const result = new NormalResult(...parsed);
         debug("result: %o", result);
         return result;
+    }
+
+    async readValues(method: string, values: string): Promise<Value[]> {
+        const contract = await this.contract;
+        const abi = contract.options.jsonInterface.find(({ name }) => name === method);
+        if (abi === undefined)
+            throw Error(`Unknown method: ${method}`);
+        const { outputs } = abi;
+        return Value.parse(values, outputs);
     }
 
     async observe(observers: Iterable<Invocation>): Promise<Observation> {
@@ -61,7 +74,8 @@ export class ContractInstance {
     async getTransaction<T>(invocation: Invocation): Promise<Transaction<T>> {
         const contract = await this.contract;
         const { method: { name }, inputs } = invocation;
-        return getTransaction(contract, this.account, name, ...inputs);
+        const values = inputs.map(Value.encode);
+        return getTransaction(contract, this.account, name, ...values);
     }
 
     handleErrors(e: any): Result {

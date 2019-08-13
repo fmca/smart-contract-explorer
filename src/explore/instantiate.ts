@@ -15,7 +15,8 @@ export class ContractInstantiation {
         const { abi, bytecode: data } = metadata;
         const { accounts: [ from ] } = this.chain;
         const contract = getContract(this.chain, abi);
-        const transaction = getDeployTransaction(contract, from, data, ...args);
+        const values = args.map(Value.encode);
+        const transaction = getDeployTransaction(contract, from, data, ...values);
         const instance = transaction.then(sendTransaction);
         return new ContractInstance(instance, from);
     }

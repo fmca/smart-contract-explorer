@@ -18,7 +18,7 @@ export class Invocation {
 
     toString() {
         const name = this.isConstructor() ? 'constructor' : this.method.name;
-        return `${name}(${this.inputs.join(', ')})`;
+        return `${name}(${this.inputs.map(Value.toString).join(', ')})`;
     }
 
     equals(that: Invocation): boolean {
