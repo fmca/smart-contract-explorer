@@ -3,7 +3,7 @@ import { NodeSubstituter, Expression, not, disjunction, implies, conjunction, is
 export function normalizedReturn(block: Block): Expression {
     const node = new ReturnNormalizer().visit(block);
     if (!isExpression(node))
-        throw Error(`Unexpected node: ${node}`);
+        throw SyntaxError(`Unexpected node: ${node}`);
     return node;
 }
 
@@ -11,13 +11,13 @@ class ReturnNormalizer extends NodeSubstituter {
 
     visitIfStatement(stmt: IfStatement) {
         if (stmt.falseBody !== null)
-            throw Error(`Unexpected else branch: ${stmt.falseBody}`);
+            throw SyntaxError(`Unexpected else branch: ${stmt.falseBody}`);
 
         const lhs = stmt.condition;
         const rhs = this.visit(stmt.trueBody);
 
         if (!isExpression(rhs))
-            throw Error(`Unexpected right-hand side node: ${rhs.nodeType}`);
+            throw SyntaxError(`Unexpected right-hand side node: ${rhs.nodeType}`);
 
         return implies(lhs, rhs);
     }
@@ -31,12 +31,12 @@ class ReturnNormalizer extends NodeSubstituter {
         const last = statements.pop();
 
         if (last === undefined || !isReturn(last) || !statements.every(isIfStatement))
-            throw Error(`Unexpected block: ${block}`);
+            throw SyntaxError(`Unexpected block: ${block}`);
 
         const lastExpr = this.visit(last);
 
         if (!isExpression(lastExpr))
-            throw Error(`Unexpected node: ${lastExpr}`);
+            throw SyntaxError(`Unexpected node: ${lastExpr}`);
 
         if (statements.length === 0)
             return lastExpr;
@@ -44,7 +44,7 @@ class ReturnNormalizer extends NodeSubstituter {
         const nodes = statements.map(s => this.visit(s));
 
         if (!nodes.every(e => isExpression(e)))
-            throw Error(`Unexpected nodes: ${nodes}`);
+            throw SyntaxError(`Unexpected nodes: ${nodes}`);
 
         const expressions = nodes as Expression[];
         const conditions = collectConditions(expressions);
@@ -63,7 +63,7 @@ function collectConditions(exprs: Expression[]): Expression[] {
                 && expr.leftExpression.operator == '!' ) {
             return expr.leftExpression.subExpression;
         } else {
-            throw Error(`Unexpected expression: ${expr}`);
+            throw SyntaxError(`Unexpected expression: ${expr}`);
         }
     });
 }

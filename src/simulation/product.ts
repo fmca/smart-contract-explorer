@@ -73,10 +73,18 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
         if (b1 === null || b2 === null)
             throw Error(`Unexpected null block(s)`);
 
-        const e1 = specBodyToExpr(b1);
-        const e2 = implBodyToExpr(b2);
-        const feature = simplify(`(= ${e1} ${e2})`);
-        features.push([feature, name]);
+        try {
+            const e1 = specBodyToExpr(b1);
+            const e2 = implBodyToExpr(b2);
+            const feature = simplify(`(= ${e1} ${e2})`);
+            features.push([feature, name]);
+
+        } catch (e) {
+            if (!(e instanceof SyntaxError))
+                throw e;
+
+            console.error(`Unable to generate seed feature from function: ${name}`);
+        }
     }
 
     return features;
