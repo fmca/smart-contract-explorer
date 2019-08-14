@@ -13,8 +13,8 @@ pragma solidity >=0.5.0;
  * @notice simulation __verifier_eq(MultiSigWallet_APIS.owners, MultiSigWallet.owners)
  * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawals, MultiSigWallet.transactions)
  * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawalConfirmations, MultiSigWallet.confirmations)
- * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawalCount, MultiSigWallet.transactionCount)
- * @notice simulation __verifier_eq(MultiSigWallet_APIS.required, MultiSigWallet.required)
+ * @notice simulation  MultiSigWallet_APIS.withdrawalCount == MultiSigWallet.transactionCount
+ * @notice simulation  MultiSigWallet_APIS.required        == MultiSigWallet.required
  
  */
 contract MultiSigWallet_APIS {
