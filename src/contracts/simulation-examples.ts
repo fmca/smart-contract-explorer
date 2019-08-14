@@ -1,7 +1,7 @@
 import { Debugger } from '../utils/debug';
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition } from "../solidity";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
@@ -155,6 +155,14 @@ export class SimulationExamplesContract extends Contract {
             const target = variable.constant
                 ? metadata.name
                 : metadata === this.source ? 'impl' : 'spec'
+
+            if (isMapping(variable.typeName) &&
+                !isElementaryTypeName(variable.typeName.valueType)) {
+
+                console.error(`Warning: did not generate accessor for mapping: ${variable.name}`);
+                continue;
+            }
+
             yield this.storageAccessor(target, variable);
         }
     }
@@ -167,10 +175,16 @@ export class SimulationExamplesContract extends Contract {
         if (isElementaryTypeName(typeName))
             return { source, name, expr: `${source}.${name}()`, type: typeName.name };
 
-        if (isArrayTypeName(typeName))
-            return { source, name, expr: `${source}.${name}`, type: `${typeString} memory`};
+        if (isArrayTypeName(typeName)) {
+            const fn = this.arrayAccessorFunctionName(typeName);
+            const expr = `${fn}(${source}.${name}, ${source}.${name}$length)`;
+            if (!this.auxiliaryDefinitions.has(fn))
+                this.auxiliaryDefinitions.set(fn, this.arrayAccessorFunction(typeName));
+            return { source, name, expr, type: `${typeString} memory`};
+        }
 
         if (isMapping(typeName)) {
+            const { valueType } = typeName;
             const idxss = [...this.values.mapIndicies(typeName)];
             const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `(${this.argument(i)})`).join('')}`);;
             const expr = `keccak256(abi.encode(${elems.join(', ')}))`;
@@ -179,6 +193,40 @@ export class SimulationExamplesContract extends Contract {
         }
 
         throw Error(`Unexpected type name: ${typeString}`);
+    }
+
+    arrayAccessorFunctionName(typeName: ArrayTypeName): string {
+        const { baseType } = typeName;
+
+        if (!isElementaryTypeName(baseType))
+            throw Error(`TODO nested arrays`);
+
+        const { name }  = baseType;
+        return `${name}$ary`;
+    }
+
+    arrayAccessorFunction(typeName: ArrayTypeName): string[] {
+        const { baseType } = typeName;
+
+        if (!isElementaryTypeName(baseType))
+            throw Error(`TODO nested arrays`);
+
+        const { name }  = baseType;
+        return [
+            ``,
+            `function ${name}$ary(`,
+            ...block(4)(
+                `function(uint) external view returns (${name}) ary,`,
+                `function() external view returns (uint) len`),
+            `) public view returns (${name}[] memory) {`,
+            ...block(4)(
+                `${name}[] memory ret = new ${name}[](len());`,
+                `for (uint i = 0; i < len(); i++)`,
+                ...block(4)(`ret[i] = ary(i);`),
+                `return ret;`
+            ),
+            `}`
+        ];
     }
 
     getMethod(example: SimulationExample, name: string): string[] {

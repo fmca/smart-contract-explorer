@@ -83,7 +83,7 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
             if (!(e instanceof SyntaxError))
                 throw e;
 
-            console.error(`Unable to generate seed feature from function: ${name}`);
+            console.error(`Warning: did not generate seed feature from function: ${name}`);
         }
     }
 

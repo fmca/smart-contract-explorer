@@ -39,9 +39,15 @@ function internalizeTransform(dirname: string) {
 function exemplifyTransform(dirname: string) {
     return function (content: string) {
         content = publicizeInternalAndExternal(content);
+        content = addLengthAccessors(content);
         content = moveImports(dirname, content);
         return content;
     }
+}
+
+function addLengthAccessors(content: string) {
+    return content
+        .replace(/(?<=^(\s*)\S+\[\] public (\S+);)/m, `\n$1function $2$$length() public view returns (uint) { return $2.length; }`);
 }
 
 function moveImports(dirname: string, content: string) {
