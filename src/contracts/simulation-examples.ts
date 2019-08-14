@@ -1,10 +1,13 @@
+import { Debugger } from '../utils/debug';
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType } from "../solidity";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
 import { type } from "../sexpr/pie";
+
+const debug = Debugger(__filename);
 
 export class SimulationExamplesContract extends ProductContract {
     examples?: (SimulationExample & AbstractExample)[];
@@ -64,11 +67,14 @@ export class SimulationExamplesContract extends ProductContract {
                     continue;
 
                 const { name, typeName } = variable;
+                const { typeDescriptions: { typeString } } = typeName;
+                debug(`storageAccessorForPie for %o of type %O`, name, typeName);
+
                 const prefix = `${metadata.name}$${name}`;
 
                 yield `${prefix}: ${type(typeName)}`;
 
-                if (!isElementaryTypeName(typeName)) {
+                if (isMapping(typeName)) {
                     const path = this.storageAccessorPath(prefix, variable.typeName);
 
                     if (path !== undefined)
@@ -79,19 +85,25 @@ export class SimulationExamplesContract extends ProductContract {
     }
 
     storageAccessorPath(prefix: string, typeName: TypeName): string | undefined {
+        const { typeDescriptions: { typeString } } = typeName;
 
         if (isElementaryTypeName(typeName))
             return isIntegerType(typeName.name) ? `${prefix}: ${type(typeName)}` : undefined;
 
-        if (!isMapping(typeName))
-            throw Error(`Unexpected type name: ${typeName}`);
+        if (isUserDefinedTypeName(typeName)) {
+            throw Error(`TODO: accessor path with user-defined types`);
+        }
 
-        const { keyType, valueType } = typeName;
+        if (isMapping(typeName)) {
+            const { keyType, valueType } = typeName;
 
-        if (!isElementaryTypeName(keyType))
-            throw Error(`Unexpected type name: ${keyType}`);
+            if (!isElementaryTypeName(keyType))
+                throw Error(`Unexpected type name: ${keyType}`);
 
-        return this.storageAccessorPath(`${prefix}[__verifier_idx_${keyType.name}]`, valueType);
+            return this.storageAccessorPath(`${prefix}[__verifier_idx_${keyType.name}]`, valueType);
+        }
+
+        throw Error(`Unexpected type: ${typeString}`);
     }
 
     * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
@@ -111,8 +123,10 @@ export class SimulationExamplesContract extends ProductContract {
 
     storageAccessor(source: string, variable: VariableDeclaration) {
         const { name, typeName } = variable;
+        const { typeDescriptions: { typeString } } = typeName;
+        debug(`storageAccessor for %o of type %O`, name, typeName);
 
-        if (isElementaryTypeName(typeName))
+        if (isElementaryTypeName(typeName) || isArrayTypeName(typeName))
             return { source, name, expr: `${source}.${name}`, type: typeName.name };
 
         if (isMapping(typeName)) {
@@ -123,7 +137,6 @@ export class SimulationExamplesContract extends ProductContract {
             return { source, name, expr, type };
         }
 
-        const { typeDescriptions: { typeString } } = typeName;
         throw Error(`Unexpected type name: ${typeString}`);
     }
 

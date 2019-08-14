@@ -1,5 +1,6 @@
-import { TypeName, ElementaryType, ContractMember, isElementaryTypeName, isMapping } from "../solidity";
+import { TypeName, ElementaryType, ContractMember, isElementaryTypeName, isMapping, isArrayTypeName, isUserDefinedTypeName } from "../solidity";
 import { Metadata } from "../frontend/metadata";
+import { isArray } from "util";
 
 const { isVariableDeclaration } = ContractMember;
 
@@ -10,13 +11,21 @@ export function fieldNames({ members }: Metadata): string[] {
 }
 
 export function type(typeName: TypeName): string {
+    const { typeDescriptions: { typeString } } = typeName;
+
     if (isElementaryTypeName(typeName))
         return primitiveType(typeName.name);
+
+    if (isArrayTypeName(typeName))
+        return `${type(typeName.baseType)}[]`;
 
     if (isMapping(typeName))
         return `Map[${type(typeName.keyType)},${type(typeName.valueType)}]`;
 
-    throw Error(`Unexpected type name: ${typeName.typeDescriptions.typeString}`)
+    if (isUserDefinedTypeName(typeName))
+        return typeName.name;
+
+    throw Error(`Unexpected type name: ${typeString}`)
 }
 
 function primitiveType(name: ElementaryType) {

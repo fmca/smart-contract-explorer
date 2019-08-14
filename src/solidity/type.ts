@@ -5,7 +5,7 @@ export interface TypeDescriptions {
     typeString: string;
 }
 
-export type TypeName = ElementaryTypeName | ArrayTypeName | Mapping;
+export type TypeName = ElementaryTypeName | ArrayTypeName | Mapping | UserDefinedTypeName;
 
 export interface TypeNameBase extends Node {
     typeDescriptions: TypeDescriptions;
@@ -20,6 +20,11 @@ export interface ArrayTypeName extends TypeNameBase {
     nodeType: 'ArrayTypeName';
     baseType: TypeName;
     length: number | null;
+}
+
+export interface UserDefinedTypeName extends TypeNameBase {
+    nodeType: 'UserDefinedTypeName';
+    name: string;
 }
 
 export type IntegerType = 'int256' | 'uint256' | 'uint' | 'int';
@@ -38,6 +43,10 @@ export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName
 
 export function isArrayTypeName(node: TypeName): node is ArrayTypeName {
     return node.nodeType === 'ArrayTypeName';
+}
+
+export function isUserDefinedTypeName(node: TypeName): node is UserDefinedTypeName {
+    return node.nodeType === 'UserDefinedTypeName';
 }
 
 export function isIntegerType(name: ElementaryType): name is IntegerType {
