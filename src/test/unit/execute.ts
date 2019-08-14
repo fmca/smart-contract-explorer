@@ -1,10 +1,12 @@
 import * as Chain from '../../utils/chain';
 import * as Compile from '../../frontend/compile';
 import assert from 'assert';
-import { Invocation, Value, NormalResult, ErrorResult } from '../../model';
+import { Invocation, TypedValue, Value, NormalResult, ErrorResult } from '../../model';
 import { Metadata, SourceInfo } from '../../frontend/metadata';
 import { ContractInstantiation } from '../../explore/instantiate';
 import { ElementaryType } from '../../solidity';
+
+const { int256, array } = Value;
 
 const pragmas = `pragma solidity ^0.5.0;`;
 const sources: SourceInfo[] = [];
@@ -45,6 +47,17 @@ contract C {
 }
 `});
 
+sources.push({
+    path: `d.sol`,
+    content: `
+${pragmas}
+contract D {
+    int[] ys;
+    function f(int[] memory xs) public { ys = xs; }
+    function g(uint i) public view returns (int) { return ys[i]; }
+}
+`});
+
 const metadata: { [path: string]: Metadata } = {};
 
 describe('execute', function() {
@@ -56,34 +69,42 @@ describe('execute', function() {
 
     it('invokes function sequences', async function() {
         await Promise.all([
-            testSequence('a.sol', 42, [], ['f']),
-            testSequence('a.sol', 0, [], ['get']),
-            testSequence('a.sol', 42, [], ['f'], ['f']),
-            testSequence('a.sol', 2, [], ['inc'], ['inc'], ['get'])
+            testSequence('a.sol', int256(42), [], ['f']),
+            testSequence('a.sol', int256(0), [], ['get']),
+            testSequence('a.sol', int256(42), [], ['f'], ['f']),
+            testSequence('a.sol', int256(2), [], ['inc'], ['inc'], ['get'])
         ]);
     });
 
     it('invokes constructors with arguments', async function() {
         await Promise.all([
-            testSequence('b.sol', 0, [0], ['get']),
-            testSequence('b.sol', 42, [42], ['get']),
-            testSequence('b.sol', 45, [42], ['inc', [3]], ['get'])
+            testSequence('b.sol', int256(0), [int256(0)], ['get']),
+            testSequence('b.sol', int256(42), [int256(42)], ['get']),
+            testSequence('b.sol', int256(45), [int256(42)], ['inc', [int256(3)]], ['get'])
+        ]);
+    });
+
+    it('invocations with array arguments', async function() {
+        const ary = array(int256(13), int256(42));
+        await Promise.all([
+            testSequence('d.sol', int256(13), [], ['f', [ary]], ['g', [int256(0)]]),
+            testSequence('d.sol', int256(42), [], ['f', [ary]], ['g', [int256(1)]]),
         ]);
     });
 
     it('handles transaction reverting', async function() {
         await Promise.all([
             testSequence('c.sol', undefined, [], ['get']),
-            testSequence('c.sol', 1, [], ['inc'], ['get'])
+            testSequence('c.sol', int256(1), [], ['inc'], ['get'])
         ]);
     });
 
 });
 
-async function testSequence(path: string, value: number | undefined, args: number[], ...calls: ([string] | [string,number[]])[]) {
+async function testSequence(path: string, value: TypedValue | undefined, args: TypedValue[], ...calls: ([string] | [string,TypedValue[]])[]) {
     const type: ElementaryType = 'int';
-    const instance = await getInstance(metadata[path], ...args.map(value => ({ type, value })));
-    const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values.map(value => ({ type, value }))));
+    const instance = await getInstance(metadata[path], ...args);
+    const invocations = calls.map(([name, values]) => values === undefined ? getInvocation(path, name) : getInvocation(path, name, ...values));
     const last = invocations.pop();
 
     if (last === undefined)
@@ -94,18 +115,18 @@ async function testSequence(path: string, value: number | undefined, args: numbe
 
     const actual = await instance.invoke(last);
 
-    const expected = value === undefined ? new ErrorResult('revert') : new NormalResult({ type: 'int256', value });
+    const expected = value === undefined ? new ErrorResult('revert') : new NormalResult(value);
     assert.deepEqual(actual, expected);
 }
 
-function getInvocation(path: string, name: string, ...values: Value[]) {
+function getInvocation(path: string, name: string, ...values: TypedValue[]) {
     const method = Metadata.findFunction(name, metadata[path]);
     assert.notEqual(method, undefined);
     const invocation = new Invocation(method!, ...values);
     return invocation;
 }
 
-async function getInstance(metadata: Metadata, ...values: Value[]) {
+async function getInstance(metadata: Metadata, ...values: TypedValue[]) {
     const chain = await Chain.get();
     const instantiation = new ContractInstantiation(chain);
     const instance = instantiation.instantiate(metadata, ...values);

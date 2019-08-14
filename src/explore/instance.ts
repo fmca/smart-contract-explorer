@@ -1,6 +1,6 @@
 import { Debugger } from '../utils/debug';
 import { Contract, Address } from '../frontend/metadata';
-import { Result, Invocation, Observation, Operation, NormalResult, ErrorResult, Value } from '../model';
+import { Result, Invocation, Observation, Operation, NormalResult, ErrorResult, Value, TypedValue } from '../model';
 import { isRuntimeError } from './errors';
 import { Transaction, sendTransaction, getTransaction, callFunction } from '../utils/chain';
 
@@ -50,7 +50,7 @@ export class ContractInstance {
         return result;
     }
 
-    async readValues(method: string, values: string): Promise<Value[]> {
+    async readValues(method: string, values: string): Promise<TypedValue[]> {
         const contract = await this.contract;
         const abi = contract.options.jsonInterface.find(({ name }) => name === method);
         if (abi === undefined)

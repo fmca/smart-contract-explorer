@@ -2,13 +2,13 @@ import { Debugger } from '../utils/debug';
 const debug = Debugger(__filename);
 
 import { Method } from '../frontend/metadata';
-import { Value, Values } from './values';
+import { TypedValue, Value, Values } from './values';
 import { FunctionDefinition } from '../solidity';
 
 export class Invocation {
-    public inputs: Value[];
+    public inputs: TypedValue[];
 
-    constructor(public method: FunctionDefinition, ...args: Value[]) {
+    constructor(public method: FunctionDefinition, ...args: TypedValue[]) {
         const { name, parameters: { parameters } } = method;
         const count = parameters.length;
         if (args.length !== count)

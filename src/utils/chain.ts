@@ -3,6 +3,7 @@ import { Address, Contract, Method } from '../frontend/metadata';
 import { TransactionObject } from 'web3/eth/types';
 import { Debugger } from '../utils/debug';
 import { ABIDefinition } from 'web3/eth/abi';
+import { Value } from '../model';
 const ganache = require("ganache-core");
 const debug = Debugger(__filename);
 

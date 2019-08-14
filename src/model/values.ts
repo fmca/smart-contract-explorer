@@ -5,32 +5,40 @@ import { Mapping, getKeyTypesAndValueType, TypeName, isElementaryTypeName, Eleme
 
 const debug = Debugger(__filename);
 
-export type ElementaryValue = { type: ElementaryType, value: number | boolean | Address };
-export type ArrayValue = { length?: number, values: Value[] };
+export type ElementaryValue = number | boolean | Address;
+export type ArrayValue = ElementaryValue[];
 export type Value = ElementaryValue | ArrayValue;
 
+export type TypedElementaryValue = { type: ElementaryType, value: ElementaryValue };
+export type TypedArrayValue = { length?: number, values: TypedValue[] };
+export type TypedValue = TypedElementaryValue | TypedArrayValue;
+
 export namespace Value {
-    export function isElementaryValue(v: Value): v is ElementaryValue {
+    export function isElementaryValue(v: TypedValue): v is TypedElementaryValue {
         return !isArrayValue(v);
     }
 
-    export function isArrayValue(v: Value): v is ArrayValue {
+    export function isArrayValue(v: TypedValue): v is TypedArrayValue {
         return (v as any).values !== undefined;
     }
 
-    export function encode(v: Value): number | boolean | Address {
+    export function encode(v: TypedValue): Value {
         debug(`encoding value: %o`, v);
 
         if (isElementaryValue(v))
             return v.value;
 
-        if (isArrayValue(v))
-            throw Error(`TODO: encoding array values`);
+        if (isArrayValue(v)) {
+            if (!v.values.every(isElementaryValue))
+                throw Error(`TODO: encoding nested arrays`);
+
+            return v.values.map(v => encode(v) as ElementaryValue);
+        }
 
         throw Error(`Unexpected value: ${v}`);
     }
 
-    export function parse(v: string, outputs: { name: string, type: string }[] | undefined): Value[] {
+    export function parse(v: string, outputs: { name: string, type: string }[] | undefined): TypedValue[] {
         debug(`parsing values %o from %o`, v, outputs);
 
         if (outputs === undefined || outputs.length <= 0) {
@@ -46,7 +54,7 @@ export namespace Value {
         return [parseValue(v, outputs[0].type)];
     }
 
-    export function parseValue(v: string, type: string): Value {
+    export function parseValue(v: string, type: string): TypedValue {
         debug(`parsing value %o of %o`, v, type);
 
         if (type.match(/.*int.*|bool/)) {
@@ -63,7 +71,21 @@ export namespace Value {
         throw Error(`Unexpected type: ${type}`);
     }
 
-    export function toString(v: Value): string {
+    export function elementary(value: ElementaryValue, type: ElementaryType): TypedElementaryValue {
+        return { value, type };
+    }
+
+    export function array(...values: TypedValue[]): TypedArrayValue {
+        return { values, length: undefined };
+    }
+
+    export function staticArray(length: number, ...values: TypedValue[]): TypedArrayValue {
+        return { values, length };
+    }
+
+    export const int256 = (v: number) => elementary(v, 'int256');
+
+    export function toString(v: TypedValue): string {
         return isElementaryValue(v)
             ? v.value.toString()
             : v.length === undefined
@@ -71,17 +93,17 @@ export namespace Value {
             : `[${v.values.map(Value.toString).join(', ')}]`;
     }
 
-    export function equals(v1: Value, v2: Value) {
+    export function equals(v1: TypedValue, v2: TypedValue) {
         return JSON.stringify(v1) == JSON.stringify(v2);
     }
 }
 
 export namespace Values {
-    export function toString(vs: Value[]) {
+    export function toString(vs: TypedValue[]) {
         return vs.toString();
     }
 
-    export function equals(vs1: Value[], vs2: Value[]) {
+    export function equals(vs1: TypedValue[], vs2: TypedValue[]) {
         return JSON.stringify(vs1) == JSON.stringify(vs2);
     }
 }
@@ -89,21 +111,21 @@ export namespace Values {
 export class ValueGenerator {
     constructor(public accounts: Address[]) { }
 
-    * ofInt(): Iterable<ElementaryValue> {
+    * ofInt(): Iterable<TypedElementaryValue> {
         const type = 'int';
 
         for (const value of [0,1,2])
             yield { type, value };
     }
 
-    * ofBytes(): Iterable<ElementaryValue> {
+    * ofBytes(): Iterable<TypedElementaryValue> {
         const type = 'bytes';
 
         for (const value of ["0x00000000","0x00000001","0x00000002"])
             yield { type, value };
     }
 
-    * ofAddress(): Iterable<ElementaryValue> {
+    * ofAddress(): Iterable<TypedElementaryValue> {
         // TODO: consider which accounts
         const type = 'address';
 
@@ -111,14 +133,14 @@ export class ValueGenerator {
             yield { type, value };
     }
 
-    * ofBool(): Iterable<ElementaryValue> {
+    * ofBool(): Iterable<TypedElementaryValue> {
         const type = 'bool';
 
         for (const value of [true,false])
             yield { type, value };
     }
 
-    * mapIndicies(mapping: Mapping): Iterable<Value[]> {
+    * mapIndicies(mapping: Mapping): Iterable<TypedValue[]> {
         const { keyTypes } = getKeyTypesAndValueType(mapping);
         const keyValues = this.valuesOfTypes(keyTypes);
 
@@ -126,7 +148,7 @@ export class ValueGenerator {
             yield indicies;
     }
 
-    valuesOfType(typeName: TypeName): Iterable<Value> {
+    valuesOfType(typeName: TypeName): Iterable<TypedValue> {
         const { typeDescriptions: { typeString } } = typeName;
         debug(`typeName: %O`, typeName);
 
@@ -139,7 +161,7 @@ export class ValueGenerator {
         throw Error(`unexpected type name: ${typeString}`);
     }
 
-    * ofArray(typeName: ArrayTypeName): Iterable<ArrayValue> {
+    * ofArray(typeName: ArrayTypeName): Iterable<TypedArrayValue> {
         const { length, baseType } = typeName;
 
         if (length !== null)
@@ -149,12 +171,12 @@ export class ValueGenerator {
             throw Error(`TODO handle nested arrays`);
 
         for (const vs of this.valuesOfTypes([baseType])) {
-            const values = vs as ElementaryValue[];
+            const values = vs as TypedElementaryValue[];
             yield { length: undefined, values };
         }
     }
 
-    ofElementary(typeName: ElementaryTypeName): Iterable<ElementaryValue> {
+    ofElementary(typeName: ElementaryTypeName): Iterable<TypedElementaryValue> {
         const { name: type } = typeName;
 
         if (type.match(/u?int\d*/))
@@ -172,7 +194,7 @@ export class ValueGenerator {
         throw Error(`unexpected elementary type: ${type}`);
     }
 
-    * valuesOfTypes(typeNames: TypeName[]): Iterable<Value[]> {
+    * valuesOfTypes(typeNames: TypeName[]): Iterable<TypedValue[]> {
         if (typeNames.length === 0) {
             yield [];
             return;

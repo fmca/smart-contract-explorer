@@ -1,4 +1,4 @@
-import { Value, Values } from './values';
+import { Value, TypedValue, Values } from './values';
 
 export abstract class Result {
     abstract isVoid(): boolean;
@@ -20,11 +20,11 @@ export class ErrorResult extends Result {
 }
 
 export class NormalResult extends Result {
-    public values: Value[];
+    public values: TypedValue[];
 
-    constructor(value: Value);
-    constructor(...values: Value[]);
-    constructor(v: Value | Value[]) {
+    constructor(value: TypedValue);
+    constructor(...values: TypedValue[]);
+    constructor(v: TypedValue | TypedValue[]) {
         super();
         this.values = v === undefined ? [] : (Array.isArray(v)) ? v : [v];
     }
