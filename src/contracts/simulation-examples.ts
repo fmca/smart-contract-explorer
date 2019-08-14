@@ -123,7 +123,8 @@ export class SimulationExamplesContract extends ProductContract {
             return { source, name, expr, type };
         }
 
-        throw Error(`Unexpected type name: ${typeName}`);
+        const { typeDescriptions: { typeString } } = typeName;
+        throw Error(`Unexpected type name: ${typeString}`);
     }
 
     getMethod(example: SimulationExample, name: string): string[] {
