@@ -18,7 +18,10 @@ interface Options {
 
 export async function get(params: Options = {}): Promise<BlockchainInterface> {
     const { mnemonic = 'anticonstitutionnellement' } = params;
-    const options = { ...params, mnemonic };
+    const gasLimit = Number.MAX_SAFE_INTEGER;
+    const gasPrice = '0x0';
+    const allowUnlimitedContractSize = true;
+    const options = { ...params, mnemonic, allowUnlimitedContractSize, gasLimit, gasPrice };
     const provider = ganache.provider(options);
     provider.setMaxListeners(100);
     const web3 = new Web3(provider);
@@ -45,12 +48,12 @@ export async function getTransaction<T>(contract: Contract, from: Address, name:
     if (typeof(target) !== 'function')
         throw Error(`Unknown function: '${name}'`);
     const transaction = target(...inputs);
-    const gas = await transaction.estimateGas() + 1;
+    const gas = await transaction.estimateGas() * 10;
     return { transaction, from, gas };
 }
 
 export async function getDeployTransaction(contract: Contract, from: Address, data: string, ...inputs: Value[]) {
-    debug(`computing gas for deployment`);
+    debug(`computing gas for deployment of %o bytes`, data.length / 2);
     const transaction = contract.deploy({ data, arguments: inputs });
     const gas = await transaction.estimateGas() + 1;
     return { transaction, from, gas };
