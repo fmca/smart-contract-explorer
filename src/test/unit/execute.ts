@@ -58,6 +58,17 @@ contract D {
 }
 `});
 
+sources.push({
+    path: `e.sol`,
+    content: `
+${pragmas}
+contract E {
+    int[] ys;
+    function f(int[] memory xs) public { ys = xs; }
+    function g() public view returns (int[] memory) { return ys; }
+}
+`});
+
 const metadata: { [path: string]: Metadata } = {};
 
 describe('execute', function() {
@@ -89,6 +100,15 @@ describe('execute', function() {
         await Promise.all([
             testSequence('d.sol', int256(13), [], ['f', [ary]], ['g', [int256(0)]]),
             testSequence('d.sol', int256(42), [], ['f', [ary]], ['g', [int256(1)]]),
+        ]);
+    });
+
+    it ('invocations with array returns', async function() {
+        const ary1 = array(int256(13));
+        const ary2 = array(int256(13), int256(42));
+        await Promise.all([
+            testSequence('e.sol', ary1, [], ['f', [ary1]], ['g']),
+            testSequence('e.sol', ary2, [], ['f', [ary2]], ['g']),
         ]);
     });
 

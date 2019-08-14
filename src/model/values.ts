@@ -13,6 +13,9 @@ export type TypedElementaryValue = { type: ElementaryType, value: ElementaryValu
 export type TypedArrayValue = { length?: number, values: TypedValue[] };
 export type TypedValue = TypedElementaryValue | TypedArrayValue;
 
+interface Ary extends Array<UnparsedValue> { }
+export type UnparsedValue = Ary | string;
+
 export namespace Value {
     export function isElementaryValue(v: TypedValue): v is TypedElementaryValue {
         return !isArrayValue(v);
@@ -38,12 +41,12 @@ export namespace Value {
         throw Error(`Unexpected value: ${v}`);
     }
 
-    export function parse(v: string, outputs: { name: string, type: string }[] | undefined): TypedValue[] {
+    export function parse(v: UnparsedValue, outputs: { name: string, type: string }[] | undefined): TypedValue[] {
         debug(`parsing values %o from %o`, v, outputs);
 
         if (outputs === undefined || outputs.length <= 0) {
-            if (v.trim() !== '')
-                throw Error(`Unexpected value string: ${v}`);
+            if (v !== undefined || v != null)
+                throw Error(`Unexpected value: ${v}`);
 
             return [];
         }
@@ -54,8 +57,19 @@ export namespace Value {
         return [parseValue(v, outputs[0].type)];
     }
 
-    export function parseValue(v: string, type: string): TypedValue {
+    export function parseValue(v: UnparsedValue, type: string): TypedValue {
         debug(`parsing value %o of %o`, v, type);
+
+        if (type.endsWith('[]')) {
+            if (!Array.isArray(v))
+                throw Error(`Expected array value, got: ${v}`);
+
+            const values = v.map(v => parseValue(v, type.slice(0, -2)));
+            return { values };
+        }
+
+        if (Array.isArray(v))
+            throw Error(`Unexpected array value: ${v}`);
 
         if (type.match(/.*int.*|bool/)) {
             const value = JSON.parse(v) as number | boolean;
@@ -76,7 +90,7 @@ export namespace Value {
     }
 
     export function array(...values: TypedValue[]): TypedArrayValue {
-        return { values, length: undefined };
+        return { values };
     }
 
     export function staticArray(length: number, ...values: TypedValue[]): TypedArrayValue {

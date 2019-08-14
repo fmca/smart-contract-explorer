@@ -33,8 +33,6 @@ export interface Transaction<T> {
     gas: number;
 }
 
-export type Value = number | boolean | Address;
-
 export function getContract(chain: BlockchainInterface, abi: ABIDefinition[]): Contract {
     const contract = chain.create(abi);
     (contract as any).transactionConfirmationBlocks = 1;
