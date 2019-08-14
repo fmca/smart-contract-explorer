@@ -69,6 +69,14 @@ export namespace Metadata {
         return undefined;
     }
 
+    export function findStruct(name: string, metadata: Metadata) {
+        for (const member of getStructs(metadata))
+            if (member.name === name)
+                return member
+
+        return undefined;
+    }
+
     export function * getVariables(metadata: Metadata) {
         const contract = getContract(metadata);
         for (const m of ContractDefinition.variables(contract))
@@ -79,6 +87,12 @@ export namespace Metadata {
     export function * getFunctions(metadata: Metadata) {
         const contract = getContract(metadata);
         for (const m of ContractDefinition.functions(contract))
+            yield m;
+    }
+
+    export function * getStructs(metadata: Metadata) {
+        const contract = getContract(metadata);
+        for (const m of ContractDefinition.structs(contract))
             yield m;
     }
 

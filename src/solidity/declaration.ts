@@ -24,7 +24,6 @@ export interface ImportDirective extends Node {
     unitAlias: string;
 }
 
-
 export interface ContractDefinition extends Node {
     nodeType: 'ContractDefinition';
     baseContracts: any[];
@@ -40,7 +39,7 @@ export interface ContractDefinition extends Node {
 export type ContractKind = 'contract';
 
 export interface ContractMember extends Node {
-    nodeType: 'FunctionDefinition' | 'VariableDeclaration';
+    nodeType: 'FunctionDefinition' | 'VariableDeclaration' | 'StructDefinition';
 }
 
 export interface FunctionDefinition extends ContractMember {
@@ -70,6 +69,12 @@ export interface VariableDeclaration extends ContractMember {
     storageLocation: StorageLocation;
     typeDescriptions: TypeDescriptions;
     typeName: TypeName;
+}
+
+export interface StructDefinition extends ContractMember {
+    nodeType: 'StructDefinition';
+    name: string;
+    members: VariableDeclaration[];
 }
 
 export type StorageLocation = 'default' | 'memory';
@@ -105,6 +110,12 @@ export namespace ContractDefinition {
                 yield member;
     }
 
+    export function * structs(contract: ContractDefinition): Iterable<StructDefinition> {
+        for (const member of members(contract))
+            if (ContractMember.isStructDefinition(member))
+                yield member;
+    }
+
     export function * members(contract: ContractDefinition): Iterable<ContractMember> {
         for (const member of contract.nodes)
             yield member;
@@ -117,6 +128,9 @@ export namespace ContractMember {
     }
     export function isFunctionDefinition(node: ContractMember): node is FunctionDefinition {
         return node.nodeType === 'FunctionDefinition';
+    }
+    export function isStructDefinition(node: ContractMember): node is StructDefinition {
+        return node.nodeType === 'StructDefinition';
     }
 }
 

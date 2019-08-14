@@ -75,23 +75,38 @@ export class SimulationExamplesContract extends ProductContract {
                 yield `${prefix}: ${type(typeName)}`;
 
                 if (isMapping(typeName)) {
-                    const path = this.storageAccessorPath(prefix, variable.typeName);
-
-                    if (path !== undefined)
+                    for (const path of this.storageAccessorPaths(prefix, variable.typeName, metadata)) {
+                        debug(`path: %o`, path);
                         yield path;
+                    }
                 }
             }
         }
     }
 
-    storageAccessorPath(prefix: string, typeName: TypeName): string | undefined {
+    * storageAccessorPaths(prefix: string, typeName: TypeName, metadata: Metadata): Iterable<string> {
         const { typeDescriptions: { typeString } } = typeName;
 
-        if (isElementaryTypeName(typeName))
-            return isIntegerType(typeName.name) ? `${prefix}: ${type(typeName)}` : undefined;
+        if (isElementaryTypeName(typeName)) {
+            if (isIntegerType(typeName.name))
+                yield `${prefix}: ${type(typeName)}`;
+
+            return;
+        }
 
         if (isUserDefinedTypeName(typeName)) {
-            throw Error(`TODO: accessor path with user-defined types`);
+            const { name } = typeName;
+
+            const decl = Metadata.findStruct(name, metadata);
+
+            if (decl === undefined)
+                throw Error(`Unknown struct name: ${name}`);
+
+            for (const { name, typeName } of decl.members)
+                for (const path of this.storageAccessorPaths(`${prefix}.${name}`, typeName, metadata))
+                    yield path;
+
+            return;
         }
 
         if (isMapping(typeName)) {
@@ -100,7 +115,10 @@ export class SimulationExamplesContract extends ProductContract {
             if (!isElementaryTypeName(keyType))
                 throw Error(`Unexpected type name: ${keyType}`);
 
-            return this.storageAccessorPath(`${prefix}[__verifier_idx_${keyType.name}]`, valueType);
+            for (const path of this.storageAccessorPaths(`${prefix}[__verifier_idx_${keyType.name}]`, valueType, metadata))
+                yield path;
+
+            return;
         }
 
         throw Error(`Unexpected type: ${typeString}`);
