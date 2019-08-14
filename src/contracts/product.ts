@@ -10,6 +10,7 @@ export abstract class ProductContract extends Contract {
         const { name } = this.info;
         const spec = await this.getSpec();
         const body = await this.getBody();
+        const aux = [...this.auxiliaryDefinitions.values()].flat();
         const lines = block()(
             `pragma solidity ^0.5.0;`,
             ``,
@@ -18,7 +19,7 @@ export abstract class ProductContract extends Contract {
             ``,
             ...spec,
             `contract ${name} is ${this.source.name}, ${this.target.name} {`,
-            ...block(4)(...body),
+            ...block(4)(...body, ...aux),
             `}`
         );
         return lines;

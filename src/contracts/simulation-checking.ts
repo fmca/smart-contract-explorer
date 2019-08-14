@@ -81,8 +81,8 @@ export class SimulationCheckingContract extends ProductContract {
             ` */`,
             `${Contract.signature({ ...target, returnParameters })} {`,
             ...block(4)(
-                `${Contract.callMethod(this.source.name, { ...source, parameters })};`,
-                `${Contract.callMethod(this.target.name, target)};`,
+                `${this.callMethod(this.source.name, { ...source, parameters })};`,
+                `${this.callMethod(this.target.name, target)};`,
                 ...this.getReturns(target),
             ),
             `}`
@@ -94,8 +94,8 @@ export class SimulationCheckingContract extends ProductContract {
             ``,
             `${Contract.signature(target)}`,
             ...block(4)(
-                Contract.callMethod(this.source.name, { ...source, parameters: target.parameters }),
-                Contract.callMethod(this.target.name, target)
+                this.callMethod(this.source.name, { ...source, parameters: target.parameters }),
+                this.callMethod(this.target.name, target)
             ),
             `{ }`
         ];

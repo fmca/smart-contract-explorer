@@ -144,12 +144,15 @@ export class SimulationExamplesContract extends ProductContract {
         const { typeDescriptions: { typeString } } = typeName;
         debug(`storageAccessor for %o of type %O`, name, typeName);
 
-        if (isElementaryTypeName(typeName) || isArrayTypeName(typeName))
+        if (isElementaryTypeName(typeName))
             return { source, name, expr: `${source}.${name}`, type: typeName.name };
+
+        if (isArrayTypeName(typeName))
+            return { source, name, expr: `${source}.${name}`, type: `${typeString} memory`};
 
         if (isMapping(typeName)) {
             const idxss = [...this.values.mapIndicies(typeName)];
-            const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `[${i}]`).join('')}`);;
+            const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `[${this.argument(i)}]`).join('')}`);;
             const expr = `keccak256(abi.encode(${elems.join(', ')}))`;
             const type = `bytes32`;
             return { source, name, expr, type };
@@ -166,8 +169,8 @@ export class SimulationExamplesContract extends ProductContract {
             ``,
             `function ${name}() public {`,
             ...block(4)(
-                ...sOps.map(Contract.callOfOperation(this.source)),
-                ...tOps.map(Contract.callOfOperation(this.target)),
+                ...sOps.map(this.callOfOperation(this.source)),
+                ...tOps.map(this.callOfOperation(this.target)),
             ),
             `}`
         ];
