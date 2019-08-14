@@ -17,7 +17,7 @@ export function type(typeName: TypeName): string {
         return primitiveType(typeName.name);
 
     if (isArrayTypeName(typeName))
-        return `${type(typeName.baseType)}[]`;
+        return `Array[${type(typeName.baseType)}]`;
 
     if (isMapping(typeName))
         return `Map[${type(typeName.keyType)},${type(typeName.valueType)}]`;
