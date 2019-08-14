@@ -10,7 +10,12 @@ contract ERC20 {
     mapping(address=>bool) internal  burners ;  // specific for Burnable-ERC20
 
 
+    /** @notice postcondition balances[msg.sender] == __verifier_old_uint(balances[msg.sender]) + supply
+        @notice modifies minters[msg.sender]
+        @notice modifies balances[msg.sender] */
     constructor(uint supply) public {
+        require(balances[msg.sender] + supply >= balances[msg.sender]);
+        minters[msg.sender] = true;
         mint(msg.sender, supply);
     }
 
@@ -93,7 +98,7 @@ contract ERC20 {
 
 
    /**  @notice precondition to != address(0)
-	    @notice minters[msg.sender]
+	    @notice precondition minters[msg.sender]
         @notice precondition balances[to] + val >= balances[to]
         @notice postcondition balances[to] == __verifier_old_uint(balances[to]) + val
         @notice modifies balances[to] */
@@ -105,7 +110,7 @@ contract ERC20 {
 
 
    /**  @notice precondition from != address(0)
-	    @notice burners[msg.sender]
+	    @notice precondition burners[msg.sender]
         @notice precondition balances[from] - val >= 0
         @notice postcondition balances[from] == __verifier_old_uint(balances[from]) - val
         @notice modifies balances[from] */

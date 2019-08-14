@@ -18,14 +18,13 @@ pragma solidity >=0.5.0;
  */
 
 
-
+// TODO add notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
 
 
 
  /**
  * @notice simulation  __verifier_eq(Token._balances, ERC20.balances)
  * @notice simulation __verifier_eq(Token._allowed, ERC20.allowances)
- * @notice simulation  Token._totalSupply ==  __verifier_sum_uint(ERC20.balances)
  */
 contract Token {
     //using SafeMath for uint;
@@ -164,29 +163,33 @@ contract Token {
      * @dev Internal function that mints an amount of the token and assigns it to
      * an account. This encapsulates the modification of balances such that the
      * proper events are emitted.
-     * @param account The account that will receive the created tokens.
-     * @param value The amount that will be created.
+     * @param to The account that will receive the created tokens.
+     * @param val The amount that will be created.
+     @notice modifies _balances[to]
+     @notice modifies _totalSupply
      */
-    function mint(address account, uint value) internal {
-        require(account != address(0));
+    function mint(address to, uint val) internal {
+        require(to != address(0));
 
-        _totalSupply = _totalSupply + value;
-        _balances[account] = _balances[account] + value;
+        _totalSupply = _totalSupply + val;
+        _balances[to] = _balances[to] + val;
         //emit Transfer(address(0), account, value);
     }
 
     /**
      * @dev Internal function that burns an amount of the token of a given
      * account.
-     * @param account The account whose tokens will be burnt.
-     * @param value The amount that will be burnt.
+     * @param from The account whose tokens will be burnt.
+     * @param val The amount that will be burnt.
+      @notice modifies _balances[from]
+      @notice modifies _totalSupply
      */
-    function burn(address account, uint value) internal {
-        require(account != address(0));
-        require(_balances[account] >= value);
+    function burn(address from, uint val) internal {
+        require(from != address(0));
+        require(_balances[from] >= val);
 
-        _totalSupply = _totalSupply - value;
-        _balances[account] = _balances[account] - value;
+        _totalSupply = _totalSupply - val;
+        _balances[from] = _balances[from] - val;
         //emit Transfer(account, address(0), value);
     }
 
