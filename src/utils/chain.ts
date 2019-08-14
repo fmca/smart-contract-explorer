@@ -45,7 +45,7 @@ export async function getTransaction<T>(contract: Contract, from: Address, name:
     if (typeof(target) !== 'function')
         throw Error(`Unknown function: '${name}'`);
     const transaction = target(...inputs);
-    const gas = await transaction.estimateGas() * 10;
+    const gas = await transaction.estimateGas() + 1;
     return { transaction, from, gas };
 }
 

@@ -19,14 +19,18 @@ export async function expressionEvaluator(expression: Expr, examples: Metadata):
 function expressionEvaluationContract(expression: Expr, examples: Metadata) {
     const { name, source: { path } } = examples;
     const node = toNode(expression);
-    const solExpr = fieldsToGetters(toContract(node));
+    debug(`node: %o`, node);
+    const expr = toContract(node);
+    debug(`expr: %o`, expr);
+    const solExpr = fieldsToGetters(expr);
+    debug(`solExpr: %o`, solExpr);
     return `pragma solidity ^0.5.0;
 import "${path}";
 contract C { function f(${name} x) public view returns (bool) { return ${solExpr}; } }`;
 }
 
 function fieldsToGetters(expression: string) {
-    return expression.replace(/(\w+)[.](\w+)/g, 'x.$1$$$2()');
+    return expression.replace(/(\w+)[.$](\w+)/g, 'x.$1$$$2()');
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {

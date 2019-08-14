@@ -1,6 +1,6 @@
 import { Debugger } from '../utils/debug';
 import { Expr } from '../sexpr/expression';
-import { State, Operation, Trace, Observation, NormalResult } from '../model';
+import { State, Operation, Trace, Observation, NormalResult, Value } from '../model';
 import * as Compile from '../frontend/compile';
 import { ExecutorFactory } from './execute';
 import { Invocation, InvocationGenerator } from '../model';
@@ -57,10 +57,10 @@ export class Evaluator {
         const { values: [ value ] } = result;
         debug(`result: %o`, value);
 
-        if (typeof(value) !== 'boolean')
+        if (!Value.isElementaryValue(value) || value.type !== 'bool')
             throw Error(`Expected Boolean-valued expression`);
 
-        return { result: value };
+        return { result: value.value as boolean };
     }
 
     parseRequest(line: string): Request {

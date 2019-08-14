@@ -1,15 +1,16 @@
 import { Debugger } from '../utils/debug';
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName } from "../solidity";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
 import { type } from "../sexpr/pie";
+import { Operation } from '../model';
 
 const debug = Debugger(__filename);
 
-export class SimulationExamplesContract extends ProductContract {
+export class SimulationExamplesContract extends Contract {
     examples?: (SimulationExample & AbstractExample)[];
 
     constructor(public source: Metadata, public target: Metadata,
@@ -17,7 +18,19 @@ export class SimulationExamplesContract extends ProductContract {
             public generator: () => AsyncIterable<SimulationExample>,
             public values: ValueGenerator) {
 
-        super(source, target, info);
+        super(info);
+    }
+
+    async getImports() {
+        return [this.source.source.path, this.target.source.path];
+    }
+
+    async getParents() {
+        return [] as string[];
+    }
+
+    async getSpec() {
+        return [] as string[];
     }
 
     async getExamples(): Promise<(SimulationExample & AbstractExample)[]> {
@@ -45,19 +58,22 @@ export class SimulationExamplesContract extends ProductContract {
     }
 
     async getBody(): Promise<string[]> {
-        const methods: string[][] = [];
+        const members: string[] = [];
+
+        members.push(`${this.source.name} impl;`);
+        members.push(`${this.target.name} spec;`);
 
         for await (const example of await this.getExamples()) {
             const { method } = example.id;
             const lines = this.getMethod(example, method);
-            methods.push(lines);
+            members.push(...lines);
         }
 
         for (const metadata of [this.source, this.target])
             for (const lines of this.storageAccessorMethodDefinitions(metadata))
-                methods.push(lines);
+                members.push(...lines);
 
-        return methods.flat();
+        return members.flat();
     }
 
     * storageAccessorsForPie(): Iterable<string> {
@@ -135,8 +151,12 @@ export class SimulationExamplesContract extends ProductContract {
     }
 
     * storageAccessors(metadata: Metadata) {
-        for (const variable of Metadata.getVariables(metadata))
-            yield this.storageAccessor(metadata.name, variable);
+        for (const variable of Metadata.getVariables(metadata)) {
+            const target = variable.constant
+                ? metadata.name
+                : metadata === this.source ? 'impl' : 'spec'
+            yield this.storageAccessor(target, variable);
+        }
     }
 
     storageAccessor(source: string, variable: VariableDeclaration) {
@@ -145,14 +165,14 @@ export class SimulationExamplesContract extends ProductContract {
         debug(`storageAccessor for %o of type %O`, name, typeName);
 
         if (isElementaryTypeName(typeName))
-            return { source, name, expr: `${source}.${name}`, type: typeName.name };
+            return { source, name, expr: `${source}.${name}()`, type: typeName.name };
 
         if (isArrayTypeName(typeName))
             return { source, name, expr: `${source}.${name}`, type: `${typeString} memory`};
 
         if (isMapping(typeName)) {
             const idxss = [...this.values.mapIndicies(typeName)];
-            const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `[${this.argument(i)}]`).join('')}`);;
+            const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `(${this.argument(i)})`).join('')}`);;
             const expr = `keccak256(abi.encode(${elems.join(', ')}))`;
             const type = `bytes32`;
             return { source, name, expr, type };
@@ -169,10 +189,18 @@ export class SimulationExamplesContract extends ProductContract {
             ``,
             `function ${name}() public {`,
             ...block(4)(
-                ...sOps.map(this.callOfOperation(this.source)),
-                ...tOps.map(this.callOfOperation(this.target)),
+                ...sOps.map(o => this.call(o, 'impl', this.source.name)),
+                ...tOps.map(o => this.call(o, 'spec', this.target.name)),
             ),
             `}`
         ];
+    }
+
+    call(operation: Operation, prefix: string, name: string): string {
+        const { invocation: { method, inputs } } = operation;
+
+        return FunctionDefinition.isConstructor(method)
+            ? `${prefix} = ${this.constructorCall(operation, name)}`
+            : this.methodCall(operation, prefix);
     }
 }

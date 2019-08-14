@@ -6,28 +6,15 @@ export abstract class ProductContract extends Contract {
         super(info);
     }
 
-    async getContract(): Promise<string[]> {
-        const { name } = this.info;
-        const spec = await this.getSpec();
-        const body = await this.getBody();
-        const aux = [...this.auxiliaryDefinitions.values()].flat();
-        const lines = block()(
-            `pragma solidity ^0.5.0;`,
-            ``,
-            `import "${this.source.source.path}";`,
-            `import "${this.target.source.path}";`,
-            ``,
-            ...spec,
-            `contract ${name} is ${this.source.name}, ${this.target.name} {`,
-            ...block(4)(...body, ...aux),
-            `}`
-        );
-        return lines;
+    async getImports() {
+        return [this.source.source.path, this.target.source.path];
     }
 
-    async getSpec(): Promise<string[]> {
-        return [];
+    async getParents() {
+        return [this.source.name, this.target.name];
     }
 
-    abstract async getBody(): Promise<string[]>;
+    async getSpec() {
+        return [] as string [];
+    }
 }

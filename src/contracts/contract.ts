@@ -16,7 +16,34 @@ export abstract class Contract {
 
     constructor(public info: ContractInfo) { }
 
-    abstract async getContract(): Promise<string[]>;
+    async getContract(): Promise<string[]> {
+        const { name } = this.info;
+        const imports = await this.getImports();
+        const spec = await this.getSpec();
+        const parents = await this.getParents();
+        const body = await this.getBody();
+        const decl = parents.length > 0
+            ? `${name} is ${parents.join(', ')}`
+            : `${name}`;
+
+        const aux = [...this.auxiliaryDefinitions.values()].flat();
+        const lines = block()(
+            `pragma solidity ^0.5.0;`,
+            ``,
+            ...imports.map(f => `import "${f}";`),
+            ``,
+            ...spec,
+            `contract ${decl} {`,
+            ...block(4)(...body, ...aux),
+            `}`
+        );
+        return lines;
+    }
+
+    abstract async getImports(): Promise<string[]>;
+    abstract async getParents(): Promise<string[]>;
+    abstract async getSpec(): Promise<string[]>;
+    abstract async getBody(): Promise<string[]>;
 
     async getMetadata(): Promise<Metadata> {
         const info = await this.getSourceInfo();
@@ -76,15 +103,18 @@ export abstract class Contract {
         return type.endsWith('[]');
     }
 
-    callOfOperation({ name: contractName }: Metadata) {
-        return (operation: Operation) => {
-            const { invocation: { method, inputs } } = operation;
-            const args = inputs.map(i => this.argument(i));
-            const name = FunctionDefinition.isConstructor(method)
-                ? contractName
-                : `${contractName}.${method.name}`;
-            return `${name}(${args.join(', ')});`;
-        }
+    methodCall(operation: Operation, target?: string) {
+        const { invocation: { method: { name }, inputs } } = operation;
+        const lhs = target === undefined ? name : `${target}.${name}`;
+        const rhs = inputs.map(i => this.argument(i)).join(', ');
+        return `${lhs}(${rhs});`;
+    }
+
+    constructorCall(operation: Operation, target: string) {
+        const { invocation: { inputs } } = operation;
+        const lhs = `new ${target}`;
+        const rhs = inputs.map(i => this.argument(i)).join(', ');
+        return `${lhs}(${rhs});`;
     }
 
     callMethod(contractName: string, method: FunctionDefinition) {
