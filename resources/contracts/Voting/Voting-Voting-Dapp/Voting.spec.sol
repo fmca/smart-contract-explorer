@@ -18,7 +18,7 @@ We will use an array of bytes32 instead to store the list of candidates
 deploy the contract to the blockchain. When we deploy the contract,
 we will pass an array of candidates who will be contesting in the election
 */
-    /** @notice postcondition __verifier_eq(candidateList, candidateNames)
+    /** TODO notice postcondition __verifier_eq(candidateList, candidateNames)
         @notice modifies candidateList
     */
     constructor(bytes32[] memory candidateNames) public{
@@ -26,19 +26,19 @@ we will pass an array of candidates who will be contesting in the election
     }
 
   
-    function totalVotesFor(bytes32 candidateName) public view returns (uint8){
-        if (validCandidate(candidateName) == false) {
+    function totalVotesFor(bytes32 candidate) public view returns (uint8){
+        if (validCandidate(candidate) == false) {
             revert();
         }
-        return votesReceived[candidateName];
+        return votesReceived[candidate];
     }
 
-    /** @notice postcondition votesReceived[candidateName] == __verifier_old_uint(votesReceived[candidateName]) + 1
-        @notice modifies votesReceived[candidateName]
+    /** @notice postcondition votesReceived[candidate] == __verifier_old_uint(votesReceived[candidate]) + 1
+        @notice modifies votesReceived[candidate]
     */
-    function voteForCandidate(bytes32 candidateName) public {
-        if (validCandidate(candidateName) == false) revert();
-        votesReceived[candidateName] += 1;
+    function voteForCandidate(bytes32 candidate) public {
+        if (validCandidate(candidate) == false) revert();
+        votesReceived[candidate] += 1;
     }
 
 

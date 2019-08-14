@@ -37,7 +37,7 @@ contract Voting {
 
   // This function increments the vote count for the specified candidate. This
   // is equivalent to casting a vote
-  /** @notice modifies votesReceived[candidateName]
+  /** @notice modifies votesReceived[candidate]
   */
   function voteForCandidate(bytes32 candidate) public {
     if (validCandidate(candidate) == false) revert();
