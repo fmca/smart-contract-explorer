@@ -3,7 +3,6 @@ import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
 import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName } from "../solidity";
 import { ValueGenerator } from "../model/values";
-import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
 import { type } from "../sexpr/pie";
 import { Operation } from '../model';
@@ -78,7 +77,7 @@ export class SimulationExamplesContract extends Contract {
 
     * storageAccessorsForPie(): Iterable<string> {
         for (const metadata of [this.source, this.target]) {
-            for (const variable of Metadata.getVariables(metadata)) {
+            for (const variable of metadata.getVariables()) {
                 if (variable.constant)
                     continue;
 
@@ -113,7 +112,7 @@ export class SimulationExamplesContract extends Contract {
         if (isUserDefinedTypeName(typeName)) {
             const { name } = typeName;
 
-            const decl = Metadata.findStruct(name, metadata);
+            const decl = metadata.findStruct(name);
 
             if (decl === undefined)
                 throw Error(`Unknown struct name: ${name}`);
@@ -151,7 +150,7 @@ export class SimulationExamplesContract extends Contract {
     }
 
     * storageAccessors(metadata: Metadata) {
-        for (const variable of Metadata.getVariables(metadata)) {
+        for (const variable of metadata.getVariables()) {
             const target = variable.constant
                 ? metadata.name
                 : metadata === this.source ? 'impl' : 'spec'

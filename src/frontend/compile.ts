@@ -70,6 +70,6 @@ function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {
     const { abi, userdoc, evm: { bytecode: { object: bytecode } } } = contract;
     debug(`abi: %O`, abi);
 
-    const metadata = { abi, name, source, bytecode, userdoc, ast, members };
+    const metadata = new Metadata(abi, name, source, bytecode, userdoc, ast, members);
     return metadata;
 }

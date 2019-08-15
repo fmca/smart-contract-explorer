@@ -4,8 +4,6 @@ import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
 import { FunctionMapping } from "../simulation/mapping";
 
-const { getMethodSpec, getContractSpec } = Metadata;
-
 export class SimulationCheckingContract extends ProductContract {
 
     constructor(public mapping: FunctionMapping, public info: ContractInfo) {
@@ -23,7 +21,7 @@ export class SimulationCheckingContract extends ProductContract {
 
     async getSpec(): Promise<string[]> {
         const { source } = this;
-        const { simulations } = getContractSpec(source);
+        const { simulations } = source.getContractSpec();
         if (simulations.length == 0)
             return [];
 
@@ -40,8 +38,8 @@ export class SimulationCheckingContract extends ProductContract {
         if (name === '')
             return this.getConstructor(source, target);
 
-        const { modifies: srcMods } = getMethodSpec(this.source, name);
-        const spec = getMethodSpec(this.target, name);
+        const { modifies: srcMods } = this.source.getMethodSpec(name);
+        const spec = this.target.getMethodSpec(name);
         const modifies = [
             ...srcMods.map(substituteFields(this.source)),
             ...spec.modifies.map(substituteFields(this.target))
@@ -136,7 +134,7 @@ export class SimulationCheckingContract extends ProductContract {
 
 function substituteFields(metadata: Metadata) {
     return function(expression: string) {
-        const ids = [...Metadata.getVariables(metadata)].map(({ name }) => name);
+        const ids = [...metadata.getVariables()].map(({ name }) => name);
         return prefixIdentifiers(expression, ids, metadata.name);
     };
 }

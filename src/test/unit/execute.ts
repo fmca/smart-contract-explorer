@@ -140,7 +140,7 @@ async function testSequence(path: string, value: TypedValue | undefined, args: T
 }
 
 function getInvocation(path: string, name: string, ...values: TypedValue[]) {
-    const method = Metadata.findFunction(name, metadata[path]);
+    const method = metadata[path].findFunction(name);
     assert.notEqual(method, undefined);
     const invocation = new Invocation(method!, ...values);
     return invocation;

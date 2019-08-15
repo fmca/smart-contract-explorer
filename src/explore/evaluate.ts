@@ -5,7 +5,7 @@ import * as Compile from '../frontend/compile';
 import { ExecutorFactory } from './execute';
 import { Invocation, InvocationGenerator } from '../model';
 import * as Chain from '../utils/chain';
-import { Metadata, Address } from '../frontend/metadata';
+import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
 import { AbstractExample } from '../simulation/examples';
 import { lines } from '../utils/lines';
@@ -115,7 +115,7 @@ class ExtensionEvaluation extends Evaluation {
         const { id: { contract, method: stateMethod } } = example;
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
-        const methods = [...Metadata.getFunctions(metadata)];
+        const methods = [...metadata.getFunctions()];
         const accounts = await this.chain.getAccounts();
         const invocationGenerator = new InvocationGenerator(methods, accounts);
         const executor = this.executorFactory.getExecutor(invocationGenerator, extension);
@@ -136,7 +136,7 @@ class ExtensionEvaluation extends Evaluation {
     }
 
     static getInvocation(metadata: Metadata, methodName: string): Invocation {
-        const method = Metadata.findFunction(methodName, metadata);
+        const method = metadata.findFunction(methodName);
         if (method === undefined)
             throw Error(`method ${methodName} not found`);
         return new Invocation(method);
@@ -160,7 +160,7 @@ class CachingEvaluation extends Evaluation {
         const { metadata, instance: { contract }} = await this.getExample(example);
         const value = (await contract).getAddress();
         const { instance, metadata: m } = await this.getExpression(expression, metadata);
-        const [method] = [...Metadata.getFunctions(m)];
+        const [method] = [...m.getFunctions()];
         const invocation = new Invocation(method, { type: 'address', value });
         const result = await instance.invokeReadOnly(invocation);
         const operation = new Operation(invocation, result);
@@ -175,7 +175,7 @@ class CachingEvaluation extends Evaluation {
             const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
             const instance = await this.creator.instantiate(metadata);
-            const method = Metadata.findFunction(methodName, metadata);
+            const method = metadata.findFunction(methodName);
             if (method === undefined)
                 throw Error(`unknown method: ${methodName}`);
             const invocation = new Invocation(method);

@@ -1,5 +1,5 @@
 import { Metadata } from '../frontend/metadata';
-import { FunctionDefinition, VariableDeclaration } from '../solidity';
+import { FunctionDefinition } from '../solidity';
 import { zip } from 'd3-array';
 import { Debugger } from '../utils/debug';
 const debug = Debugger(__filename);
@@ -40,16 +40,16 @@ class SimpleFunctionMapping extends FunctionMapping {
         super(sourceMetadata, targetMetadata);
         this._entries = [];
 
-        for (const target of Metadata.getFunctions(targetMetadata)) {
+        for (const target of targetMetadata.getFunctions()) {
 
             const source = target.name === ''
 
                 // find a matching constructor
-                ? [...Metadata.getFunctions(sourceMetadata)]
+                ? [...sourceMetadata.getFunctions()]
                     .find(f => f.name === '' && SimpleFunctionMapping.compatible(f, target))
 
                 // find the same-named function
-                : Metadata.findFunction(target.name, sourceMetadata);
+                : sourceMetadata.findFunction(target.name, );
 
             // Insist on matching constructors
             if (target.name === '' && source === undefined)

@@ -1,5 +1,5 @@
 import * as Compile from '../../frontend/compile';
-import { Metadata, ContractSpec } from '../../frontend/metadata';
+import { ContractSpec } from '../../frontend/metadata';
 import assert from 'assert';
 
 const pragmas = `pragma solidity ^0.5.0;`;
@@ -65,7 +65,7 @@ async function getSpecFromNotices(notices: string) {
 async function getSpecFromContent(content: string) {
     const path = `C.sol`;
     const metadata = await Compile.fromString({ path, content });
-    const contractSpec = Metadata.getContractSpec(metadata);
+    const contractSpec = metadata.getContractSpec();
     return contractSpec;
 }
 

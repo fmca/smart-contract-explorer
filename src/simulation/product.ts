@@ -41,9 +41,8 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
     const source = await Compile.fromFile(paths.source);
     const target = await Compile.fromFile(paths.target);
 
-    const s = { ...source, source: internalized.source };
-    const t = { ...target, source: internalized.target };
-
+    const s = source.redirect(internalized.source);
+    const t = target.redirect(internalized.target);
     const mapping = FunctionMapping.getMapping(s, t);
     const contract = await new SimulationCheckingContract(mapping, o).getSourceInfo();
     return { contract, internalized };
@@ -55,12 +54,12 @@ export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string,
     const specBodyToExpr = getBodyToExpr(spec);
     const implBodyToExpr = getBodyToExpr(impl);
 
-    for (const m1 of Metadata.getFunctions(spec)) {
+    for (const m1 of spec.getFunctions()) {
         if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
             continue;
 
         const { name, body: b1 } = m1;
-        const m2 = Metadata.findFunction(name, impl);
+        const m2 = impl.findFunction(name);
 
         if (m2 === undefined)
             continue;

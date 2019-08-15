@@ -2,7 +2,7 @@ import * as Compile from '../../frontend/compile';
 import * as Chain from '../../utils/chain';
 import assert from 'assert';
 import { InvocationGenerator } from '../../model';
-import { Address, Metadata } from '../../frontend/metadata';
+import { Address } from '../../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
@@ -89,7 +89,7 @@ function getContext(accounts: Address[]): Context {
     async function generator(content: string) {
         const path = `c.sol`;
         const metadata = await Compile.fromString({ path, content });
-        const generator = new InvocationGenerator([...Metadata.getFunctions(metadata)], accounts);
+        const generator = new InvocationGenerator([...metadata.getFunctions()], accounts);
         return generator;
     }
 

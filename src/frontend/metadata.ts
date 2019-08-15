@@ -4,6 +4,7 @@ import { SourceUnit, ContractMember, SourceUnitElement, ContractDefinition, Func
 import { UserDoc } from './solc';
 
 import { Debugger } from '../utils/debug';
+import { copy } from 'fs-extra';
 
 const debug = Debugger(__filename);
 
@@ -41,63 +42,61 @@ export interface SourceInfo {
     content: string;
 }
 
-export interface Metadata {
-    name: string;
-    source: SourceInfo;
-    abi: Method[];
-    bytecode: string;
-    userdoc: UserDoc;
-    ast: SourceUnit;
-    members: ContractMember[];
-}
+export class Metadata {
+    constructor(
+        public abi: Method[],
+        public name: string,
+        public source: SourceInfo,
+        public bytecode: string,
+        public userdoc: UserDoc,
+        public ast: SourceUnit,
+        public members: ContractMember[]) {}
 
-export namespace Metadata {
-
-    export function findVariable(name: string, metadata: Metadata) {
-        for (const m of getVariables(metadata))
+    findVariable(name: string) {
+        for (const m of this.getVariables())
             if (m.name === name)
                 return m;
 
         return undefined;
     }
 
-    export function findFunction(name: string, metadata: Metadata) {
-        for (const m of getFunctions(metadata))
+    findFunction(name: string) {
+        for (const m of this.getFunctions())
             if (m.name === name)
                 return m;
 
         return undefined;
     }
 
-    export function findStruct(name: string, metadata: Metadata) {
-        for (const member of getStructs(metadata))
+    findStruct(name: string) {
+        for (const member of this.getStructs())
             if (member.name === name)
                 return member
 
         return undefined;
     }
 
-    export function * getVariables(metadata: Metadata) {
-        const contract = getContract(metadata);
+    * getVariables() {
+        const contract = this.getContract();
         for (const m of ContractDefinition.variables(contract))
             if (m.stateVariable && !m.constant)
                 yield m;
     }
 
-    export function * getFunctions(metadata: Metadata) {
-        const contract = getContract(metadata);
+    * getFunctions() {
+        const contract = this.getContract();
         for (const m of ContractDefinition.functions(contract))
             yield m;
     }
 
-    export function * getStructs(metadata: Metadata) {
-        const contract = getContract(metadata);
+    * getStructs() {
+        const contract = this.getContract();
         for (const m of ContractDefinition.structs(contract))
             yield m;
     }
 
-    export function getContractSpec(metadata: Metadata): ContractSpec {
-        const { name, userdoc: { notice = '' } } = metadata;
+    getContractSpec(): ContractSpec {
+        const { name, userdoc: { notice = '' } } = this;
         debug(`notice(%s): %O`, name, notice);
         const specs = notice.trim().split(/(?=simulation)|(?=invariant)/);
         const strip = (s: string) => s.replace(/[^\s]*\s+/,'').replace(/\s+/g, ' ').trim();
@@ -108,10 +107,10 @@ export namespace Metadata {
         return spec;
     }
 
-    export function getMethodSpec(metadata: Metadata, name: string): MethodSpec {
-        debug(`getMethodSpec(%o, %O)`, name, metadata);
+    getMethodSpec(name: string): MethodSpec {
+        debug(`getMethodSpec(%o, %O)`, name, this);
 
-        const { userdoc: { methods } } = metadata;
+        const { userdoc: { methods } } = this;
 
         if (name === undefined)
             return emptySpec();
@@ -119,7 +118,7 @@ export namespace Metadata {
         const key = Object.keys(methods).find(key => key.split('(')[0] === name);
 
         if (key === undefined)
-            return getInternalMethodSpec(metadata,name);
+            return this.getInternalMethodSpec(name);
 
         const { notice = '' } = methods[key];
         const specs = notice.split(/(?=modifies)|(?=precondition)|(?=postcondition)/);
@@ -132,26 +131,26 @@ export namespace Metadata {
         return spec;
     }
 
-    function getContract(metadata: Metadata): ContractDefinition {
-        const { name } = metadata;
+    getContract(): ContractDefinition {
+        const { name } = this;
 
-        for (const contract of contracts(metadata))
+        for (const contract of this.contracts())
             if (contract.name === name)
                 return contract;
 
         throw Error(`Expected contract named '${name}'`);
     }
 
-    function * contracts(metadata: Metadata): Iterable<ContractDefinition> {
-        for (const node of metadata.ast.nodes)
+    * contracts(): Iterable<ContractDefinition> {
+        for (const node of this.ast.nodes)
             if (SourceUnitElement.isContractDefinition(node))
                 yield node;
     }
 
-    function getInternalMethodSpec(metadata: Metadata, name: string): MethodSpec {
-        debug(`getInternalSpec(%o, %O)`, name, metadata);
+    getInternalMethodSpec(name: string): MethodSpec {
+        debug(`getInternalSpec(%o, %O)`, name, this);
 
-        const method = Metadata.findFunction(name, metadata);
+        const method = this.findFunction(name);
 
         if (method === undefined)
             return emptySpec();
@@ -175,7 +174,16 @@ export namespace Metadata {
         return spec;
     }
 
-    function emptySpec() {
-        return { modifies: [], preconditions: [], postconditions: [] };
+    private static copy(metadata: { [K in keyof Metadata]: Metadata[K] }): Metadata {
+        const { abi, name, source, bytecode, userdoc, ast, members } = metadata;
+        return new Metadata(abi, name, source, bytecode, userdoc, ast, members);
     }
+
+    redirect(source: SourceInfo): Metadata {
+        return Metadata.copy({ ...this, source });
+    }
+}
+
+function emptySpec() {
+    return { modifies: [], preconditions: [], postconditions: [] };
 }
