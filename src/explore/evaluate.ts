@@ -76,19 +76,16 @@ export class Evaluator {
     }
 
     static async listen() {
-        const chain = await Chain.get();
+        const chain = new Chain.BlockchainInterface();
         const evaluator = new Evaluator(chain);
         await evaluator.listen();
     }
 }
 
 abstract class Evaluation {
-    accounts: Address[];
     metadataCache = new Map<string, Metadata>();
 
-    constructor(chain: Chain.BlockchainInterface) {
-        this.accounts = chain.accounts;
-    }
+    constructor(public chain: Chain.BlockchainInterface) {}
 
     abstract async evaluate(example: AbstractExample, expression: Expr): Promise<Operation>;
 
@@ -119,7 +116,8 @@ class ExtensionEvaluation extends Evaluation {
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
         const methods = [...Metadata.getFunctions(metadata)];
-        const invocationGenerator = new InvocationGenerator(methods, this.accounts);
+        const accounts = await this.chain.getAccounts();
+        const invocationGenerator = new InvocationGenerator(methods, accounts);
         const executor = this.executorFactory.getExecutor(invocationGenerator, extension);
         const state = ExtensionEvaluation.getState(extension, stateMethod);
         const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);
@@ -160,7 +158,7 @@ class CachingEvaluation extends Evaluation {
 
     async evaluate(example: AbstractExample, expression: Expr): Promise<Operation> {
         const { metadata, instance: { contract }} = await this.getExample(example);
-        const { options: { address: value }} = await contract;
+        const value = (await contract).getAddress();
         const { instance, metadata: m } = await this.getExpression(expression, metadata);
         const [method] = [...Metadata.getFunctions(m)];
         const invocation = new Invocation(method, { type: 'address', value });

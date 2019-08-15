@@ -147,7 +147,7 @@ function getInvocation(path: string, name: string, ...values: TypedValue[]) {
 }
 
 async function getInstance(metadata: Metadata, ...values: TypedValue[]) {
-    const chain = await Chain.get();
+    const chain = new Chain.BlockchainInterface();
     const instantiation = new ContractInstantiation(chain);
     const instance = instantiation.instantiate(metadata, ...values);
     return instance;

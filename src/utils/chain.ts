@@ -1,73 +1,90 @@
 import Web3 from 'web3';
-import { Address, Contract, Method } from '../frontend/metadata';
-import { TransactionObject } from 'web3/eth/types';
+import { Address, Method } from '../frontend/metadata';
+import Web3Contract from 'web3/eth/contract';
 import { Debugger } from '../utils/debug';
-import { ABIDefinition } from 'web3/eth/abi';
 import { Value } from '../model';
+import { ABIDefinition } from 'web3/eth/abi';
 const ganache = require("ganache-core");
 const debug = Debugger(__filename);
-
-export interface BlockchainInterface {
-    accounts: Address[];
-    create(abi: Method[]): Contract;
-}
 
 interface Options {
     mnemonic?: string;
 }
 
-export async function get(params: Options = {}): Promise<BlockchainInterface> {
-    const { mnemonic = 'anticonstitutionnellement' } = params;
-    const gasLimit = Number.MAX_SAFE_INTEGER;
-    const gasPrice = '0x0';
-    const allowUnlimitedContractSize = true;
-    const options = { ...params, mnemonic, allowUnlimitedContractSize, gasLimit, gasPrice };
-    const provider = ganache.provider(options);
-    provider.setMaxListeners(100);
-    const web3 = new Web3(provider);
-    const accounts = await web3.eth.getAccounts();
-    const create = (abi: Method[]) => new web3.eth.Contract(abi);
-    return { create, accounts };
+export type Address = string;
+
+export class BlockchainInterface {
+    web3: Web3;
+
+    constructor(params: Options = {}) {
+        const { mnemonic = 'anticonstitutionnellement' } = params;
+        const gasLimit = Number.MAX_SAFE_INTEGER;
+        const gasPrice = '0x0';
+        const allowUnlimitedContractSize = true;
+        const options = { ...params, mnemonic, allowUnlimitedContractSize, gasLimit, gasPrice };
+        const provider = ganache.provider(options);
+        provider.setMaxListeners(100);
+        this.web3 = new Web3(provider);
+    }
+
+    async getAccounts(): Promise<Address[]> {
+        const accounts = await this.web3.eth.getAccounts();
+        return accounts;
+    }
+
+    getContract(abi: Method[]): UndeployedContract {
+        const contract = new this.web3.eth.Contract(abi);
+        (contract as any).transactionConfirmationBlocks = 1;
+        return new UndeployedContract(contract);
+    }
 }
 
 export interface Transaction<T> {
-    transaction: TransactionObject<T>;
-    from: Address;
-    gas: number;
+    send(): Promise<T>;
 }
 
-export function getContract(chain: BlockchainInterface, abi: ABIDefinition[]): Contract {
-    const contract = chain.create(abi);
-    (contract as any).transactionConfirmationBlocks = 1;
-    return contract;
+export class UndeployedContract {
+    constructor(private contract: Web3Contract) { }
+
+    async getDeployTransaction(from: Address, data: string, ...inputs: Value[]): Promise<Transaction<DeployedContract>> {
+        debug(`computing gas for deployment of %o bytes`, data.length / 2);
+        const transaction = this.contract.deploy({ data, arguments: inputs });
+        const gas = await transaction.estimateGas() + 1;
+        return { send: () => transaction.send({ from, gas }).then(c => new DeployedContract(c)) };
+    }
+
+    getABI(): ABIDefinition[] {
+        return this.contract.options.jsonInterface;
+    }
 }
 
-export async function getTransaction<T>(contract: Contract, from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
-    debug(`computing gas for transaction: %s`, name);
-    const target = contract.methods[name!];
-    if (typeof(target) !== 'function')
-        throw Error(`Unknown function: '${name}'`);
-    const transaction = target(...inputs);
-    const gas = await transaction.estimateGas() * 10;
-    return { transaction, from, gas };
-}
+export class DeployedContract {
+    constructor(private contract: Web3Contract) { }
 
-export async function getDeployTransaction(contract: Contract, from: Address, data: string, ...inputs: Value[]) {
-    debug(`computing gas for deployment of %o bytes`, data.length / 2);
-    const transaction = contract.deploy({ data, arguments: inputs });
-    const gas = await transaction.estimateGas() + 1;
-    return { transaction, from, gas };
-}
+    async getTransaction<T>(from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
+        debug(`computing gas for transaction: %s`, name);
+        const target = this.contract.methods[name!];
+        if (typeof(target) !== 'function')
+            throw Error(`Unknown function: '${name}'`);
+        const transaction = target(...inputs);
+        const gas = await transaction.estimateGas() * 10;
+        return { send: () => transaction.send({ from, gas }) }
+    }
 
-export async function sendTransaction<T>({ transaction, from, gas }: Transaction<T>): Promise<T> {
-    debug(`sending transaction from %o with gas %o`, from, gas);
-    return transaction.send({ from, gas });
-}
+    async callFunction<T>(name: string, ...inputs: Value[]): Promise<T> {
+        debug(`calling function: %s`, name);
+        const target = this.contract.methods[name!];
+        if (typeof(target) !== 'function')
+            throw Error(`Unknown function: '${name}'`);
+        return target(...inputs).call();
+    }
 
-export async function callFunction<T>(contract: Contract, name: string, ...inputs: Value[]): Promise<T> {
-    debug(`calling function: %s`, name);
-    const target = contract.methods[name!];
-    if (typeof(target) !== 'function')
-        throw Error(`Unknown function: '${name}'`);
-    return target(...inputs).call();
+    getAddress(): Address {
+        return this.contract.options.address;
+    }
+
+    getABI(): ABIDefinition[] {
+        return this.contract.options.jsonInterface;
+    }
+
 }

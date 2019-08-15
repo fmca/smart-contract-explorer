@@ -69,8 +69,8 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const source = await Compile.fromString(exemplified.source);
     const target = await Compile.fromString(exemplified.target);
 
-    const chain = await Chain.get();
-    const { accounts } = chain;
+    const chain = new Chain.BlockchainInterface();
+    const accounts = await chain.getAccounts();
 
     const generator = new ExampleGenerator(chain, states)
     const fn = () => generator.simulationExamples(source, target);
@@ -88,35 +88,39 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 }
 
 export class ExampleGenerator {
-    explorer: Explorer;
+    factory: ExecutorFactory;
     limiters: LimiterFactory;
 
-    constructor(chain: Chain.BlockchainInterface, states: number) {
-        const { accounts } = chain;
-        const factory = new ExecutorFactory(chain);
-        this.explorer = new Explorer(factory, accounts);
+    constructor(public chain: Chain.BlockchainInterface, states: number) {
+        this.factory = new ExecutorFactory(chain);
         this.limiters = new StateCountLimiterFactory(states);
     }
 
+    async getExplorer() {
+        const accounts = await this.chain.getAccounts();
+        return new Explorer(this.factory, accounts);
+    }
+
     async * simulationExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
+        const explorer = await this.getExplorer();
         const context = new Context();
         const { limiters } = this;
         const workList: SimulationExample[] = [];
         const mapping = FunctionMapping.getMapping(source, target);
-        const si = new InvocationGenerator([...mapping.sources()], this.explorer.accounts);
-        const ti = new InvocationGenerator([...mapping.targets()], this.explorer.accounts);
+        const si = new InvocationGenerator([...mapping.sources()], explorer.accounts);
+        const ti = new InvocationGenerator([...mapping.targets()], explorer.accounts);
         const sourceParams = { metadata: source, limiters, invocationGenerator: si };
         const targetParams = { metadata: target, limiters, invocationGenerator: ti };
 
         debug(`exploring source states`);
 
-        for await (const transition of this.explorer.transitions(sourceParams)) {
+        for await (const transition of explorer.transitions(sourceParams)) {
             context.addSource(transition);
         }
 
         debug(`exploring target states`);
 
-        for await (const transition of this.explorer.transitions(targetParams)) {
+        for await (const transition of explorer.transitions(targetParams)) {
             const { post: t } = transition;
             context.addTarget(transition);
 

@@ -1,18 +1,18 @@
 import { Debugger } from '../utils/debug';
-import { Contract, Address } from '../frontend/metadata';
+import { Transaction, DeployedContract } from '../utils/chain';
+import { Address } from '../frontend/metadata';
 import { Result, Invocation, Observation, Operation, NormalResult, ErrorResult, Value, TypedValue } from '../model';
 import { isRuntimeError } from './errors';
-import { Transaction, sendTransaction, getTransaction, callFunction } from '../utils/chain';
 
 const debug = Debugger(__filename);
 
 export class ContractInstance {
-    constructor(public contract: Promise<Contract>, public account: Address) { }
+    constructor(public contract: Promise<DeployedContract>, public account: Address) { }
 
     async invokeSequence(invocations: Invocation[]): Promise<void> {
         debug(`invoking sequence: %O`, invocations);
         const transactions = await Promise.all(invocations.map(this.getTransaction.bind(this)));
-        const results = transactions.map(sendTransaction);
+        const results = transactions.map(t => t.send());
         await results[results.length-1];
     }
 
@@ -30,7 +30,7 @@ export class ContractInstance {
     async invokeMutator(invocation: Invocation): Promise<Result> {
         debug(`invoking mutator method: %s`, invocation);
         const transaction = await this.getTransaction(invocation);
-        await sendTransaction(transaction);
+        await transaction.send();
 
         // TODO maybe don’t ignore the result?
         return new NormalResult();
@@ -41,7 +41,7 @@ export class ContractInstance {
         const contract = await this.contract;
         const { method: { name }, inputs } = invocation;
         const values = inputs.map(Value.encode);
-        const returns = await callFunction<string>(contract, name, ...values);
+        const returns = await contract.callFunction<string>(name, ...values);
         debug(`return values: %o`, returns);
         const parsed = await this.readValues(name, returns);
         debug(`parsed values: %o`, parsed);
@@ -52,7 +52,7 @@ export class ContractInstance {
 
     async readValues(method: string, values: string): Promise<TypedValue[]> {
         const contract = await this.contract;
-        const abi = contract.options.jsonInterface.find(({ name }) => name === method);
+        const abi = contract.getABI().find(({ name }) => name === method);
         if (abi === undefined)
             throw Error(`Unknown method: ${method}`);
         const { outputs } = abi;
@@ -75,7 +75,7 @@ export class ContractInstance {
         const contract = await this.contract;
         const { method: { name }, inputs } = invocation;
         const values = inputs.map(Value.encode);
-        return getTransaction(contract, this.account, name, ...values);
+        return contract.getTransaction(this.account, name, ...values);
     }
 
     handleErrors(e: any): Result {

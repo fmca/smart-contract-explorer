@@ -15,11 +15,9 @@ type Effect = {
 
 export class ExecutorFactory {
     public creator: ContractInstantiation;
-    public accounts: Address[];
 
     constructor(chain: BlockchainInterface) {
         this.creator = new ContractInstantiation(chain);
-        this.accounts = chain.accounts;
      }
 
     getExecutor(invocationGenerator: InvocationGenerator, metadata: Metadata): Executor {
