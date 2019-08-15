@@ -43,8 +43,16 @@ export interface Transaction<T> {
     send(): Promise<T>;
 }
 
-export class UndeployedContract {
-    constructor(private contract: Web3Contract) { }
+export class Contract {
+    constructor(protected contract: Web3Contract) { }
+
+    getABI(): ABIDefinition[] {
+        return this.contract.options.jsonInterface;
+    }
+}
+
+export class UndeployedContract extends Contract {
+    constructor(contract: Web3Contract) { super(contract); }
 
     async getDeployTransaction(from: Address, data: string, ...inputs: Value[]): Promise<Transaction<DeployedContract>> {
         debug(`computing gas for deployment of %o bytes`, data.length / 2);
@@ -52,14 +60,10 @@ export class UndeployedContract {
         const gas = await transaction.estimateGas() + 1;
         return { send: () => transaction.send({ from, gas }).then(c => new DeployedContract(c)) };
     }
-
-    getABI(): ABIDefinition[] {
-        return this.contract.options.jsonInterface;
-    }
 }
 
-export class DeployedContract {
-    constructor(private contract: Web3Contract) { }
+export class DeployedContract extends Contract {
+    constructor(contract: Web3Contract) { super(contract); }
 
     async getTransaction<T>(from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
         debug(`computing gas for transaction: %s`, name);
@@ -82,9 +86,4 @@ export class DeployedContract {
     getAddress(): Address {
         return this.contract.options.address;
     }
-
-    getABI(): ABIDefinition[] {
-        return this.contract.options.jsonInterface;
-    }
-
 }
