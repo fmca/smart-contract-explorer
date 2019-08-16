@@ -29,7 +29,7 @@ export interface UserDefinedTypeName extends TypeNameBase {
 
 export type IntegerType = 'int256' | 'uint256' | 'uint' | 'int';
 
-export type ElementaryType = IntegerType | 'string' | 'bytes' | 'address' | 'bool' | 'bytes4';
+export type ElementaryType = IntegerType | 'string' | 'bytes' | 'address' | 'bool' | 'bytes4' | 'bytes8' | 'bytes16' | 'bytes24' | 'bytes32';
 
 export interface Mapping extends TypeNameBase {
     nodeType: 'Mapping';

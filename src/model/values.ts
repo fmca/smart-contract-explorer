@@ -128,14 +128,22 @@ export class ValueGenerator {
     * ofInt(): Iterable<TypedElementaryValue> {
         const type = 'int';
 
+        for (const value of [0,1,-1,2,-2])
+            yield { type, value };
+    }
+
+    * ofUint(): Iterable<TypedElementaryValue> {
+        const type = 'uint';
+
         for (const value of [0,1,2])
             yield { type, value };
     }
 
-    * ofBytes(): Iterable<TypedElementaryValue> {
-        const type = 'bytes';
+    * ofBytes(bytesLength: number): Iterable<TypedElementaryValue> {
+        const type = `bytes${bytesLength.toString}` as ElementaryType;
+        const prefix = new Array(bytesLength).join( "00" );
 
-        for (const value of ["0x00000000","0x00000001","0x00000002"])
+        for (const value of [`0x${prefix}00`,`0x${prefix}01`,`0x${prefix}02`])
             yield { type, value };
     }
 
@@ -193,8 +201,11 @@ export class ValueGenerator {
     ofElementary(typeName: ElementaryTypeName): Iterable<TypedElementaryValue> {
         const { name: type } = typeName;
 
-        if (type.match(/u?int\d*/))
+        if (type.match(/int\d*/))
             return this.ofInt();
+
+        if (type.match(/uint\d*/))
+            return this.ofUint();
 
         if (type === 'address')
             return this.ofAddress();
@@ -202,8 +213,11 @@ export class ValueGenerator {
         if (type === 'bool')
             return this.ofBool();
 
-        if (type.match(/bytes\d*/))
-            return this.ofBytes();
+        if (type.match(/bytes\d*/)) {
+            const bytesLength = Number(type.split("s").pop());
+            return this.ofBytes(bytesLength);
+        }
+            
 
         throw Error(`unexpected elementary type: ${type}`);
     }
