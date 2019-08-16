@@ -17,37 +17,42 @@ export class ContractInstance {
     }
 
     async invoke(invocation: Invocation): Promise<Result> {
+        return await (invocation.isMutator()
+            ? this.invokeMutator(invocation)
+            : this.invokeReadOnly(invocation));
+    }
+
+    async invokeMutator(invocation: Invocation): Promise<Result> {
+        debug(`invoking mutator method: %s`, invocation);
         try {
-            return await (invocation.isMutator()
-                ? this.invokeMutator(invocation)
-                : this.invokeReadOnly(invocation));
+            const transaction = await this.getTransaction(invocation);
+            await transaction.send();
+
+            // TODO maybe don’t ignore the result?
+            return new NormalResult();
 
         } catch (e) {
             return this.handleErrors(e);
         }
     }
 
-    async invokeMutator(invocation: Invocation): Promise<Result> {
-        debug(`invoking mutator method: %s`, invocation);
-        const transaction = await this.getTransaction(invocation);
-        await transaction.send();
-
-        // TODO maybe don’t ignore the result?
-        return new NormalResult();
-    }
-
     async invokeReadOnly(invocation: Invocation): Promise<Result> {
         debug(`invoking readonly method: %s`, invocation);
-        const contract = await this.contract;
-        const { method: { name }, inputs } = invocation;
-        const values = inputs.map(Value.encode);
-        const returns = await contract.callFunction<string>(name, ...values);
-        debug(`return values: %o`, returns);
-        const parsed = await this.readValues(name, returns);
-        debug(`parsed values: %o`, parsed);
-        const result = new NormalResult(...parsed);
-        debug("result: %o", result);
-        return result;
+        try {
+            const contract = await this.contract;
+            const { method: { name }, inputs } = invocation;
+            const values = inputs.map(Value.encode);
+            const returns = await contract.callFunction<string>(name, ...values);
+            debug(`return values: %o`, returns);
+            const parsed = await this.readValues(name, returns);
+            debug(`parsed values: %o`, parsed);
+            const result = new NormalResult(...parsed);
+            debug("result: %o", result);
+            return result;
+
+        } catch (e) {
+            return this.handleErrors(e);
+        }
     }
 
     async readValues(method: string, values: string): Promise<TypedValue[]> {
@@ -82,7 +87,7 @@ export class ContractInstance {
         debug(`caught: %O`, e);
 
         if (!isRuntimeError(e))
-        throw e;
+            throw e;
 
         const results = Object.values(e.results);
         if (results.length !== 1)
