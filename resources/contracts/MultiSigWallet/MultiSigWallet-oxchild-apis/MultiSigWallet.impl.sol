@@ -7,11 +7,11 @@ pragma solidity >=0.5.0;
 
 // link to contract source code
 // https://raw.githubusercontent.com/Oxchild/MultiSigWallet-APIS/master/contract/multiSigApis.sol
+// TODO add notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawals, MultiSigWallet.transactions)
 
  /**
  * @notice simulation  __verifier_eq(MultiSigWallet_APIS.is_owner, MultiSigWallet.is_owner)
  * @notice simulation __verifier_eq(MultiSigWallet_APIS.owners, MultiSigWallet.owners)
- * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawals, MultiSigWallet.transactions)
  * @notice simulation __verifier_eq(MultiSigWallet_APIS.withdrawalConfirmations, MultiSigWallet.confirmations)
  * @notice simulation  MultiSigWallet_APIS.withdrawalCount == MultiSigWallet.transactionCount
  * @notice simulation  MultiSigWallet_APIS.required        == MultiSigWallet.required
@@ -70,23 +70,17 @@ contract MultiSigWallet_APIS {
         owners.push(owner);
     }
 
-    /** @notice precondition _required != 0
-        @notice precondition _required <= owners.length
-        @notice precondition msg.sender == address(this)
-        @notice postcondition required == _required
-        @notice modifies required
+    /** @notice modifies required
     */
     function changeRequirement(uint _required) public
     {
         required = _required;
     }
 
-    /** @notice precondition is_owner[owner] == true
-        @notice precondition owners.length - 1  != 0
-        @notice precondition msg.sender == address(this)
-        @notice postcondition is_owner[owner] == false
+    /** 
         @notice modifies is_owner[owner]
         @notice modifies owners
+        @notice modifies required
     */
     function removeOwner(address owner)
         public
@@ -102,13 +96,10 @@ contract MultiSigWallet_APIS {
             changeRequirement(owners.length);
     }
 
-    /** @notice precondition is_owner[owner] == true
-        @notice precondition is_owner[newOwner] == false
-        @notice precondition msg.sender == address(this)
-        @notice postcondition is_owner[owner] == false
-        @notice postcondition is_owner[newOwner] == true
+    /**
         @notice modifies is_owner[owner]
         @notice modifies is_owner[newOwner]
+        @notice modifies owners
     */
     function replaceOwner(address owner, address newOwner)
         public
@@ -123,6 +114,11 @@ contract MultiSigWallet_APIS {
     }
 
 
+    /**
+        @notice modifies withdrawalConfirmations[withdrawalCount-1][msg.sender]
+        @notice modifies withdrawals[withdrawalCount-1]
+        @notice modifies withdrawalCount
+    */
     function submitTransaction(address payable _destination, uint _val) public returns (uint withdrawalId)
     {
         withdrawalId = withdrawalCount;
@@ -130,43 +126,52 @@ contract MultiSigWallet_APIS {
         withdrawals[withdrawalId].attoApis = _val;
         withdrawals[withdrawalId].executed = false;
 
-        confirmTransaction(withdrawalId);
+        withdrawalConfirmations[withdrawalId][msg.sender] = true;
 
         withdrawalCount ++;
     }
 
-
-    function confirmTransaction(uint withdrawalId) public
+  
+    /** 
+        @notice modifies withdrawalConfirmations[transactionId][msg.sender]
+        @notice modifies withdrawals[transactionId]
+    */
+    function confirmTransaction(uint transactionId) public
     {
-        withdrawalConfirmations[withdrawalId][msg.sender] = true;
-        executeTransaction(withdrawalId);
+        withdrawalConfirmations[transactionId][msg.sender] = true;
+        executeTransaction(transactionId);
+    }
+
+    /** 
+        @notice modifies withdrawalConfirmations[transactionId][msg.sender]
+    */
+    function revokeTransaction(uint transactionId) public
+    {
+        withdrawalConfirmations[transactionId][msg.sender] = false;
     }
 
 
-    function revokeTransaction(uint withdrawalId) public
+    /** 
+        @notice modifies withdrawals[transactionId]
+    */
+    function executeTransaction(uint transactionId) public
     {
-        withdrawalConfirmations[withdrawalId][msg.sender] = false;
-    }
+        if (isConfirmed(transactionId)) {
+            withdrawals[transactionId].executed = true;
 
-
-    function executeTransaction(uint withdrawalId) public
-    {
-        if (isConfirmed(withdrawalId)) {
-            withdrawals[withdrawalId].executed = true;
-
-            withdrawals[withdrawalId].destination.transfer(withdrawals[withdrawalId].attoApis);
+            withdrawals[transactionId].destination.transfer(withdrawals[transactionId].attoApis);
         }
 
     }
 
-    function isConfirmed(uint withdrawalId)
+    function isConfirmed(uint transactionId)
         internal
         view
         returns (bool)
     {
         uint count = 0;
         for (uint i = 0; i < owners.length; i++) {
-            if (withdrawalConfirmations[withdrawalId][owners[i]])
+            if (withdrawalConfirmations[transactionId][owners[i]])
                 count += 1;
             if (count == required)
                 return true;

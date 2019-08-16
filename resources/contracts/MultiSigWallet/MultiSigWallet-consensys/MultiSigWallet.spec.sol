@@ -34,7 +34,14 @@ contract MultiSigWallet {
 
     uint internal transactionCount;
 
+    /// TODO add: notice postcondition __verifier_eq(owners,_owners)
 
+    /**
+        @notice postcondition required == _required
+        @notice modifies required
+        @notice modifies owners
+        @notice modifies is_owner
+    */
     constructor(address[] memory _owners, uint _required)
         public
     {
@@ -80,6 +87,7 @@ contract MultiSigWallet {
         @notice postcondition is_owner[owner] == false
         @notice modifies is_owner[owner]
         @notice modifies owners
+        @notice modifies required
     */
     function removeOwner(address owner)
         public
@@ -102,6 +110,7 @@ contract MultiSigWallet {
         @notice postcondition is_owner[newOwner] == true
         @notice modifies is_owner[owner]
         @notice modifies is_owner[newOwner]
+        @notice modifies owners
     */
     function replaceOwner(address owner, address newOwner)
         public
@@ -119,14 +128,14 @@ contract MultiSigWallet {
 
     /** @notice precondition is_owner[msg.sender]
         @notice precondition transactions[transactionCount].destination == address(0)
+        @notice precondition confirmations[transactionCount][msg.sender] == false
         @notice precondition _destination != address(0)
-        @notice postcondition transactions[transactionCount].destination == _destination
-        @notice postcondition transactions[transactionCount].attoApis == _val
-        @notice postcondition transactions[transactionCount].executed == false
-        @notice postcondition confirmations[transactionCount][msg.sender] == true
-        @notice postcondition transactionCount == transactionCount + 1
-        @notice modifies confirmations[transactionCount][msg.sender]
-        @notice modifies transactions[transactionCount]
+        @notice postcondition transactions[transactionCount-1].destination == _destination
+        @notice postcondition transactions[transactionCount-1].attoApis == _val
+        @notice postcondition confirmations[transactionCount-1][msg.sender] == true
+        @notice postcondition transactionCount == __verifier_old_uint(transactionCount) + 1
+        @notice modifies confirmations[transactionCount-1][msg.sender]
+        @notice modifies transactions[transactionCount-1]
         @notice modifies transactionCount
     */
     function submitTransaction(address payable _destination, uint _val) public returns (uint transactionId)
@@ -144,8 +153,10 @@ contract MultiSigWallet {
 
 
 
+        ///TODO add: notice postcondition  somecondition ==> transactions[transactionId].executed
     /**
         @notice precondition transactions[transactionId].executed == false
+        @notice precondition transactions[transactionId].destination != address(0)
         @notice modifies transactions[transactionId].executed
      */
     function executeTransaction(uint transactionId) public
@@ -172,8 +183,10 @@ contract MultiSigWallet {
     /** @notice precondition is_owner[msg.sender]
         @notice precondition confirmations[transactionId][msg.sender] == false
         @notice precondition transactions[transactionId].destination != address(0)
+        @notice precondition transactions[transactionId].executed == false
         @notice postcondition confirmations[transactionId][msg.sender] == true
         @notice modifies confirmations[transactionId][msg.sender]
+        @notice modifies transactions[transactionId].executed
     */
     function confirmTransaction(uint transactionId) public
     {
