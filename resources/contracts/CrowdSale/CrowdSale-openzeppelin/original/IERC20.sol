@@ -5,6 +5,7 @@ pragma solidity ^0.5.0;
  * the optional functions; to access them see {ERC20Detailed}.
  */
 interface IERC20 {
+
     /**
      * @dev Returns the amount of tokens in existence.
      */

@@ -4,16 +4,16 @@ pragma solidity >=0.5.0;
 // Link to contract source code:
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/crowdsale
 
-import './original/IERC20.sol';
+import '../../Token/ERC20-openzeppelin/ERC20.spec.sol';
 import './original/SafeMath.sol';
 
 contract Crowdsale {
 
-    using SafeMath for uint256;
+    using SafeMath_spec for uint256;
     //using SafeERC20 for IERC20;
 
     // The token being sold
-    IERC20 private _token;
+    ERC20 private _token;
 
     // The token being sold
     address private _tokenOwner;
@@ -36,7 +36,7 @@ contract Crowdsale {
     uint256 private _closingTime;
 
 
-    constructor (address payable wallet, address token, uint256 openingTime, uint256 closingTime) public {
+    constructor (address payable wallet, ERC20 token, uint256 openingTime, uint256 closingTime) public {
         //require(rate > 0, "Crowdsale: rate is 0");
         require(wallet != address(0), "Crowdsale: wallet is the zero address");
         require(address(token) != address(0), "Crowdsale: token is the zero address");
@@ -49,7 +49,7 @@ contract Crowdsale {
 
         _rate = 6400; // 6400 tokens per 1 ETH
         _wallet = wallet;
-        _token = IERC20(token);
+        _token = ERC20(token);
     }
 
 
@@ -135,9 +135,6 @@ contract Crowdsale {
         * @notice precondition msg.value != 0
         * @notice precondition block.number >= _openingTime && block.number <= _closingTime
         * @notice precondition _finalized
-        * @notice precondition _token.balances[address(this)] >= tokenAmount
-        * @notice postcondition _token.balances[beneficiary] == __verifier_old_uint(_token.balances[beneficiary]) + tokenAmount
-        * @notice postcondition _token.balances[address(this)] == __verifier_old_uint(_token.balances[address(this)]) - tokenAmount
         * @notice postcondition address(this).balance == __verifier_old_uint(address(this).balance) + msg.value
     */
     function buyTokens(address beneficiary) public  payable {
