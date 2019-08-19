@@ -12,7 +12,13 @@ export class ContractInstance {
     async invokeSequence(invocations: Invocation[]): Promise<void> {
         debug(`invoking sequence: %O`, invocations);
         const transactions = await Promise.all(invocations.map(this.getTransaction.bind(this)));
-        const results = transactions.map(t => t.send());
+        const results = transactions.map(async t => {
+            try {
+                await t.send();
+            } catch (e) {
+                this.handleErrors(e);
+            }
+        });
         await results[results.length-1];
     }
 
@@ -87,7 +93,7 @@ export class ContractInstance {
         debug(`caught: %O`, e);
 
         if (!isRuntimeError(e))
-            throw e;
+            throw Error(`Unexpected error: ${e}`);
 
         const results = Object.values(e.results);
         if (results.length !== 1)

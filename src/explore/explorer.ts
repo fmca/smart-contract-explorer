@@ -39,7 +39,7 @@ export class Explorer {
         debug(`exploring initial states`);
 
         for await (const initial of this.initials(params)) {
-            debug({ post: initial });
+            debug(`initial: %s`, initial);
             yield { post: initial };
             workList.push(initial);
         }
@@ -48,6 +48,7 @@ export class Explorer {
 
         while (workList.length > 0) {
             const pre = workList.shift()!;
+            debug(`prev: %s`, pre);
 
             for await (const invocation of invocationGenerator.mutators()) {
                 if (!limiter.accept(pre, invocation))
@@ -56,8 +57,10 @@ export class Explorer {
                 const result = await executer.execute(pre, invocation);
 
                 const { operation, state: post } = result;
+                debug(`oper: %s`, operation);
+                debug(`next: %s`, post);
+
                 const transition = { pre, operation, post };
-                debug(transition);
                 yield transition;
                 workList.push(post);
             }

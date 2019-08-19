@@ -16,8 +16,13 @@ export class ContractInstantiation {
         const contract = this.chain.getContract(abi);
         const values = args.map(Value.encode);
         const transaction = contract.getDeployTransaction(from, data, ...values);
-        const instance = transaction.then(t => t.send());
+        const instance = transaction.then(async t => {
+            try {
+                return await t.send();
+            } catch (e) {
+                throw Error(`unexpected deployment error: ${e}`);
+            }
+        });
         return new ContractInstance(instance, from);
     }
 }
-

@@ -101,7 +101,7 @@ export namespace Value {
 
     export function toString(v: TypedValue): string {
         return isElementaryValue(v)
-            ? v.value.toString()
+            ? (typeof(v.value) === 'string' ? v.value.substr(0, 8) : v.value.toString())
             : v.length === undefined
             ? `[${v.values.map(Value.toString).join(', ')}]`
             : `[${v.values.map(Value.toString).join(', ')}]`;
@@ -217,7 +217,7 @@ export class ValueGenerator {
             const bytesLength = Number(type.split("s").pop());
             return this.ofBytes(bytesLength);
         }
-            
+
 
         throw Error(`unexpected elementary type: ${type}`);
     }

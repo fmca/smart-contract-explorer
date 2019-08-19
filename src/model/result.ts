@@ -14,6 +14,10 @@ export class ErrorResult extends Result {
         return false;
     }
 
+    toString() {
+        return `${this.error}(${this.reason || ''})`;
+    }
+
     equals(that: Result): boolean {
         return that instanceof ErrorResult && this.error === that.error && this.reason === that.reason;
     }
