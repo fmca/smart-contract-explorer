@@ -7,13 +7,28 @@ import { FunctionDefinition } from '../solidity';
 
 export class Invocation {
     public inputs: TypedValue[];
+    public value: number | undefined;
 
-    constructor(public method: FunctionDefinition, ...args: TypedValue[]) {
+    constructor(method: FunctionDefinition, ...args: TypedValue[]);
+    constructor(method: FunctionDefinition, value: number, ...args: TypedValue[]);
+
+    constructor(public method: FunctionDefinition, ...valueAndArgs: (number | TypedValue)[]) {
         const { name, parameters: { parameters } } = method;
         const count = parameters.length;
-        if (args.length !== count)
+
+        if (valueAndArgs.length > 0 && typeof(valueAndArgs[0]) === 'number') {
+            const [ value, ...args ] = valueAndArgs;
+            this.value = value;
+            valueAndArgs = args;
+        }
+
+        if (!valueAndArgs.every(Value.isTypedValue))
+            throw Error(`Unexpected values: ${valueAndArgs}`);
+
+        if (valueAndArgs.length !== count)
             throw Error(`method ${name} requires ${count} parameters`);
-        this.inputs = args;
+
+        this.inputs = valueAndArgs as TypedValue[];
     }
 
     toString() {
@@ -34,8 +49,8 @@ export class Invocation {
         return FunctionDefinition.isMutator(this.method);
     }
 
-    static deserialize(obj: { [K in keyof Invocation]: Invocation[K] }): Invocation {
-        const { method, inputs } = obj;
-        return new Invocation(method, ...inputs);
-    }
+    // static deserialize(obj: { [K in keyof Invocation]: Invocation[K] }): Invocation {
+    //     const { method, inputs } = obj;
+    //     return new Invocation(method, ...inputs);
+    // }
 }

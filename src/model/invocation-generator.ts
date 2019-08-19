@@ -3,7 +3,7 @@ const debug = Debugger(__filename);
 
 import {  Address } from '../frontend/metadata';
 import { ValueGenerator } from './values';
-import { FunctionDefinition, node } from '../solidity';
+import { FunctionDefinition } from '../solidity';
 import { Invocation } from './invocations';
 
 export class InvocationGenerator {

@@ -10,12 +10,12 @@ export class ContractInstantiation {
 
     constructor(public chain: BlockchainInterface) { }
 
-    async instantiate(metadata: Metadata, ...args: TypedValue[]) {
+    async instantiate(metadata: Metadata, value: number | undefined, ...args: TypedValue[]) {
         const { abi, bytecode: data } = metadata;
         const [ from ] = await this.chain.getAccounts();
         const contract = this.chain.getContract(abi);
         const values = args.map(Value.encode);
-        const transaction = contract.getDeployTransaction(from, data, ...values);
+        const transaction = contract.getDeployTransaction(from, data, value, ...values);
         const instance = transaction.then(async t => {
             try {
                 return await t.send();

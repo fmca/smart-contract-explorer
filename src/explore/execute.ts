@@ -66,8 +66,8 @@ export class Executor {
         if (!invocation.isConstructor)
             throw Error(`Expected constructor invocation`);
 
-        const { inputs } = invocation;
-        return this.creator.instantiate(this.metadata, ...inputs);
+        const { inputs, value } = invocation;
+        return this.creator.instantiate(this.metadata, value, ...inputs);
     }
 
     async replay(trace: Trace): Promise<ContractInstance> {

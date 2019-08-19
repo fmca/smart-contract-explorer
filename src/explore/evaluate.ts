@@ -174,7 +174,8 @@ class CachingEvaluation extends Evaluation {
             debug(`caching example: %o`, example);
             const { id: { contract, method: methodName } } = example;
             const metadata = await this.getMetadata(contract);
-            const instance = await this.creator.instantiate(metadata);
+            const value = undefined;
+            const instance = await this.creator.instantiate(metadata, value);
             const method = metadata.findFunction(methodName);
             if (method === undefined)
                 throw Error(`unknown method: ${methodName}`);
@@ -192,7 +193,8 @@ class CachingEvaluation extends Evaluation {
         if (!this.expressionCache.has(key)) {
             debug(`caching expression: %o`, expression);
             const metadata = await expressionEvaluator(expression, examples);
-            const instance = await this.creator.instantiate(metadata);
+            const value = undefined;
+            const instance = await this.creator.instantiate(metadata, value);
             this.expressionCache.set(key, { metadata, instance });
         }
 

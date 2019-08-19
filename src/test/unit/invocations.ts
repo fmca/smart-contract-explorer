@@ -78,6 +78,8 @@ describe('invocation generation', function() {
         assert.ok(invocations.some(({ method: { name } }) => name === 'get'));
 
     });
+
+    it (`generates payments`);
 });
 
 interface Context {

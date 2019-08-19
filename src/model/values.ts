@@ -17,6 +17,10 @@ interface Ary extends Array<UnparsedValue> { }
 export type UnparsedValue = Ary | string;
 
 export namespace Value {
+    export function isTypedValue(v: any): v is TypedValue {
+        return isElementaryValue(v) || isArrayValue(v);
+    }
+
     export function isElementaryValue(v: TypedValue): v is TypedElementaryValue {
         return !isArrayValue(v);
     }
@@ -98,6 +102,10 @@ export namespace Value {
     }
 
     export const int256 = (v: number) => elementary(v, 'int256');
+    export const uint256 = (v: number) => elementary(v, 'uint256');
+
+    export const int = (v: number) => elementary(v, 'int256');
+    export const uint = (v: number) => elementary(v, 'uint256');
 
     export function toString(v: TypedValue): string {
         return isElementaryValue(v)

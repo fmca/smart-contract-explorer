@@ -84,9 +84,9 @@ export class ContractInstance {
 
     async getTransaction<T>(invocation: Invocation): Promise<Transaction<T>> {
         const contract = await this.contract;
-        const { method: { name }, inputs } = invocation;
+        const { method: { name }, inputs, value } = invocation;
         const values = inputs.map(Value.encode);
-        return contract.getTransaction(this.account, name, ...values);
+        return contract.getTransaction(this.account, name, value, ...values);
     }
 
     handleErrors(e: any): Result {

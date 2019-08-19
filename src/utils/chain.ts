@@ -54,25 +54,25 @@ export class Contract {
 export class UndeployedContract extends Contract {
     constructor(contract: Web3Contract) { super(contract); }
 
-    async getDeployTransaction(from: Address, data: string, ...inputs: Value[]): Promise<Transaction<DeployedContract>> {
+    async getDeployTransaction(from: Address, data: string, value: number | undefined, ...inputs: Value[]): Promise<Transaction<DeployedContract>> {
         debug(`computing gas for deployment of %o bytes`, data.length / 2);
         const transaction = this.contract.deploy({ data, arguments: inputs });
         const gas = await transaction.estimateGas() + 1;
-        return { send: () => transaction.send({ from, gas }).then(c => new DeployedContract(c)) };
+        return { send: () => transaction.send({ from, gas, value }).then(c => new DeployedContract(c)) };
     }
 }
 
 export class DeployedContract extends Contract {
     constructor(contract: Web3Contract) { super(contract); }
 
-    async getTransaction<T>(from: Address, name: string, ...inputs: Value[]): Promise<Transaction<T>> {
+    async getTransaction<T>(from: Address, name: string, value: number | undefined, ...inputs: Value[]): Promise<Transaction<T>> {
         debug(`computing gas for transaction: %s`, name);
         const target = this.contract.methods[name!];
         if (typeof(target) !== 'function')
             throw Error(`Unknown function: '${name}'`);
         const transaction = target(...inputs);
         const gas = await transaction.estimateGas() * 10;
-        return { send: () => transaction.send({ from, gas }) }
+        return { send: () => transaction.send({ from, gas, value }) }
     }
 
     async callFunction<T>(name: string, ...inputs: Value[]): Promise<T> {
