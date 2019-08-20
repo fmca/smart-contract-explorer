@@ -16,6 +16,7 @@ export interface Identifier extends Expression {
 export interface Literal extends Expression {
     nodeType: 'Literal';
     value : string;
+    kind: 'number' | 'bool';
 }
 
 export interface Operation extends Expression {
@@ -42,6 +43,12 @@ export interface BinaryOperation extends Operation {
     operator: BinaryOperator;
     leftExpression: Expression;
     rightExpression: Expression;
+}
+
+export interface FunctionCall extends Operation {
+    nodeType: 'FunctionCall';
+    expression: Expression;
+    arguments: Expression[];
 }
 
 export type BinaryOperator = '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>';

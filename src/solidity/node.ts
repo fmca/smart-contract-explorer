@@ -24,6 +24,7 @@ export type NodeType = 'SourceUnit'
     | 'UnaryOperation'
     | 'Conditional'
     | 'MemberAccess'
+    | 'FunctionCall'
 
 export interface Node {
     id: number;

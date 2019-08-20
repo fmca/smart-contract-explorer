@@ -1,6 +1,5 @@
 import { TypeName, ElementaryType, ContractMember, isElementaryTypeName, isMapping, isArrayTypeName, isUserDefinedTypeName } from "../solidity";
 import { Metadata } from "../frontend/metadata";
-import { isArray } from "util";
 
 const { isVariableDeclaration } = ContractMember;
 

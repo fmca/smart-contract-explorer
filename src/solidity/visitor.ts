@@ -1,6 +1,6 @@
 import { Node } from './node';
 import { Block, IfStatement, Return, ExpressionStatement, Assignment } from './statement';
-import { Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional } from './expression';
+import { Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, FunctionCall } from './expression';
 
 export class NodeVisitor<T> {
 
@@ -52,6 +52,10 @@ export class NodeVisitor<T> {
         return unimplemented(node);
     }
 
+    visitFunctionCall(node: FunctionCall): T {
+        return unimplemented(node);
+    }
+
     visit(node: Node): T {
         // throw Error(`expression is : %${JSON.stringify(node)}`);
         const { nodeType } = node;
@@ -78,6 +82,11 @@ export class NodeVisitor<T> {
                 return this.visitLiteral(node as Literal);
             case 'MemberAccess':
                 return this.visitMemberAccess(node as MemberAccess);
+            case 'ExpressionStatement':
+                return this.visitExpressionStatement(node as ExpressionStatement);
+            case 'FunctionCall':
+                return this.visitFunctionCall(node as FunctionCall);
+
             default:
                 throw Error(`unexpected node type: ${nodeType}`);
         }
@@ -85,5 +94,5 @@ export class NodeVisitor<T> {
 };
 
 function unimplemented<T>(node: Node): T {
-    throw Error(`unexpected ${node.nodeType} node`);
+    throw SyntaxError(`unexpected ${node.nodeType} node`);
 }
