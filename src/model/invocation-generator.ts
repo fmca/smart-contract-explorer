@@ -19,26 +19,35 @@ export class InvocationGenerator {
     constructor(metadata: FunctionProvider, public accounts: Address[]) {
         this.valueGenerator = new ValueGenerator(accounts);
         this.methods = [...metadata.getFunctions()];
+
+        if (!this.methods.some(FunctionDefinition.isConstructor))
+            this.methods.push(FunctionDefinition.get('', 'constructor'));
     }
 
     * getInvocations(kind?: Kind) {
+        debug(`getInvocations(%o)`, kind || 'any');
+
         for (const method of this.methods) {
             if (!this.accept(method, kind))
                 continue;
 
-            for (const invocation of this.fromMethod(method))
+            for (const invocation of this.fromMethod(method)) {
+                debug(`invocation: %s`, invocation);
                 yield invocation;
+            }
         }
     }
 
     accept(method: FunctionDefinition, kind?: Kind) {
-        if (method.visibility === 'private')
-            return false;
-
-        return kind === 'observer' && FunctionDefinition.isReadOnly(method)
+        const result = (method.visibility !== 'private') && (
+            kind === 'observer' && FunctionDefinition.isReadOnly(method)
             || kind === 'mutator' && FunctionDefinition.isMutator(method)
             || kind === 'constructor' && FunctionDefinition.isConstructor(method)
-            || kind === undefined;
+            || kind === undefined && (FunctionDefinition.isReadOnly(method) || FunctionDefinition.isMutator(method))
+        );
+
+        debug(`accept(%o, %o}): %o`, method.name, kind || 'any', result);
+        return result;
     }
 
     fromMethod(method: FunctionDefinition) {
@@ -62,13 +71,14 @@ class PerMethodInvocationGenerator {
     }
 
     * fromTypes(types: TypeName[]) {
-        debug(`parameter types: %O`, types);
+        debug(`fromTypes(%O)`, types);
         for (const inputs of this.valueGenerator.valuesOfTypes(types))
             for (const invocation of this.fromInputs(inputs))
                 yield invocation;
     }
 
     * fromInputs(inputs: TypedValue[]) {
+        debug(`fromInputs(%O)`, inputs);
         const { stateMutability } = this.method;
 
         if (stateMutability === 'payable') {

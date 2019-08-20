@@ -1,7 +1,7 @@
 import * as Compile from '../../frontend/compile';
 import * as Chain from '../../utils/chain';
 import assert from 'assert';
-import { InvocationGenerator, Invocation } from '../../model';
+import { InvocationGenerator, Invocation, Kind } from '../../model';
 import { Address } from '../../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
@@ -43,6 +43,12 @@ describe('invocation generation', function() {
             function getP() private view returns (int) { return x; }
         }`, 'observer');
         result.expectEvery(({ method: { name }, inputs }) => name === 'get' && inputs.length === 0);
+    });
+
+    it('generates constructors', async function() {
+        const result = await tester.getResult(`contract C { }`, 'constructor');
+        result.expectSome(_ => true);
+        result.expectEvery(({ method: { name }, inputs }) => name === '' && inputs.length === 0);
     });
 
     it ('generates various types', async function() {
@@ -94,13 +100,9 @@ class InvocationsTester {
         return generator;
     }
 
-    async getResult(content: string, kind?: 'mutator' | 'observer') {
+    async getResult(content: string, kind?: Kind) {
         const generator = await this.getGenerator(content);
-        const invocations = kind === undefined
-            ? generator.invocations()
-            : kind === 'mutator'
-            ? generator.mutators()
-            : generator.observers();
+        const invocations = generator.getInvocations(kind);
         return new TestResult([...invocations]);
     }
 }
