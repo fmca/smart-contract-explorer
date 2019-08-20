@@ -5,7 +5,7 @@ require('source-map-support').install();
 import yargs from 'yargs';
 import path from 'path';
 import fs from 'fs-extra';
-import cp from 'child_process';
+import cp, { ChildProcess } from 'child_process';
 import * as Examples from '../simulation/examples';
 import * as Product from '../simulation/product';
 import { SimulationCounterExample } from '../simulation/counterexample';
@@ -96,26 +96,46 @@ async function main() {
     }
 }
 
+const files = <const>[
+    'positive-examples.txt',
+    'negative-examples.txt',
+    'seed-features.txt',
+    'fields.txt',
+    'constants.txt',
+    'SimulationExamples.sol',
+    'SimulationCheck.sol'
+];
+
+type Paths = {
+    [path in (typeof files)[number]]: string;
+}
+
+async function getPaths(): Promise<Paths> {
+    const dir = path.resolve(args.output);
+    await fs.mkdirp(dir);
+    const ary = files.map(file => [file, path.join(dir, file)]);
+    return Object.fromEntries(ary) as Paths;
+}
+
 async function generateExamples() {
     console.log(`---`);
     console.log(`Generating examples`);
     console.log(`---`);
 
     const { source, target, states } = args;
-    const dir = path.resolve(args.output);
+    const { 'SimulationExamples.sol': path, ...ps } = await getPaths();
+    const output = { name: 'SimulationExamples', path };
 
-    const output = { name: 'SimulationExamples', path: path.join(dir, 'SimulationExamples.sol') };
     const paths = { source: source!, target: target! };
     const { contract, examples: { positive, negative }, fields, seedFeatures, exemplified } = await Examples.generateExamples({ paths, output, states });
 
-    await fs.mkdirp(dir);
     for (const { path, content } of [contract, ...Object.values(exemplified)])
         await fs.writeFile(path, content);
 
-    await fs.writeFile(path.join(dir, `positive-examples.txt`), positive.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(path.join(dir, `negative-examples.txt`), negative.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(path.join(dir, `fields.txt`), fields.join(`\n`) + '\n');
-    await fs.writeFile(path.join(dir, `seed-features.txt`), seedFeatures.join(`\n`) + '\n');
+    await fs.writeFile(ps[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
+    await fs.writeFile(ps[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
+    await fs.writeFile(ps[`fields.txt`], fields.join(`\n`) + '\n');
+    await fs.writeFile(ps[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');
 
     console.log();
 }
@@ -125,7 +145,16 @@ async function synthesizeSimulation() {
     console.log(`Synthesizing simulation relation`);
     console.log(`---`);
 
-    console.log(`TODO connect to LoopInvGen!!`);
+    const paths = await getPaths();
+    const command = `lig-symbolic-infer`;
+    const args: string[] = [];
+
+    for (const file of files.filter(f => f.endsWith('.txt')))
+        args.push(`--${path.basename(file, '.txt')}`, paths[file])
+
+    const options = {};
+    const childProcess = cp.spawn(command, args, options);
+    await processOutput(childProcess);
     console.log();
 }
 
@@ -135,12 +164,11 @@ async function verifySimulation() {
     console.log(`---`);
 
     const { source, target } = args;
-    const dir = path.resolve(args.output);
     const paths = { source: source!, target: target! };
-    const output = { name: 'SimulationCheck', path: path.join(dir, 'SimulationCheck.sol') };
+    const { 'SimulationCheck.sol': path } = await getPaths();
+    const output = { name: 'SimulationCheck', path };
     const { contract, internalized } = await Product.getSimulationCheckContract({ paths, output });
 
-    await fs.mkdirp(dir);
     for (const { path, content } of [contract, ...Object.values(internalized)])
         await fs.writeFile(path, content);
 
@@ -148,15 +176,24 @@ async function verifySimulation() {
         const command = `solc-verify.py`;
         const args = [output.path];
         const options = {};
-        const { stdout, stderr } = await cp.spawn(command, args, options);
-
-        for await (const line of lines(stdout))
-            console.log(line);
-
-        for await (const line of lines(stderr))
-            console.error(line);
+        const childProcess = cp.spawn(command, args, options);
+        await processOutput(childProcess);
     }
     console.log();
+}
+
+async function processOutput(childProcess: ChildProcess) {
+    const { stdout, stderr } = childProcess;
+
+    for await (const line of lines(stdout))
+        console.log(line);
+
+    for await (const line of lines(stderr)) {
+        console.error(line);
+
+        if (line.match(/Uncaught exception/))
+            throw Error(`Synthesis failed: ${line}`);
+    }
 }
 
 main();

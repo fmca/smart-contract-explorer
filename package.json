@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "build:infer": "cd LoopInvGen && opam install . && dune build",
+    "build:infer": "cd LoopInvGen && opam install . && dune install",
     "postinstall": "npm run build",
     "test:unit": "mocha dist/test/unit/**/*.js",
     "test:integration": "mocha dist/test/integration/**/*.js",
