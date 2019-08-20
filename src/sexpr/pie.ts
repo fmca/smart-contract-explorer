@@ -29,31 +29,21 @@ export function type(typeName: TypeName): string {
 }
 
 function primitiveType(name: ElementaryType) {
-    switch (name) {
 
-        case 'bool':
-            return 'Bool';
+    if (name.match(/^u?int\d*$/))
+        return `Int`;
 
-        case 'bytes4':
-            return 'Int';
+    if (name.match(/^bytes\d*$/))
+        return `Int`;
 
-        case 'int':
-            return 'Int';
+    if (name === 'bool')
+        return `Int`;
 
-        case 'uint':
-            return 'Int';
+    if (name === 'string')
+        return `String`;
 
-        case 'uint256':
-            return 'Int';
+    if (name === 'address')
+        return `Address`;
 
-        case 'string':
-            return 'String';
-
-        // TODO should address be int?
-        case 'address':
-            return 'Address';
-
-        default:
-            throw new Error(`unexpected type: ${name}`);
-    }
+    throw new Error(`unexpected type: ${name}`);
 }
