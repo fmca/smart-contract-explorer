@@ -107,9 +107,17 @@ export namespace Value {
     export const int = (v: number) => elementary(v, 'int256');
     export const uint = (v: number) => elementary(v, 'uint256');
 
-    export function toString(v: TypedValue): string {
+    export function toSmallString(v: TypedValue): string {
         return isElementaryValue(v)
             ? (typeof(v.value) === 'string' ? v.value.substr(0, 8) : v.value.toString())
+            : v.length === undefined
+            ? `[${v.values.map(Value.toString).join(', ')}]`
+            : `[${v.values.map(Value.toString).join(', ')}]`;
+    }
+
+    export function toString(v: TypedValue): string {
+        return isElementaryValue(v)
+            ? v.value.toString()
             : v.length === undefined
             ? `[${v.values.map(Value.toString).join(', ')}]`
             : `[${v.values.map(Value.toString).join(', ')}]`;

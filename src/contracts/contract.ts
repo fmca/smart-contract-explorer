@@ -104,17 +104,19 @@ export abstract class Contract {
     }
 
     methodCall(operation: Operation, target?: string) {
-        const { invocation: { method: { name }, inputs } } = operation;
+        const { invocation: { method: { name }, inputs, value } } = operation;
         const lhs = target === undefined ? name : `${target}.${name}`;
-        const rhs = inputs.map(i => this.argument(i)).join(', ');
-        return `${lhs}(${rhs});`;
+        const args = `(${inputs.map(i => this.argument(i)).join(', ')})`;
+        const extra = value === undefined ? '' : `.value(${value})`;
+        return `${lhs}${extra}${args};`;
     }
 
     constructorCall(operation: Operation, target: string) {
-        const { invocation: { inputs } } = operation;
-        const lhs = `new ${target}`;
-        const rhs = inputs.map(i => this.argument(i)).join(', ');
-        return `${lhs}(${rhs});`;
+        const { invocation: { inputs, value } } = operation;
+        const lhs = `(new ${target})`;
+        const args = `(${inputs.map(i => this.argument(i)).join(', ')})`;
+        const extra = value === undefined ? '' : `.value(${value})`;
+        return `${lhs}${extra}${args};`;
     }
 
     callMethod(contractName: string, method: FunctionDefinition) {

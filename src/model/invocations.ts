@@ -33,7 +33,9 @@ export class Invocation {
 
     toString() {
         const name = this.isConstructor() ? 'constructor' : this.method.name;
-        return `${name}(${this.inputs.map(Value.toString).join(', ')})`;
+        const args = `(${this.inputs.map(Value.toSmallString).join(', ')})`;
+        const extra = this.value === undefined ? '' : `.value(${this.value})`;
+        return `${name}${extra}${args}`;
     }
 
     equals(that: Invocation): boolean {
