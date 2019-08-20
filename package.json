@@ -5,8 +5,6 @@
   "main": "dist/index.js",
   "bin": {
     "sc-simulation": "dist/cli/simulation.js",
-    "sc-examples": "dist/cli/examples.js",
-    "sc-product": "dist/cli/product.js",
     "sc-evaluate": "dist/cli/evaluate.js"
   },
   "scripts": {
