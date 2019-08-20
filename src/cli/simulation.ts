@@ -18,7 +18,7 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
         describe: 'output directory',
         type: 'string',
         requriesArg: true,
-        default: '.'
+        default: '.sc-simulation.ignore'
     })
     .option('source', {
         demandOption: true,
@@ -69,10 +69,10 @@ async function main() {
             await generateExamples();
 
         if (relation === undefined && synthesize)
-            await generateSimulation();
+            await synthesizeSimulation();
 
         if (verify)
-            await checkSimulation();
+            await verifySimulation();
 
     } catch (e) {
         if (e instanceof SimulationCounterExample) {
@@ -116,15 +116,20 @@ async function generateExamples() {
     await fs.writeFile(path.join(dir, `negative-examples.txt`), negative.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(path.join(dir, `fields.txt`), fields.join(`\n`) + '\n');
     await fs.writeFile(path.join(dir, `seed-features.txt`), seedFeatures.join(`\n`) + '\n');
+
+    console.log();
 }
 
-async function generateSimulation() {
+async function synthesizeSimulation() {
     console.log(`---`);
-    console.log(`TODO generate simulation relation`);
+    console.log(`Synthesizing simulation relation`);
     console.log(`---`);
+
+    console.log(`TODO connect to LoopInvGen!!`);
+    console.log();
 }
 
-async function checkSimulation() {
+async function verifySimulation() {
     console.log(`---`);
     console.log(`Checking simulation relation`);
     console.log(`---`);
@@ -151,6 +156,7 @@ async function checkSimulation() {
         for await (const line of lines(stderr))
             console.error(line);
     }
+    console.log();
 }
 
 main();
