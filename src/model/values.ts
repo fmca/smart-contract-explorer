@@ -133,6 +133,12 @@ export namespace Values {
 export class ValueGenerator {
     constructor(public accounts: Address[]) { }
 
+    * ofPayment(): Iterable<TypedElementaryValue> {
+        const type = 'uint';
+        for (const value of [0,1])
+            yield { type, value };
+    }
+
     * ofInt(): Iterable<TypedElementaryValue> {
         const type = 'int';
 

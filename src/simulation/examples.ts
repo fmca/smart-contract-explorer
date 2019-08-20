@@ -107,8 +107,8 @@ export class ExampleGenerator {
         const { limiters } = this;
         const workList: SimulationExample[] = [];
         const mapping = FunctionMapping.getMapping(source, target);
-        const si = new InvocationGenerator([...mapping.sources()], explorer.accounts);
-        const ti = new InvocationGenerator([...mapping.targets()], explorer.accounts);
+        const si = new InvocationGenerator({ getFunctions: () => mapping.sources() }, explorer.accounts);
+        const ti = new InvocationGenerator({ getFunctions: () => mapping.targets() }, explorer.accounts);
         const sourceParams = { metadata: source, limiters, invocationGenerator: si };
         const targetParams = { metadata: target, limiters, invocationGenerator: ti };
 

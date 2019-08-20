@@ -115,9 +115,8 @@ class ExtensionEvaluation extends Evaluation {
         const { id: { contract, method: stateMethod } } = example;
         const metadata = await this.getMetadata(contract);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expression);
-        const methods = [...metadata.getFunctions()];
         const accounts = await this.chain.getAccounts();
-        const invocationGenerator = new InvocationGenerator(methods, accounts);
+        const invocationGenerator = new InvocationGenerator(metadata, accounts);
         const executor = this.executorFactory.getExecutor(invocationGenerator, extension);
         const state = ExtensionEvaluation.getState(extension, stateMethod);
         const invocation = ExtensionEvaluation.getInvocation(extension, predicateMethod);

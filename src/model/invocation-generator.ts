@@ -2,56 +2,93 @@ import { Debugger } from '../utils/debug';
 const debug = Debugger(__filename);
 
 import {  Address } from '../frontend/metadata';
-import { ValueGenerator } from './values';
-import { FunctionDefinition } from '../solidity';
+import { ValueGenerator, TypedValue } from './values';
+import { FunctionDefinition, TypeName } from '../solidity';
 import { Invocation } from './invocations';
+
+export type Kind = 'constructor' | 'observer' | 'mutator';
+
+export interface FunctionProvider {
+    getFunctions(): Iterable<FunctionDefinition>;
+}
 
 export class InvocationGenerator {
     valueGenerator: ValueGenerator;
+    methods: FunctionDefinition[];
 
-    constructor(public methods: FunctionDefinition[], public accounts: Address[]) {
+    constructor(metadata: FunctionProvider, public accounts: Address[]) {
         this.valueGenerator = new ValueGenerator(accounts);
+        this.methods = [...metadata.getFunctions()];
     }
 
-    * invocationsWith(accept: (_: FunctionDefinition) => boolean): Iterable<Invocation> {
+    * getInvocations(kind?: Kind) {
         for (const method of this.methods) {
-            debug(`considering method: %o`, method.name);
-
-            if (!accept(method))
+            if (!this.accept(method, kind))
                 continue;
 
-            if (method.visibility === 'private')
-                continue;
-
-            const types = method.parameters.parameters.map(({ typeName }) => typeName);
-
-            debug(`parameter types: %O`, types);
-
-            for (const inputs of this.valueGenerator.valuesOfTypes(types)) {
-                const invocation = new Invocation(method, ...inputs);
-
-                debug(`invocation: %s`, invocation);
+            for (const invocation of this.fromMethod(method))
                 yield invocation;
-            }
         }
     }
 
-    invocations(): Iterable<Invocation> {
-        return this.invocationsWith(() => true);
+    accept(method: FunctionDefinition, kind?: Kind) {
+        if (method.visibility === 'private')
+            return false;
+
+        return kind === 'observer' && FunctionDefinition.isReadOnly(method)
+            || kind === 'mutator' && FunctionDefinition.isMutator(method)
+            || kind === 'constructor' && FunctionDefinition.isConstructor(method)
+            || kind === undefined;
     }
 
-    constructors(): Iterable<Invocation> {
-        if (!this.methods.some(FunctionDefinition.isConstructor))
-            return [new Invocation(FunctionDefinition.get('', 'constructor'))];
-
-        return this.invocationsWith(FunctionDefinition.isConstructor);
+    fromMethod(method: FunctionDefinition) {
+        const generator = new PerMethodInvocationGenerator(method, this.valueGenerator);
+        return generator.getInvocations();
     }
 
-    mutators(): Iterable<Invocation> {
-        return this.invocationsWith(FunctionDefinition.isMutator);
+    invocations() { return this.getInvocations(); }
+    constructors() { return this.getInvocations('constructor'); }
+    mutators() { return this.getInvocations('mutator'); }
+    observers() { return this.getInvocations('observer'); }
+}
+
+class PerMethodInvocationGenerator {
+    constructor(public method: FunctionDefinition, public valueGenerator: ValueGenerator) { }
+
+    getInvocations() {
+        const { parameters: { parameters }} = this.method;
+        const types = parameters.map(({ typeName }) => typeName);
+        return this.fromTypes(types);
     }
 
-    observers(): Iterable<Invocation> {
-        return this.invocationsWith(FunctionDefinition.isReadOnly);
+    * fromTypes(types: TypeName[]) {
+        debug(`parameter types: %O`, types);
+        for (const inputs of this.valueGenerator.valuesOfTypes(types))
+            for (const invocation of this.fromInputs(inputs))
+                yield invocation;
+    }
+
+    * fromInputs(inputs: TypedValue[]) {
+        const { stateMutability } = this.method;
+
+        if (stateMutability === 'payable') {
+            for (const invocation of this.fromInputsWithPayment(inputs)) {
+                yield invocation;
+            }
+
+        } else {
+            const invocation = new Invocation(this.method, ...inputs);
+            yield invocation;
+        }
+    }
+
+    * fromInputsWithPayment(inputs: TypedValue[]) {
+        for (const { value } of this.valueGenerator.ofPayment()) {
+            if (typeof(value) !== 'number')
+                throw Error(`Expected numeric payment value`);
+
+            const invocation = new Invocation(this.method, value, ...inputs);
+            yield invocation;
+        }
     }
 }

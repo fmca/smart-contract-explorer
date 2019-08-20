@@ -118,12 +118,6 @@ function getInvocation(metadata: Metadata, name: string, ...values: TypedValue[]
     return invocation;
 }
 
-async function get(content: string, ...values: TypedValue[]) {
-    const metadata = await getMetadata(content);
-    const instance = await getInstance(metadata, ...values);
-    return instance;
-}
-
 async function getMetadata(content: string) {
     const path = `a.sol`;
     content = `${pragmas} ${content}`;
@@ -134,7 +128,6 @@ async function getMetadata(content: string) {
 async function getInstance(metadata: Metadata, ...values: TypedValue[]) {
     const chain = new Chain.BlockchainInterface();
     const instantiation = new ContractInstantiation(chain);
-    const value = undefined;
     const instance = instantiation.instantiate(metadata, undefined, ...values);
     return instance;
 }
