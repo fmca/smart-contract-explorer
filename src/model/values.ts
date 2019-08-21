@@ -150,7 +150,7 @@ export class ValueGenerator {
     * ofInt(): Iterable<TypedElementaryValue> {
         const type = 'int';
 
-        for (const value of [0,1,-1,2,-2])
+        for (const value of [0,1,-1])
             yield { type, value };
     }
 
@@ -223,10 +223,10 @@ export class ValueGenerator {
     ofElementary(typeName: ElementaryTypeName): Iterable<TypedElementaryValue> {
         const { name: type } = typeName;
 
-        if (type.match(/int\d*/))
+        if (type.match(/^int\d*$/))
             return this.ofInt();
 
-        if (type.match(/uint\d*/))
+        if (type.match(/^uint\d*$/))
             return this.ofUint();
 
         if (type === 'address')
@@ -235,7 +235,7 @@ export class ValueGenerator {
         if (type === 'bool')
             return this.ofBool();
 
-        if (type.match(/bytes\d*/)) {
+        if (type.match(/^bytes\d*$/)) {
             const bytesLength = Number(type.split("s").pop());
             return this.ofBytes(bytesLength);
         }

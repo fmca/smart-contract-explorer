@@ -154,7 +154,7 @@ async function synthesizeSimulation() {
 
     const options = {};
     const childProcess = cp.spawn(command, args, options);
-    await processOutput(childProcess);
+    const result = await processOutput(childProcess);
     console.log();
 }
 
@@ -177,13 +177,25 @@ async function verifySimulation() {
         const args = [output.path];
         const options = {};
         const childProcess = cp.spawn(command, args, options);
-        await processOutput(childProcess);
+        const result = await processOutput(childProcess);
     }
     console.log();
 }
 
 async function processOutput(childProcess: ChildProcess) {
     const { stdout, stderr } = childProcess;
+
+    const result = new Promise<boolean>((resolve, reject) => {
+        childProcess.on('exit', (code, signal) => {
+            if (signal !== null)
+                reject(signal);
+
+            if (code !== null)
+                resolve(code === 0);
+
+            throw Error(`Unexpected null signal and return code.`);
+        });
+    });
 
     for await (const line of lines(stdout))
         console.log(line);
@@ -194,6 +206,8 @@ async function processOutput(childProcess: ChildProcess) {
         if (line.match(/Uncaught exception/))
             throw Error(`Synthesis failed: ${line}`);
     }
+
+    return result;
 }
 
 main();

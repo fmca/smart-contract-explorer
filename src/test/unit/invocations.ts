@@ -1,7 +1,7 @@
 import * as Compile from '../../frontend/compile';
 import * as Chain from '../../utils/chain';
 import assert from 'assert';
-import { InvocationGenerator, Invocation, Kind } from '../../model';
+import { InvocationGenerator, Invocation, Kind, Values, Value } from '../../model';
 import { Address } from '../../frontend/metadata';
 
 const pragmas = `pragma solidity ^0.5.0;`;
@@ -12,6 +12,25 @@ describe('invocation generation', function() {
     this.beforeAll(async function() {
         tester = new InvocationsTester();
         await tester.getAccounts();
+    });
+
+    it (`generates the right types`, async function() {
+        const tester = new InvocationsTester();
+        const result = await tester.getResult(`contract C {
+            function f1(int x) public pure {}
+            function f2(uint x) public pure {}
+            function f3(bool x) private pure {}
+            function f4(address x) public pure {}
+        }`);
+        result.expectSome(_ => true);
+        result.expectEvery(({ method: { name }, inputs: [v] }) => {
+            return Value.isElementaryValue(v) && (
+                name === 'f1' && v.type === 'int' && typeof(v.value) === 'number'
+                || name === 'f2' && v.type === 'uint' && typeof(v.value) === 'number' && v.value >= 0
+                || name === 'f3' && v.type === 'bool' && typeof(v.value) === 'boolean'
+                || name === 'f4' && v.type === 'address' && typeof(v.value) === 'string'
+            );
+        });
     });
 
     it (`includes only public members`, async function() {
@@ -109,9 +128,15 @@ class InvocationsTester {
 
 class TestResult {
     constructor(public invocations: Invocation[]) {}
+
+    forEach(f: (_: Invocation) => void) {
+        this.invocations.forEach(f);
+    }
+
     expectSome(f: (_: Invocation) => boolean) {
         assert.ok(this.invocations.some(f));
     }
+
     expectEvery(f: (_: Invocation) => boolean) {
         assert.ok(this.invocations.every(f));
     }
