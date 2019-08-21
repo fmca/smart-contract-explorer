@@ -49,10 +49,10 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
 }
 
 
-export function getProductSeedFeatures(spec: Metadata, impl: Metadata): [string, string][] {
+export function getProductSeedFeatures(impl: Metadata, spec: Metadata): [string, string][] {
     const features: [string, string][] = [];
-    const specBodyToExpr = getBodyToExpr(spec);
-    const implBodyToExpr = getBodyToExpr(impl);
+    const specBodyToExpr = getBodyToExpr('spec', spec);
+    const implBodyToExpr = getBodyToExpr('impl', impl);
 
     for (const m1 of spec.getFunctions()) {
         if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
@@ -125,8 +125,7 @@ function fix(f: (_: Expr) => Expr, expr: Expr): Expr {
     return expr;
 }
 
-function getBodyToExpr(metadata: Metadata) {
-    const { name } = metadata;
+function getBodyToExpr(mode: 'impl' | 'spec', metadata: Metadata) {
     const ids = fieldNames(metadata);
 
     return function bodyToExpr(block: Block): string {
@@ -139,7 +138,7 @@ function getBodyToExpr(metadata: Metadata) {
         const expr = normalizedReturn(block);
         debug(`expr: %O`, expr)
 
-        const prefixed = prefixIdentifiers(expr, name, ids);
+        const prefixed = prefixIdentifiers(expr, mode, ids);
         debug(`prefixed: %O`, prefixed);
 
         const sexpr = toSExpr(prefixed);

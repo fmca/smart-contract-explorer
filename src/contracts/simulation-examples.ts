@@ -81,6 +81,13 @@ export class SimulationExamplesContract extends Contract {
                 if (variable.constant)
                     continue;
 
+                if (isMapping(variable.typeName) &&
+                    !isElementaryTypeName(variable.typeName.valueType)) {
+
+                    console.error(`Warning: did not generate accessor for mapping: ${variable.name}`);
+                    continue;
+                }
+
                 const { name, typeName } = variable;
                 const { typeDescriptions: { typeString } } = typeName;
                 debug(`storageAccessorForPie for %o of type %O`, name, typeName);

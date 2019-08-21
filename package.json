@@ -8,8 +8,9 @@
     "sc-evaluate": "dist/cli/evaluate.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build:node": "tsc",
     "build:infer": "cd LoopInvGen && opam install . && dune install",
+    "build": "npm-run-all build:*",
     "postinstall": "npm run build",
     "test:unit": "mocha dist/test/unit/**/*.js",
     "test:integration": "mocha dist/test/integration/**/*.js",
