@@ -147,27 +147,24 @@ export class SimulationExamplesContract extends Contract {
     }
 
     * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
-        for (const { source, name, expr, type } of this.storageAccessors(metadata))
+        for (const { source, name, expr, type } of this.storageAccessors(metadata)) {
+            const result = [...expr];
+            result.splice(0, 1, `return ${expr[0]}`);
+            result.splice(-1, 1, `${expr[expr.length-1]};`);
             yield [
                 ``,
                 `function ${source}$${name}() public view returns (${type}) {`,
-                ...block(4)(`return ${expr};`),
+                ...block(4)(...result),
                 `}`
             ];
+        }
     }
 
     * storageAccessors(metadata: Metadata) {
         for (const variable of metadata.getVariables()) {
             const target = variable.constant
                 ? metadata.name
-                : metadata === this.source ? 'impl' : 'spec'
-
-            if (isMapping(variable.typeName) &&
-                !isElementaryTypeName(variable.typeName.valueType)) {
-
-                console.error(`Warning: did not generate accessor for mapping: ${variable.name}`);
-                continue;
-            }
+                : metadata === this.source ? 'impl' : 'spec';
 
             yield this.storageAccessor(target, variable);
         }
@@ -179,21 +176,23 @@ export class SimulationExamplesContract extends Contract {
         debug(`storageAccessor for %o of type %O`, name, typeName);
 
         if (isElementaryTypeName(typeName))
-            return { source, name, expr: `${source}.${name}()`, type: typeName.name };
+            return { source, name, expr: [`${source}.${name}()`], type: typeName.name };
 
         if (isArrayTypeName(typeName)) {
             const fn = this.arrayAccessorFunctionName(typeName);
-            const expr = `${fn}(${source}.${name}, ${source}.${name}$length)`;
+            const expr = [`${fn}(${source}.${name}, ${source}.${name}$length)`];
             if (!this.auxiliaryDefinitions.has(fn))
                 this.auxiliaryDefinitions.set(fn, this.arrayAccessorFunction(typeName));
             return { source, name, expr, type: `${typeString} memory`};
         }
 
         if (isMapping(typeName)) {
-            const { valueType } = typeName;
-            const idxss = [...this.values.mapIndicies(typeName)];
-            const elems = idxss.map(idxs => `${source}.${name}${idxs.map(i => `(${this.argument(i)})`).join('')}`);;
-            const expr = `keccak256(abi.encode(${elems.join(', ')}))`;
+            const keyLists = [...this.values.mapIndicies(typeName)];
+            const values = keyLists.map(keys => `${source}.${name}(${keys.map(k => `${this.argument(k)}`).join(', ')})`);;
+            const expr = [
+                `keccak256(abi.encode(`,
+                ...block(4)(...values.slice(0,-1).map(v => `${v},`), ...values.slice(-1)),
+                `))`];
             const type = `bytes32`;
             return { source, name, expr, type };
         }
