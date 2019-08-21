@@ -5,14 +5,13 @@ require('source-map-support').install();
 import yargs from 'yargs';
 import path from 'path';
 import fs from 'fs-extra';
-import cp, { ChildProcess, SpawnOptions } from 'child_process';
+import cp from 'child_process';
 import * as Examples from '../simulation/examples';
 import * as Product from '../simulation/product';
 import { SimulationCounterExample } from '../simulation/counterexample';
 import { lines } from '../utils/lines';
-import { toNode } from '../frontend/expr-to-node';
-import { toContract } from '../frontend/node-to-contract';
-import { Expr } from '../sexpr/expression';
+import * as Contracts from '../contracts/conversions';
+import { fromFile } from '../frontend/compile';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()
@@ -161,19 +160,31 @@ async function synthesizeSimulation() {
     console.log(`Synthesizing simulation relation`);
     console.log(`---`);
 
-    const args: string[] = [];
+    const ligArgs: string[] = [];
     const paths = await getPaths();
 
     for (const file of files.filter(f => f.endsWith('.txt')))
-        args.push(`--${path.basename(file, '.txt')}`, paths[file])
+        ligArgs.push(`--${path.basename(file, '.txt')}`, paths[file])
 
-    const { success, output, errors } = await run(`lig-symbolic-infer`, ...args);
+    const { success, output, errors } = await run(`lig-symbolic-infer`, ...ligArgs);
     console.log();
 
     if (!success)
         throw Error(`Unable to synthesize simulation relation: ${errors.join('\n')}`);
 
-    const relation = output.map(Expr.parse).map(toNode).map(toContract);
+    const metadata = {
+        examples: await fromFile(paths['SimulationExamples.sol']),
+        source: await fromFile(args.source!),
+        target: await fromFile(args.target!)
+    };
+    function findVariable(name: string) { return metadata.examples.findFunction(name); }
+
+    const relation = output.map(expr => {
+        const code = Contracts.fromUnparsedExpression(expr, { findVariable });
+        return code
+            .replace(/\bspec\$/, `${metadata.target.name}.`)
+            .replace(/\bimpl\$/, `${metadata.source.name}.`);
+    });
 
     console.log(`---`);
     console.log(`Computed simulation relation:`);
@@ -214,6 +225,7 @@ async function verifySimulation() {
     console.log(`---`);
 }
 
+
 async function run(command: string, ...args: readonly string[]) {
     const options = {};
     const childProcess = cp.spawn(command, args, options);
@@ -240,7 +252,6 @@ async function run(command: string, ...args: readonly string[]) {
         if (verbose)
             console.log(line);
     }
-
 
     for await (const line of lines(stderr)) {
         errors.push(line);

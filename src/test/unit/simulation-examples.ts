@@ -37,7 +37,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (address => mapping (int => int)) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Address,Map[Int,Int]]`, `S$x[__verifier_idx_address][__verifier_idx_int]: Int`, `T$y: Int`]
+            [`S$x: Map[Address,Map[Int,Int]]`, `T$y: Int`]
         );
     });
 

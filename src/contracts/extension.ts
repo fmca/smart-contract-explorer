@@ -1,9 +1,9 @@
 import * as Compile from '../frontend/compile';
 import { Metadata } from "../frontend/metadata";
-import { toContract } from '../frontend/node-to-contract';
+import * as Contracts from '../contracts/conversions';
 import { Expr } from "../sexpr/expression";
 import { Debugger } from '../utils/debug';
-import { toNode } from '../frontend/expr-to-node';
+import * as Solidity from '../solidity/conversions';
 
 const debug = Debugger(__filename);
 
@@ -18,9 +18,9 @@ export async function expressionEvaluator(expression: Expr, examples: Metadata):
 
 function expressionEvaluationContract(expression: Expr, examples: Metadata) {
     const { name, source: { path } } = examples;
-    const node = toNode(expression);
+    const node = Solidity.fromExpression(expression);
     debug(`node: %o`, node);
-    const expr = toContract(node);
+    const expr = Contracts.fromNode(node);
     debug(`expr: %o`, expr);
     const solExpr = fieldsToGetters(expr);
     debug(`solExpr: %o`, solExpr);
@@ -34,8 +34,8 @@ function fieldsToGetters(expression: string) {
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {
-    const nodeAst = toNode(feature);
-    const strFeature = toContract(nodeAst);
+    const nodeAst = Solidity.fromExpression(feature);
+    const strFeature = Contracts.fromNode(nodeAst);
     const [newContract, funNames] = await extendWithFeatures(contract,[strFeature]);
 
     if (funNames.length != 1)

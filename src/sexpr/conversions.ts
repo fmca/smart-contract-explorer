@@ -1,7 +1,9 @@
 import { Node, NodeVisitor, Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, Assignment } from '../solidity';
 
-export function toSExpr(node: Node): string {
-    return new NodeToSExpr().visit(node);
+export function fromNode(node: Node): string {
+    const visitor = new NodeToSExpr();
+    const expression = visitor.visit(node);
+    return expression;
 }
 
 class NodeToSExpr extends NodeVisitor<string> {

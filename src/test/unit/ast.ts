@@ -1,5 +1,5 @@
-import { toContract } from '../../frontend/node-to-contract';
-import { toSExpr } from '../../frontend/node-to-sexpr';
+import * as Contract from '../../contracts/conversions';
+import * as SExpr from '../../sexpr/conversions';
 import { IndexAccess, Identifier, BinaryOperation, Assignment } from '../../solidity';
 import assert from 'assert';
 
@@ -245,33 +245,33 @@ const ASTcondition: BinaryOperation =
 
 
     it('generate s-expression from ast of lhs', async function() {
-        const expr = toSExpr(ASTleftHandSide);
+        const expr = SExpr.fromNode(ASTleftHandSide);
         console.log(`expression is : %s`, expr);
         assert.deepEqual(expr, `(index counters i)`);
     });
 
     it('generate s-expression from ast condition', async function() {
-        const expr = toSExpr(ASTcondition);
+        const expr = SExpr.fromNode(ASTcondition);
         assert.deepEqual(expr, `(= k 1)`);
     });
 
     it('generate s-expression from ast of false', async function() {
-      const expr = toSExpr(ASTfalseExpression);
+      const expr = SExpr.fromNode(ASTfalseExpression);
       assert.deepEqual(expr, `(+ (index counters i) k)`);
     });
 
     it('generate s-expression from ast true', async function() {
-      const expr = toSExpr(ASTtrueExpression);
+      const expr = SExpr.fromNode(ASTtrueExpression);
       assert.deepEqual(expr, `(+ (index counters i) (* 2 k))`);
     });
 
     it('generate s-expression from ast', async function() {
-      const expr = toSExpr(ast);
+      const expr = SExpr.fromNode(ast);
       assert.deepEqual(expr, `(= (index counters i) (ite (= k 1) (+ (index counters i) (* 2 k)) (+ (index counters i) k)))`);
     });
 
     it('generate solidity expression from ast', async function() {
-        const expr = toContract(ast);
+        const expr = Contract.fromNode(ast);
         assert.deepEqual(expr, `counters[i] = k == 1? counters[i] + 2 * k: counters[i] + k`);
     });
 

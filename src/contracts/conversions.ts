@@ -1,7 +1,22 @@
-import { Node, NodeVisitor, Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, Assignment } from '../solidity';
+import { Node, NodeVisitor, Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, Assignment, FunctionCall } from '../solidity';
+import * as Solidity from '../solidity/conversions';
+import { Expr } from '../sexpr/expression';
 
-export function toContract(node: Node): string {
-    return new NodeToContract().visit(node);
+export function fromUnparsedExpression(string: string, scope?: Solidity.Scope): string {
+    const expression = Expr.parse(string);
+    return fromExpression(expression, scope);
+}
+
+export function fromExpression(expr: Expr, scope?: Solidity.Scope): string {
+    const node = Solidity.fromExpression(expr, scope);
+    const contract = fromNode(node);
+    return contract;
+}
+
+export function fromNode(node: Node): string {
+    const visitor = new NodeToContract();
+    const contract = visitor.visit(node);
+    return contract;
 }
 
 class NodeToContract extends NodeVisitor<string> {
@@ -51,5 +66,11 @@ class NodeToContract extends NodeVisitor<string> {
         const falseE = this.visit(node.falseExpression);
 
         return `${condition}? ${trueE}: ${falseE}`;
+    }
+
+    visitFunctionCall(node: FunctionCall) {
+        const expression = this.visit(node.expression);
+        const args = node.arguments.map(n => this.visit(n));
+        return `${expression}(${args.join(', ')})`;
     }
 }

@@ -3,7 +3,7 @@ import * as Compile from '../frontend/compile';
 import { Metadata, SourceInfo } from "../frontend/metadata";
 import { prefixIdentifiers } from '../frontend/identifier-prefixer';
 import { normalizedReturn } from '../frontend/return-normalizer';
-import { toSExpr } from '../frontend/node-to-sexpr';
+import * as SExpr from '../sexpr/conversions';
 import { Block } from '../solidity';
 import { Debugger } from '../utils/debug';
 import { SimulationCheckingContract, ContractInfo } from '../contracts';
@@ -141,7 +141,7 @@ function getBodyToExpr(mode: 'impl' | 'spec', metadata: Metadata) {
         const prefixed = prefixIdentifiers(expr, mode, ids);
         debug(`prefixed: %O`, prefixed);
 
-        const sexpr = toSExpr(prefixed);
+        const sexpr = SExpr.fromNode(prefixed);
         debug(`sexpr: %O`, sexpr);
 
         return sexpr;

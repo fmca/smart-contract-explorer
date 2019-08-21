@@ -73,6 +73,10 @@ export function isExpression(e: Node): e is Expression {
     return e.argumentTypes !== undefined;
 }
 
+export function isIdentifier(e: Expression): e is Identifier {
+    return e.nodeType === 'Identifier';
+}
+
 export function isUnary(e: Expression): e is UnaryOperation {
     return e.nodeType === 'UnaryOperation';
 }
@@ -112,4 +116,31 @@ export function conjunction([expr, ...exprs]: Expression[]): Expression {
 
 export function disjunction([expr, ...exprs]: Expression[]): Expression {
     return exprs.reduce(or, expr);
+}
+
+export function identifier(name: string): Identifier {
+    const node = get('Identifier');
+    const overloadedDeclarations: any[] = [];
+    const referencedDeclaration = 0;
+    return { ...node, name, overloadedDeclarations, referencedDeclaration };
+}
+
+export function literal(value: string, kind: 'number' | 'bool'): Literal {
+    const node = get('Literal');
+    return { ...node, value, kind };
+}
+
+export function call(expression: Expression, ...args: Expression[]): FunctionCall {
+    const node = op('FunctionCall');
+    return { ...node, expression, arguments: args };
+}
+
+export function index(baseExpression: Expression, indexExpression: Expression, lValueRequested = false): IndexAccess {
+    const node = op('IndexAccess');
+    return { ...node, baseExpression, indexExpression, lValueRequested };
+}
+
+export function conditional(condition: Expression, trueExpression: Expression, falseExpression: Expression): Conditional {
+    const node = get('Conditional');
+    return { ...node, condition, trueExpression, falseExpression };
 }
