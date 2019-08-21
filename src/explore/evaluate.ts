@@ -52,7 +52,7 @@ export class Evaluator {
         const { result } = operation;
 
         if (!(result instanceof NormalResult))
-            throw Error(`Expected normal result`);
+            throw Error(`Expected normal result; got ${result}`);
 
         const { values: [ value ] } = result;
         debug(`result: %o`, value);
@@ -163,6 +163,7 @@ class CachingEvaluation extends Evaluation {
         const invocation = new Invocation(method, { type: 'address', value });
         const result = await instance.invokeReadOnly(invocation);
         const operation = new Operation(invocation, result);
+        debug(`evaluate(%o, %o): %s`, example.id.method, expression, operation);
         return operation;
     }
 

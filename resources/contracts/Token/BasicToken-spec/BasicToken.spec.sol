@@ -9,8 +9,8 @@ contract BasicToken_spec {
     mapping (address => mapping (address => uint256)) allowances ;
 
     /** @notice precondition balances[msg.sender] >= _value
-        @notice postcondition balances[msg.sender] == __verifier_old_int(balances[msg.sender]) - _value
-        @notice postcondition balances[_to] == __verifier_old_int(balances[_to]) + _value
+        @notice postcondition balances[msg.sender] == __verifier_old_uint(balances[msg.sender]) - _value
+        @notice postcondition balances[_to] == __verifier_old_uint(balances[_to]) + _value
         @notice modifies balances[msg.sender]
         @notice modifies balances[_to]
     */

@@ -47,13 +47,13 @@ export class SimulationCheckingContract extends ProductContract {
         const returns: VariableDeclaration[] = [];
         const preconditions = spec.preconditions.map(substituteFields(this.target));
         const postconditions = [
-            ...spec.postconditions.map(p => substituteReturns(this.target, target)(substituteFields(this.target)(p))),
+            // ...spec.postconditions.map(p => substituteReturns(this.target, target)(substituteFields(this.target)(p))),
             ...this.getOutputEqualities(target)
         ];
 
         for (const [i, param] of [...FunctionDefinition.returns(target)].entries()) {
-            returns.push({ ...param, name: `${this.source.name}_ret_${i}` });
-            returns.push({ ...param, name: `${this.target.name}_ret_${i}` });
+            returns.push({ ...param, name: `impl_ret_${i}` });
+            returns.push({ ...param, name: `spec_ret_${i}` });
         }
 
         const parameters: Parameters = {
@@ -79,8 +79,8 @@ export class SimulationCheckingContract extends ProductContract {
             ` */`,
             `${Contract.signature({ ...target, returnParameters })} {`,
             ...block(4)(
-                `${this.callMethod(this.source.name, { ...source, parameters })};`,
-                `${this.callMethod(this.target.name, target)};`,
+                `${this.callMethod(this.source.name, { ...source, parameters }, 'impl')};`,
+                `${this.callMethod(this.target.name, target, 'spec')};`,
                 ...this.getReturns(target),
             ),
             `}`
@@ -92,8 +92,8 @@ export class SimulationCheckingContract extends ProductContract {
             ``,
             `${Contract.signature(target)}`,
             ...block(4)(
-                this.callMethod(this.source.name, { ...source, parameters: target.parameters }),
-                this.callMethod(this.target.name, target)
+                this.callMethod(this.source.name, { ...source, parameters: target.parameters }, 'impl'),
+                this.callMethod(this.target.name, target, 'spec')
             ),
             `{ }`
         ];
@@ -102,7 +102,7 @@ export class SimulationCheckingContract extends ProductContract {
     getReturns(method: FunctionDefinition): string[] {
         const returns: string[] = [];
 
-        for (const { name } of [this.source, this.target])
+        for (const name of ['impl', 'spec'])
             for (const [i] of [...FunctionDefinition.returns(method)].entries())
                 returns.push(`${name}_ret_${i}`);
 
@@ -113,8 +113,8 @@ export class SimulationCheckingContract extends ProductContract {
         const expressions: string[] = [];
 
         for (const [i, { typeName }] of [...FunctionDefinition.returns(method)].entries()) {
-            const lhs = `${this.source.name}_ret_${i}`;
-            const rhs = `${this.target.name}_ret_${i}`;
+            const lhs = `impl_ret_${i}`;
+            const rhs = `spec_ret_${i}`;
 
             if (isElementaryTypeName(typeName))
                 expressions.push(`${lhs} == ${rhs}`);

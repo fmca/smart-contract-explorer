@@ -119,9 +119,9 @@ export abstract class Contract {
         return `${lhs}${extra}${args};`;
     }
 
-    callMethod(contractName: string, method: FunctionDefinition) {
+    callMethod(contractName: string, method: FunctionDefinition, returnVarPrefix: string) {
         const args = [...FunctionDefinition.parameters(method)].map(({ name }) => name).join(', ');
-        const returns = [...FunctionDefinition.returns(method)].map((_, i) => `${contractName}_ret_${i}`);
+        const returns = [...FunctionDefinition.returns(method)].map((_, i) => `${returnVarPrefix}_ret_${i}`);
         const assignments = returns.length > 0 ? `${returns.join(', ')} = ` : ``;
 
         const name = FunctionDefinition.isConstructor(method)

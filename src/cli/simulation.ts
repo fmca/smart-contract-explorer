@@ -5,15 +5,23 @@ require('source-map-support').install();
 import yargs from 'yargs';
 import path from 'path';
 import fs from 'fs-extra';
-import cp, { ChildProcess } from 'child_process';
+import cp, { ChildProcess, SpawnOptions } from 'child_process';
 import * as Examples from '../simulation/examples';
 import * as Product from '../simulation/product';
 import { SimulationCounterExample } from '../simulation/counterexample';
 import { lines } from '../utils/lines';
+import { toNode } from '../frontend/expr-to-node';
+import { toContract } from '../frontend/node-to-contract';
+import { Expr } from '../sexpr/expression';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()
     .check(({ _: { length }}) => length === 0)
+    .option('verbose', {
+        describe: 'output verbosity',
+        type: 'boolean',
+        default: false
+    })
     .option('output', {
         describe: 'output directory',
         type: 'string',
@@ -60,6 +68,8 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .coerce(['source', 'target'], path.resolve)
     .help('help')
     .argv;
+
+const { verbose } = args;
 
 async function main() {
     try {
@@ -141,7 +151,7 @@ async function generateExamples() {
     await fs.writeFile(ps[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(ps[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');
     await fs.writeFile(ps[`fields.txt`], fields.join(`\n`) + '\n');
-    await fs.writeFile(ps[`constants.txt`], '\n');
+    await fs.writeFile(ps[`constants.txt`], '');
 
     console.log();
 }
@@ -151,12 +161,32 @@ async function synthesizeSimulation() {
     console.log(`Synthesizing simulation relation`);
     console.log(`---`);
 
+    const args: string[] = [];
     const paths = await getPaths();
-    const result = await pie(paths);
+
+    for (const file of files.filter(f => f.endsWith('.txt')))
+        args.push(`--${path.basename(file, '.txt')}`, paths[file])
+
+    const { success, output, errors } = await run(`lig-symbolic-infer`, ...args);
     console.log();
 
-    if (!result)
-        throw Error(`Unable to synthesize simulation relation`);
+    if (!success)
+        throw Error(`Unable to synthesize simulation relation: ${errors.join('\n')}`);
+
+    const relation = output.map(Expr.parse).map(toNode).map(toContract);
+
+    console.log(`---`);
+    console.log(`Computed simulation relation:`);
+    console.log();
+
+    for (const clause of relation)
+        console.log(`  `, clause);
+
+    console.log();
+    console.log(`---`);
+    console.log();
+
+    return output;
 }
 
 async function verifySimulation() {
@@ -173,36 +203,22 @@ async function verifySimulation() {
     for (const { path, content } of [contract, ...Object.values(internalized)])
         await fs.writeFile(path, content);
 
-    const result = await solcVerify(path);
+    const { success, output: lines } = await run(`solc-verify.py`, path);
     console.log();
 
-    if (!result)
-        throw Error(`Unable to verify simulation relation`);
+    if (!success)
+        throw Error(`Unable to verify simulation relation: ${lines.join('\n')}`);
+
+    console.log(`---`);
+    console.log(`Verified simulation relation`);
+    console.log(`---`);
 }
 
-async function pie(paths: Paths) {
-    const command = `lig-symbolic-infer`;
-    const args: string[] = [];
-
-    for (const file of files.filter(f => f.endsWith('.txt')))
-        args.push(`--${path.basename(file, '.txt')}`, paths[file])
-
+async function run(command: string, ...args: readonly string[]) {
     const options = {};
     const childProcess = cp.spawn(command, args, options);
-    const result = await processOutput(childProcess);
-    return result;
-}
-
-async function solcVerify(path: string) {
-    const command = `solc-verify.py`;
-    const args = [path];
-    const options = {};
-    const childProcess = cp.spawn(command, args, options);
-    const result = await processOutput(childProcess);
-    return result;
-}
-
-async function processOutput(childProcess: ChildProcess) {
+    const output: string[] = [];
+    const errors: string[] = [];
     const { stdout, stderr } = childProcess;
 
     const result = new Promise<boolean>((resolve, reject) => {
@@ -218,13 +234,26 @@ async function processOutput(childProcess: ChildProcess) {
         });
     });
 
-    for await (const line of lines(stdout))
-        console.log(line);
+    for await (const line of lines(stdout)) {
+        output.push(line);
 
-    for await (const line of lines(stderr))
-        console.error(line);
+        if (verbose)
+            console.log(line);
+    }
 
-    return result;
+
+    for await (const line of lines(stderr)) {
+        errors.push(line);
+
+        if (verbose)
+            console.error(line);
+    }
+
+    return result.then(success => ({
+        success,
+        output,
+        errors
+    }));
 }
 
 main();
