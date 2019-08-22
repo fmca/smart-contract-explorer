@@ -16,6 +16,7 @@ brew install node opam
 ## Setup
 
 ```bash
+$ git clone git@github.com:SRI-CSL/smart-contract-explorer.git
 $ git submodule init
 $ git submodule update
 $ npm link
