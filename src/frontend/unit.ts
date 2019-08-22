@@ -15,7 +15,8 @@ export class Unit {
     getName() {
         const extname = path.extname(this.path);
         const basename = path.basename(this.path, extname);
-        return basename;
+        const [ name ] = basename.split(/[-.]/);
+        return name;
     }
 
     suffix(suffix: string) {

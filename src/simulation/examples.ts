@@ -1,14 +1,12 @@
-import path from 'path';
 import { State } from '../model/state';
 import { ExecutorFactory } from '../explore/execute';
 import { LimiterFactory, StateCountLimiterFactory } from '../explore/limiter';
 import { Explorer, Transition } from '../explore/explorer';
-import { Metadata, SourceInfo } from '../frontend/metadata';
-import * as Compile from '../frontend/compile';
+import { Metadata } from '../frontend/metadata';
 import { Debugger } from '../utils/debug';
 import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
-import { SimulationExamplesContract, ContractInfo } from '../contracts';
+import { SimulationExamplesContract } from '../contracts';
 import { SimulationCounterExample } from './counterexample';
 import { exemplify } from '../contracts/rewriting';
 import { ValueGenerator } from '../model/values';
