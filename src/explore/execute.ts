@@ -43,7 +43,7 @@ export class Executor {
             const operation = new Operation(invocation, result);
             const trace = new Trace([operation]);
             const observation = await this.getObservation(instance);
-            const { source: { path: contractId }} = this.metadata;
+            const { path: contractId } = this.metadata.getSource();
             yield new State(contractId, trace, observation);
         }
     }

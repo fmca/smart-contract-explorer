@@ -11,7 +11,8 @@ export class ContractInstantiation {
     constructor(public chain: BlockchainInterface) { }
 
     async instantiate(metadata: Metadata, value: number | undefined, ...args: TypedValue[]) {
-        const { abi, bytecode: data } = metadata;
+        const abi = metadata.getABI();
+        const data = metadata.getBytecode();
         const [ from ] = await this.chain.getAccounts();
         const contract = this.chain.getContract(abi);
         const values = args.map(Value.encode);

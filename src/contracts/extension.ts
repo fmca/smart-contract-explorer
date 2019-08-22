@@ -17,7 +17,8 @@ export async function expressionEvaluator(expression: Expr, examples: Metadata):
 }
 
 function expressionEvaluationContract(expression: Expr, examples: Metadata) {
-    const { name, source: { path } } = examples;
+    const name = examples.getName();
+    const { path } = examples.getSource();
     const node = Solidity.fromExpression(expression);
     debug(`node: %o`, node);
     const expr = Contracts.fromNode(node);
@@ -45,7 +46,7 @@ export async function extendWithPredicate(contract: Metadata, feature: Expr): Pr
 }
 
 export async function extendWithFeatures(contract: Metadata, features: string[]): Promise<[Metadata, string[]]> {
-    const { source: { path, content } } = contract;
+    const { path, content } = contract.getSource();
 
     debug(`creating a product file to test features`);
 

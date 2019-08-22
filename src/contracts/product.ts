@@ -7,11 +7,11 @@ export abstract class ProductContract extends Contract {
     }
 
     async getImports() {
-        return [this.source.source.path, this.target.source.path];
+        return [this.source.getSource().path, this.target.getSource().path];
     }
 
     async getParents() {
-        return [this.source.name, this.target.name];
+        return [this.source.getName(), this.target.getName()];
     }
 
     async getSpec() {

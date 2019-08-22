@@ -21,7 +21,7 @@ export class SimulationExamplesContract extends Contract {
     }
 
     async getImports() {
-        return [this.source.source.path, this.target.source.path];
+        return [this.source.getSource().path, this.target.getSource().path];
     }
 
     async getParents() {
@@ -59,8 +59,8 @@ export class SimulationExamplesContract extends Contract {
     async getBody(): Promise<string[]> {
         const members: string[] = [];
 
-        members.push(`${this.source.name} impl;`);
-        members.push(`${this.target.name} spec;`);
+        members.push(`${this.source.getName()} impl;`);
+        members.push(`${this.target.getName()} spec;`);
 
         for await (const example of await this.getExamples()) {
             const { method } = example.id;
@@ -92,7 +92,7 @@ export class SimulationExamplesContract extends Contract {
                 const { typeDescriptions: { typeString } } = typeName;
                 debug(`storageAccessorForPie for %o of type %O`, name, typeName);
 
-                const prefix = `${metadata.name}$${name}`;
+                const prefix = `${metadata.getName()}$${name}`;
 
                 yield `${prefix}: ${type(typeName)}`;
 
@@ -163,7 +163,7 @@ export class SimulationExamplesContract extends Contract {
     * storageAccessors(metadata: Metadata) {
         for (const variable of metadata.getVariables()) {
             const target = variable.constant
-                ? metadata.name
+                ? metadata.getName()
                 : metadata === this.source ? 'impl' : 'spec';
 
             yield this.storageAccessor(target, variable);
@@ -242,8 +242,8 @@ export class SimulationExamplesContract extends Contract {
             ``,
             `function ${name}() public {`,
             ...block(4)(
-                ...sOps.map(o => this.call(o, 'impl', this.source.name)),
-                ...tOps.map(o => this.call(o, 'spec', this.target.name)),
+                ...sOps.map(o => this.call(o, 'impl', this.source.getName())),
+                ...tOps.map(o => this.call(o, 'spec', this.target.getName())),
             ),
             `}`
         ];

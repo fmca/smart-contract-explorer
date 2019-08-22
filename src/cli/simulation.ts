@@ -182,8 +182,8 @@ async function synthesizeSimulation() {
     const relation = output.map(expr => {
         const code = Contracts.fromUnparsedExpression(expr, { findVariable });
         return code
-            .replace(/\bspec\$/, `${metadata.target.name}.`)
-            .replace(/\bimpl\$/, `${metadata.source.name}.`);
+            .replace(/\bspec\$/, `${metadata.target.getName()}.`)
+            .replace(/\bimpl\$/, `${metadata.source.getName()}.`);
     });
 
     console.log(`---`);

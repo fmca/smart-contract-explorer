@@ -79,8 +79,8 @@ export class SimulationCheckingContract extends ProductContract {
             ` */`,
             `${Contract.signature({ ...target, returnParameters })} {`,
             ...block(4)(
-                `${this.callMethod(this.source.name, { ...source, parameters }, 'impl')};`,
-                `${this.callMethod(this.target.name, target, 'spec')};`,
+                `${this.callMethod(this.source.getName(), { ...source, parameters }, 'impl')};`,
+                `${this.callMethod(this.target.getName(), target, 'spec')};`,
                 ...this.getReturns(target),
             ),
             `}`
@@ -92,8 +92,8 @@ export class SimulationCheckingContract extends ProductContract {
             ``,
             `${Contract.signature(target)}`,
             ...block(4)(
-                this.callMethod(this.source.name, { ...source, parameters: target.parameters }, 'impl'),
-                this.callMethod(this.target.name, target, 'spec')
+                this.callMethod(this.source.getName(), { ...source, parameters: target.parameters }, 'impl'),
+                this.callMethod(this.target.getName(), target, 'spec')
             ),
             `{ }`
         ];
@@ -127,15 +127,15 @@ export class SimulationCheckingContract extends ProductContract {
     sourceVar(x: string) { return this.qualifiedVariable(this.source,x); }
     targetVar(x: string) { return this.qualifiedVariable(this.target,x); }
 
-    qualifiedVariable({ name }: Metadata, varName: string) {
-        return `${name}_${varName}`;
+    qualifiedVariable(metadata: Metadata, varName: string) {
+        return `${metadata.getName()}_${varName}`;
     }
 }
 
 function substituteFields(metadata: Metadata) {
     return function(expression: string) {
         const ids = [...metadata.getVariables()].map(({ name }) => name);
-        return prefixIdentifiers(expression, ids, metadata.name);
+        return prefixIdentifiers(expression, ids, metadata.getName());
     };
 }
 
@@ -143,7 +143,7 @@ function substituteReturns(metadata: Metadata, method: FunctionDefinition) {
     return function(expression: string) {
         const substitutions =
             [...FunctionDefinition.returns(method)]
-            .map(({ name }, i) => [name, `${metadata.name}_ret_${i}`]);
+            .map(({ name }, i) => [name, `${metadata.getName()}_ret_${i}`]);
 
         for (const [x, y] of substitutions) {
             const re = new RegExp(`\\b${x}\\b`, 'g');

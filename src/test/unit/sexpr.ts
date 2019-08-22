@@ -2,113 +2,94 @@ import { Expr } from '../../sexpr/expression';
 import * as Solidity from '../../solidity/conversions';
 import assert from 'assert';
 
-const util = require('util');
+const node = { id: -1, src: '' };
+const typeDescriptions = { typeIdentifier: '', typeString: '' };
+const expression = { ...node, argumentTypes: null, typeDescriptions };
+const operation = { ...expression, isConstant: false, isLValue: false, isPure: false };
+const literal = { ...expression, nodeType: 'Literal', kind: 'number'};
+const identifier = { ...expression, nodeType: 'Identifier', overloadedDeclarations: [], referencedDeclaration: 0 };
+const unary = { ...operation, nodeType: 'UnaryOperation' };
+const binary = { ...operation, nodeType: 'BinaryOperation' };
 
-const pragmas = `pragma solidity ^0.5.0;`;
-
-const test1_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test1_result = {
+    ...binary,
     operator: '+',
-    leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a' },
-    rightExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b' } };
+    leftExpression: { ...identifier, name: 'a' },
+    rightExpression: { ...identifier, name: 'b' } };
 
-const test2_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test2_result = {
+    ...binary,
     operator: '+',
     leftExpression:
-     { id: 0,
-       src: '',
-       nodeType: 'UnaryOperation',
+     { ...unary,
        prefix: true,
        operator: '-',
-       subExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a' } },
-    rightExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b' } };
+       subExpression: { ...identifier, name: 'a' } },
+    rightExpression: { ...identifier, name: 'b' } };
 
-const test3_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test3_result = {
+    ...binary,
     operator: '>=',
-    leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a' },
+    leftExpression: { ...identifier, name: 'a' },
     rightExpression:
-     { id: 0,
-       src: '',
-       nodeType: 'UnaryOperation',
+     { ...unary,
        prefix: true,
        operator: '-',
-       subExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b' } } };
+       subExpression: { ...identifier, name: 'b' } } };
 
-const test4_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test4_result = {
+    ...binary,
     operator: '>=',
-    leftExpression: { id: 0, src: '', nodeType: 'Literal', value: '1' },
-    rightExpression: { id: 0, src: '', nodeType: 'Literal', value: '0' } };
+    leftExpression: { ...literal, value: '1' },
+    rightExpression: { ...literal, value: '0' } };
 
-const test5_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test5_result = {
+    ...binary,
     operator: '>=',
-    leftExpression: { id: 0, src: '', nodeType: 'Literal', value: '1' },
+    leftExpression: { ...literal, value: '1' },
     rightExpression:
-     { id: 0,
-       src: '',
-       nodeType: 'UnaryOperation',
+     { ...unary,
        prefix: true,
        operator: '-',
-       subExpression: { id: 0, src: '', nodeType: 'Literal', value: '267' } } };
+       subExpression: { ...literal, value: '267' } } };
 
-const test6_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test6_result = {
+    ...binary,
     operator: '&&',
-    leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a_a' },
-    rightExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b' } };
+    leftExpression: { ...identifier, name: 'a_a' },
+    rightExpression: { ...identifier, name: 'b' } };
 
-const test7_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test7_result = {
+    ...binary,
     operator: '+',
     leftExpression:
-     { id: 0,
-       src: '',
-       nodeType: 'BinaryOperation',
+     { ...binary,
        operator: '*',
-       leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a' },
+       leftExpression: { ...identifier, name: 'a' },
        rightExpression:
-        { id: 0,
-          src: '',
-          nodeType: 'UnaryOperation',
+        { ...unary,
           prefix: true,
           operator: '-',
-          subExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'c' } } },
-    rightExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b' } };
+          subExpression: { ...identifier, name: 'c' } } },
+    rightExpression: { ...identifier, name: 'b' } };
 
-const test8_result = { id: 0,
-    src: '',
-    nodeType: 'BinaryOperation',
+const test8_result = {
+    ...binary,
     operator: '&&',
-    leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'a_a' },
+    leftExpression: { ...identifier, name: 'a_a' },
     rightExpression:
-     { id: 0,
-       src: '',
-       nodeType: 'BinaryOperation',
+     { ...binary,
        operator: '&&',
-       leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'b_b' },
+       leftExpression: { ...identifier, name: 'b_b' },
        rightExpression:
-        { id: 0,
-          src: '',
-          nodeType: 'BinaryOperation',
+        { ...binary,
           operator: '&&',
-          leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'c_c' },
+          leftExpression: { ...identifier, name: 'c_c' },
           rightExpression:
-           { id: 0,
-             src: '',
-             nodeType: 'BinaryOperation',
+           { ...binary,
              operator: '&&',
-             leftExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'd_d' },
-             rightExpression: { id: 0, src: '', nodeType: 'Identifier', name: 'e_e' } } } } };
+             leftExpression: { ...identifier, name: 'd_d' },
+             rightExpression: { ...identifier, name: 'e_e' } } } } };
 
 describe('sexpr', function() {
 

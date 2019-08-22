@@ -52,6 +52,13 @@ export class Metadata {
         public ast: SourceUnit,
         public members: ContractMember[]) {}
 
+    getName() { return this.name; }
+    getSource() { return this.source; }
+    getABI() { return this.abi; }
+    getBytecode() { return this.bytecode; }
+    getMembers() { return this.members; }
+    getUserdoc() { return this.userdoc; }
+
     findVariable(name: string) {
         for (const m of this.getVariables())
             if (m.name === name)
