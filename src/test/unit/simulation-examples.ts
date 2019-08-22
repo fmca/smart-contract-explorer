@@ -3,6 +3,7 @@ import { SimulationExamplesContract } from '../../contracts';
 import * as Compile from '../../frontend/compile';
 import { ValueGenerator } from '../../model';
 import { SimulationExample } from '../../simulation/examples';
+import { Unit } from '../../frontend/unit';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
@@ -70,10 +71,10 @@ async function testFields(source: Contract, target: Contract, expected: string[]
 async function getExamplesContract(source: Contract, target: Contract) {
     const s = await getContract(source);
     const t = await getContract(target);
-    const info = { name: '', path: '' };
+    const unit = new Unit('');
     const values = new ValueGenerator([]);
     async function* gen(): AsyncIterable<SimulationExample> {}
-    const contract = new SimulationExamplesContract(s, t, info, gen, values);
+    const contract = new SimulationExamplesContract(s, t, unit, gen, values);
     return contract;
 }
 

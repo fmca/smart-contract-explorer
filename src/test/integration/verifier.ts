@@ -3,6 +3,7 @@ import cp from 'child_process';
 import path from 'path';
 import assert from 'assert';
 import { getSimulationCheckContract } from '../../simulation/product';
+import { Unit } from '../../frontend/unit';
 
 const resources = path.resolve(__dirname, '..', '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
@@ -17,26 +18,23 @@ describe('verifier integration', function() {
         const test = fs.readJSONSync(file);
         const {
             description,
-            source,
-            target,
+            source: s,
+            target: t,
             valid = true
         } = test;
 
         it (description, async function() {
-            const result = path.join(contracts, `SimulationCheck-${name}.sol`);
-            const output = { name: 'SimulationCheck', path: result };
-            const paths = {
-                source: path.join(contracts, source),
-                target: path.join(contracts, target)
-            };
-            const { contract, internalized } = await getSimulationCheckContract({ paths, output });
+            const source = new Unit(path.join(contracts, s));
+            const target = new Unit(path.join(contracts, t));
+            const output = new Unit(path.join(contracts, `SimulationCheck-${name}.sol`));
+            const parameters = { source, target, output };
+            const { units } = await getSimulationCheckContract(parameters);
 
-            // await fs.mkdirp(dir);
-            for (const { path, content } of [contract, ...Object.values(internalized)])
-                await fs.writeFile(path, content);
+            for (const unit of units)
+                await unit.writeContent();
 
             const command = `solc-verify.py`;
-            const args = [output.path];
+            const args = [output.getPath()];
             const options = {};
             const success = await new Promise<boolean>((resolve, reject) => {
                 try {

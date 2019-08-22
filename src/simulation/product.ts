@@ -6,46 +6,44 @@ import { normalizedReturn } from '../frontend/return-normalizer';
 import * as SExpr from '../sexpr/conversions';
 import { Block } from '../solidity';
 import { Debugger } from '../utils/debug';
-import { SimulationCheckingContract, ContractInfo } from '../contracts';
+import { SimulationCheckingContract } from '../contracts';
 import { fieldNames } from '../sexpr/pie';
 import { internalize } from '../contracts/rewriting';
 import { Expr } from '../sexpr/expression';
 import { FunctionMapping } from './mapping';
+import { Unit } from '../frontend/unit';
 
 const debug = Debugger(__filename);
 
 export interface Parameters {
-    paths: {
-        source: string;
-        target: string;
-    },
-    output: ContractInfo
+    source: Unit;
+    target: Unit;
+    output: Unit;
 }
 
 export interface Result {
-    contract: SourceInfo;
-    internalized: {
-        source: SourceInfo;
-        target: SourceInfo;
-    }
+    units: Unit[];
 }
 
 export async function getSimulationCheckContract(parameters: Parameters): Promise<Result> {
-    const { paths, output: o } = parameters;
-    const dir = path.dirname(o.path);
-    const internalized = {
-        source: await internalize(paths.source, dir),
-        target: await internalize(paths.target, dir)
-    }
+    const { source: s, target: t, output } = parameters;
 
-    const source = await Compile.fromFile(paths.source);
-    const target = await Compile.fromFile(paths.target);
+    const si = s.suffix('.internalized').relocate(output.getDirname());
+    const ti = t.suffix('.internalized').relocate(output.getDirname());
+    const units = [si, ti, output];
 
-    const s = source.redirect(internalized.source);
-    const t = target.redirect(internalized.target);
-    const mapping = FunctionMapping.getMapping(s, t);
-    const contract = await new SimulationCheckingContract(mapping, o).getSourceInfo();
-    return { contract, internalized };
+    await internalize(s, si);
+    await internalize(t, ti);
+
+    const source = await s.getMetadata();
+    const target = await t.getMetadata();
+
+    const sr = source.redirect(await si.getSourceInfo());
+    const tr = target.redirect(await ti.getSourceInfo());
+    const mapping = FunctionMapping.getMapping(sr, tr);
+    const c = new SimulationCheckingContract(mapping, output);
+    await output.setContent(c);
+    return { units };
 }
 
 

@@ -6,6 +6,7 @@ import { ValueGenerator } from "../model/values";
 import { Contract, ContractInfo, block } from "./contract";
 import { type } from "../sexpr/pie";
 import { Operation } from '../model';
+import { Unit } from '../frontend/unit';
 
 const debug = Debugger(__filename);
 
@@ -13,11 +14,11 @@ export class SimulationExamplesContract extends Contract {
     examples?: (SimulationExample & AbstractExample)[];
 
     constructor(public source: Metadata, public target: Metadata,
-            public info: ContractInfo,
+            public unit: Unit,
             public generator: () => AsyncIterable<SimulationExample>,
             public values: ValueGenerator) {
 
-        super(info);
+        super(unit);
     }
 
     async getImports() {
@@ -33,11 +34,15 @@ export class SimulationExamplesContract extends Contract {
     }
 
     async getExamples(): Promise<(SimulationExample & AbstractExample)[]> {
-        if (this.examples !== undefined)
+        if (this.examples !== undefined) {
+            debug(`re-using existing ${this.examples.length} examples`);
             return this.examples;
+        }
+
+        debug(`generating examples`);
 
         this.examples = [];
-        const { path } = this.info;
+        const path = this.unit.getPath();
         const counts = { positive: 0, negative: 0 };
 
         for await (const example of this.generator()) {
@@ -46,6 +51,9 @@ export class SimulationExamplesContract extends Contract {
             const abstract = { id: { contract: path, method }};
             this.examples.push({ ...example, ...abstract });
         }
+
+        debug(`generated ${counts.positive}/${counts.negative} positive/negative examples`);
+
         return this.examples;
     }
 
@@ -67,6 +75,8 @@ export class SimulationExamplesContract extends Contract {
             const lines = this.getMethod(example, method);
             members.push(...lines);
         }
+
+        debug(`generated ${members.length - 2} example methods`);
 
         for (const metadata of [this.source, this.target])
             for (const lines of this.storageAccessorMethodDefinitions(metadata))

@@ -1,8 +1,7 @@
-import { Metadata, SourceInfo } from "../frontend/metadata";
-import { Operation, Values, Value, TypedValue, TypedArrayValue } from "../model";
-import * as Compile from '../frontend/compile';
+import { Operation,  Value, TypedValue, TypedArrayValue } from "../model";
 import { Debugger } from '../utils/debug';
-import { VariableDeclaration, FunctionDefinition, isElementaryTypeName, ElementaryType } from "../solidity";
+import { VariableDeclaration, FunctionDefinition } from "../solidity";
+import { Unit } from "../frontend/unit";
 
 const debug = Debugger(__filename);
 
@@ -14,14 +13,14 @@ export interface ContractInfo {
 export abstract class Contract {
     auxiliaryDefinitions = new  Map<string,string[]>();
 
-    constructor(public info: ContractInfo) { }
+    constructor(public unit: Unit) { }
 
     async getContract(): Promise<string[]> {
-        const { name } = this.info;
         const imports = await this.getImports();
         const spec = await this.getSpec();
         const parents = await this.getParents();
         const body = await this.getBody();
+        const name = this.unit.getName();
         const decl = parents.length > 0
             ? `${name} is ${parents.join(', ')}`
             : `${name}`;
@@ -44,19 +43,6 @@ export abstract class Contract {
     abstract async getParents(): Promise<string[]>;
     abstract async getSpec(): Promise<string[]>;
     abstract async getBody(): Promise<string[]>;
-
-    async getMetadata(): Promise<Metadata> {
-        const info = await this.getSourceInfo();
-        const metadata = Compile.fromString(info);
-        return metadata;
-    }
-
-    async getSourceInfo(): Promise<SourceInfo> {
-        const { path } = this.info;
-        const content = await this.getContent();
-        const info = { path, content };
-        return info;
-    }
 
     async getContent(): Promise<string> {
         const lines = await this.getContract();

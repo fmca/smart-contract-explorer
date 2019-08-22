@@ -1,9 +1,10 @@
 import { Metadata } from "../frontend/metadata";
-import { Contract, ContractInfo, block } from "./contract";
+import { Contract} from "./contract";
+import { Unit } from "../frontend/unit";
 
 export abstract class ProductContract extends Contract {
-    constructor(public source: Metadata, public target: Metadata, public info: ContractInfo) {
-        super(info);
+    constructor(public source: Metadata, public target: Metadata, public unit: Unit) {
+        super(unit);
     }
 
     async getImports() {

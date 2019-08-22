@@ -14,27 +14,22 @@ import { exemplify } from '../contracts/rewriting';
 import { ValueGenerator } from '../model/values';
 import { FunctionMapping } from './mapping';
 import { InvocationGenerator } from '../model';
+import { Unit } from '../frontend/unit';
 
 const debug = Debugger(__filename);
 
 interface Parameters {
-    paths: {
-        source: string;
-        target: string;
-    },
+    source: Unit;
+    target: Unit;
+    output: Unit;
     states: number;
-    output: ContractInfo
 }
 
 interface Result {
-    contract: SourceInfo;
     examples: AbstractExamples;
     fields: string[];
     seedFeatures: string[];
-    exemplified: {
-        source: SourceInfo,
-        target: SourceInfo
-    }
+    units: Unit[];
 }
 
 type Kind = 'positive' | 'negative';
@@ -58,16 +53,17 @@ export type SimulationExample = {
 };
 
 export async function generateExamples(parameters: Parameters): Promise<Result> {
-    const { paths, states, output: info } = parameters;
-    const dir = path.dirname(info.path);
+    const { source: s, target: t, states, output } = parameters;
 
-    const exemplified = {
-        source: await exemplify(paths.source, dir),
-        target: await exemplify(paths.target, dir)
-    };
+    const se = s.suffix('.exemplified').relocate(output.getDirname());
+    const te = t.suffix('.exemplified').relocate(output.getDirname());
+    const units = [se, te, output];
 
-    const source = await Compile.fromString(exemplified.source);
-    const target = await Compile.fromString(exemplified.target);
+    await exemplify(s, se);
+    await exemplify(t, te);
+
+    const source = await se.getMetadata();
+    const target = await te.getMetadata();
 
     const chain = new Chain.BlockchainInterface();
     const accounts = await chain.getAccounts();
@@ -77,14 +73,15 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 
     const values = new ValueGenerator(accounts);
 
-    const c = new SimulationExamplesContract(source, target, info, fn, values);
+    const c = new SimulationExamplesContract(source, target, output, fn, values);
+    await output.setContent(c);
+
     const examples = await c.getAbstractExamples();
-    const contract = await c.getSourceInfo();
 
     const fields = [...c.storageAccessorsForPie()];
     const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
 
-    return { contract, exemplified, examples, fields, seedFeatures };
+    return { units, examples, fields, seedFeatures };
 }
 
 export class ExampleGenerator {
@@ -119,19 +116,22 @@ export class ExampleGenerator {
         }
 
         debug(`exploring target states`);
+        const counts = { positive: 0, negative: 0 };
 
         for await (const transition of explorer.transitions(targetParams)) {
             const { post: t } = transition;
             context.addTarget(transition);
 
-            for (const s of context.getSourceTraceEquivalent(t))
+            for (const s of context.getSourceTraceEquivalent(t)) {
+                counts.positive++;
                 yield { source: s, target: t, kind: 'positive' };
+            }
 
             for (const s of context.getSourceObservationDistinct(t))
                 workList.push({ source: s, target: t, kind: 'negative' });
         }
 
-        debug(`generated positive examples`);
+        debug(`generated ${counts.positive} positive examples`);
 
         while (workList.length > 0) {
             const example = workList.shift()!;
@@ -141,6 +141,7 @@ export class ExampleGenerator {
             if (source.trace.equals(target.trace))
                 throw new SimulationCounterExample(source, target);
 
+            counts.negative++;
             yield example;
 
             for (const pred of context.getNewJointPredecessors(example)) {
@@ -150,7 +151,7 @@ export class ExampleGenerator {
             }
         }
 
-        debug(`generated negative examples`);
+        debug(`generated ${counts.negative} negative examples`);
     }
 }
 

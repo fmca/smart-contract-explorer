@@ -12,6 +12,7 @@ import { SimulationCounterExample } from '../simulation/counterexample';
 import { lines } from '../utils/lines';
 import * as Contracts from '../contracts/conversions';
 import { fromFile } from '../frontend/compile';
+import { Unit } from '../frontend/unit';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()
@@ -136,15 +137,16 @@ async function generateExamples() {
     console.log(`Generating examples`);
     console.log(`---`);
 
-    const { source, target, states } = args;
+    const { states } = args;
     const { 'SimulationExamples.sol': path, ...ps } = await getPaths();
-    const output = { name: 'SimulationExamples', path };
+    const source = new Unit(args.source!);
+    const target = new Unit(args.target!);
+    const output = new Unit(path);
+    const parameters = { source, target, output, states };
+    const { units, examples: { positive, negative }, fields, seedFeatures } = await Examples.generateExamples(parameters);
 
-    const paths = { source: source!, target: target! };
-    const { contract, examples: { positive, negative }, fields, seedFeatures, exemplified } = await Examples.generateExamples({ paths, output, states });
-
-    for (const { path, content } of [contract, ...Object.values(exemplified)])
-        await fs.writeFile(path, content);
+    for (const unit of units)
+        await unit.writeContent();
 
     await fs.writeFile(ps[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(ps[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
@@ -205,14 +207,16 @@ async function verifySimulation() {
     console.log(`Checking simulation relation`);
     console.log(`---`);
 
-    const { source, target } = args;
-    const paths = { source: source!, target: target! };
     const { 'SimulationCheck.sol': path } = await getPaths();
-    const output = { name: 'SimulationCheck', path };
-    const { contract, internalized } = await Product.getSimulationCheckContract({ paths, output });
+    const source = new Unit(args.source!);
+    const target = new Unit(args.target!);
+    const output = new Unit(path);
 
-    for (const { path, content } of [contract, ...Object.values(internalized)])
-        await fs.writeFile(path, content);
+    const parameters = { source, target, output };
+    const { units } = await Product.getSimulationCheckContract(parameters);
+
+    for (const unit of units)
+        await unit.writeContent();
 
     const { success, output: lines } = await run(`solc-verify.py`, path);
     console.log();

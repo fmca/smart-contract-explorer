@@ -3,11 +3,12 @@ import { isElementaryTypeName, VariableDeclaration, FunctionDefinition, Paramete
 import { ProductContract } from "./product";
 import { Contract, ContractInfo, block } from "./contract";
 import { FunctionMapping } from "../simulation/mapping";
+import { Unit } from "../frontend/unit";
 
 export class SimulationCheckingContract extends ProductContract {
 
-    constructor(public mapping: FunctionMapping, public info: ContractInfo) {
-        super(mapping.sourceMetadata, mapping.targetMetadata, info);
+    constructor(public mapping: FunctionMapping, public unit: Unit) {
+        super(mapping.sourceMetadata, mapping.targetMetadata, unit);
     }
 
     async getBody(): Promise<string[]> {

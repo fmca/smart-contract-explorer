@@ -3,6 +3,7 @@ import path from 'path';
 import assert from 'assert';
 import { generateExamples } from '../../simulation/examples';
 import { SimulationCounterExample } from '../../simulation/counterexample';
+import { Unit } from '../../frontend/unit';
 
 const resources = path.resolve(__dirname, '..', '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
@@ -17,8 +18,8 @@ describe('explorer integration', function() {
         const test = fs.readJSONSync(file);
         const {
             description,
-            source,
-            target,
+            source: s,
+            target: t,
             states = 5,
             failure: expectFailure = false,
             fields: expectedFields,
@@ -26,20 +27,18 @@ describe('explorer integration', function() {
         } = test;
 
         it (description, async function() {
-            const result = path.join(contracts, `SimulationExamples-${name}.sol`);
+            const source = new Unit(path.join(contracts, s));
+            const target = new Unit(path.join(contracts, t));
+            const output = new Unit(path.join(contracts, `SimulationExamples-${name}.sol`));
 
-            const output = { name: 'SimulationExamples', path: result };
-            const paths = {
-                source: path.join(contracts, source),
-                target: path.join(contracts, target)
-            };
+            const parameters = { source, target, output, states };
 
             if (expectFailure) {
-                await assert.rejects(async () => await generateExamples({ paths, output, states }), SimulationCounterExample);
+                await assert.rejects(async () => await generateExamples(parameters), SimulationCounterExample);
 
             } else {
                 await assert.doesNotReject(async () => {
-                    const result = await generateExamples({ paths, output, states });
+                    const result = await generateExamples(parameters);
                     const { examples: { positive, negative }, fields, seedFeatures } = result;
 
                     if (expectedFields !== undefined)

@@ -1,30 +1,15 @@
-import fs from 'fs-extra';
-import path from 'path';
-import { SourceInfo } from '../frontend/metadata';
 import { Debugger } from '../utils/debug';
+import { Unit } from '../frontend/unit';
 const debug = Debugger(__filename);
 
-export async function internalize(sourcePath: string, targetDir: string): Promise<SourceInfo> {
-    const dirname = path.dirname(sourcePath);
-    const transform = internalizeTransform(dirname);
-    return rewrite(sourcePath, targetDir, 'internalized', transform);
+export async function internalize(source: Unit, target: Unit) {
+    const transform = internalizeTransform(target.getDirname());
+    await source.rewriteInto(transform, target);
 }
 
-export async function exemplify(sourcePath: string, targetDir: string): Promise<SourceInfo> {
-    const dirname = path.dirname(sourcePath);
-    const transform = exemplifyTransform(dirname);
-    return rewrite(sourcePath, targetDir, 'exemplified', transform);
-}
-
-async function rewrite(sourcePath: string, targetDir: string, suffix: string,
-        rewrite: (content: string) => string): Promise<SourceInfo> {
-
-    const basename = path.basename(sourcePath, '.sol');
-    const targetPath = path.join(targetDir, `${basename}.${suffix}.sol`);
-    const buffer = await fs.readFile(sourcePath);
-    const original = buffer.toString();
-    const content = rewrite(original);
-    return { path: targetPath, content };
+export async function exemplify(source: Unit, target: Unit) {
+    const transform = exemplifyTransform(target.getDirname());
+    await source.rewriteInto(transform, target);
 }
 
 function internalizeTransform(dirname: string) {
