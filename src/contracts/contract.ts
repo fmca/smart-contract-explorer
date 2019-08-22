@@ -105,7 +105,7 @@ export abstract class Contract {
         const args = [ sig, ...inputs.map(i => this.argument(i)) ];
         const extra = value === undefined ? '' : `.value(${value})`;
         // TODO what about the value?
-        return `address(${lhs}).call(abi.encodeWithSignature(${args.join(', ')}));`;
+        return `address(${lhs}).call${extra}(abi.encodeWithSignature(${args.join(', ')}));`;
     }
 
     constructorCall(operation: Operation, target: string) {

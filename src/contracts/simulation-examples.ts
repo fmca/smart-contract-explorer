@@ -264,6 +264,6 @@ export class SimulationExamplesContract extends Contract {
 
         return FunctionDefinition.isConstructor(method)
             ? `${prefix} = ${this.constructorCall(operation, name)}`
-            : this.methodCall(operation, prefix);
+            : this.lowLevelCall(operation, prefix);
     }
 }
