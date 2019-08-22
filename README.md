@@ -16,6 +16,8 @@ brew install node opam
 ## Setup
 
 ```bash
+$ git submodule init
+$ git submodule update
 $ npm link
 ```
 
