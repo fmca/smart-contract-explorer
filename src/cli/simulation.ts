@@ -5,14 +5,13 @@ require('source-map-support').install();
 import yargs from 'yargs';
 import path from 'path';
 import fs from 'fs-extra';
-import cp from 'child_process';
 import * as Examples from '../simulation/examples';
 import * as Product from '../simulation/product';
 import { SimulationCounterExample } from '../simulation/counterexample';
-import { lines } from '../utils/lines';
 import * as Contracts from '../contracts/conversions';
-import { fromFile } from '../frontend/compile';
 import { Unit } from '../frontend/unit';
+import { Run } from '../utils/run';
+import { annotate } from '../contracts/rewriting';
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()
@@ -69,7 +68,6 @@ const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .help('help')
     .argv;
 
-const { verbose } = args;
 
 async function main() {
     try {
@@ -138,21 +136,21 @@ async function generateExamples() {
     console.log(`---`);
 
     const { states } = args;
-    const { 'SimulationExamples.sol': path, ...ps } = await getPaths();
+    const paths = await getPaths();
     const source = new Unit(args.source!);
     const target = new Unit(args.target!);
-    const output = new Unit(path);
+    const output = new Unit(paths['SimulationExamples.sol']);
     const parameters = { source, target, output, states };
     const { units, examples: { positive, negative }, fields, seedFeatures } = await Examples.generateExamples(parameters);
 
     for (const unit of units)
         await unit.writeContent();
 
-    await fs.writeFile(ps[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(ps[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(ps[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');
-    await fs.writeFile(ps[`fields.txt`], fields.join(`\n`) + '\n');
-    await fs.writeFile(ps[`constants.txt`], '');
+    await fs.writeFile(paths[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
+    await fs.writeFile(paths[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
+    await fs.writeFile(paths[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');
+    await fs.writeFile(paths[`fields.txt`], fields.join(`\n`) + '\n');
+    await fs.writeFile(paths[`constants.txt`], '');
 
     console.log();
 }
@@ -169,37 +167,29 @@ async function synthesizeSimulation() {
         ligArgs.push(`--${path.basename(file, '.txt')}`, paths[file])
 
     const { success, output, errors } = await run(`lig-symbolic-infer`, ...ligArgs);
-    console.log();
 
     if (!success)
         throw Error(`Unable to synthesize simulation relation: ${errors.join('\n')}`);
 
-    const metadata = {
-        examples: await fromFile(paths['SimulationExamples.sol']),
-        source: await fromFile(args.source!),
-        target: await fromFile(args.target!)
-    };
-    function findVariable(name: string) { return metadata.examples.findFunction(name); }
+    const source = new Unit(args.source!);
+    const target = new Unit(args.target!);
+    const examples = new Unit(paths['SimulationExamples.sol']);
+    const clauses = await Contracts.parseSimulation(source, target, examples, output);
 
-    const relation = output.map(expr => {
-        const code = Contracts.fromUnparsedExpression(expr, { findVariable });
-        return code
-            .replace(/\bspec\$/, `${metadata.target.getName()}.`)
-            .replace(/\bimpl\$/, `${metadata.source.getName()}.`);
-    });
-
-    console.log(`---`);
     console.log(`Computed simulation relation:`);
     console.log();
 
-    for (const clause of relation)
+    for (const clause of clauses)
         console.log(`  `, clause);
-
-    console.log();
-    console.log(`---`);
     console.log();
 
-    return output;
+    const annotated = source.suffix('.annotated');
+    await annotate(source, clauses, annotated);
+    await annotated.writeContent();
+    console.log(`Annotated source contract: ${annotated.getPath()}`);
+    console.log();
+
+    return annotated;
 }
 
 async function verifySimulation() {
@@ -207,68 +197,25 @@ async function verifySimulation() {
     console.log(`Checking simulation relation`);
     console.log(`---`);
 
-    const { 'SimulationCheck.sol': path } = await getPaths();
-    const source = new Unit(args.source!);
+    const paths = await getPaths();
+    const source = args.synthesize
+        ? new Unit(args.source!).suffix('.annotated')
+        : new Unit(args.source!);
     const target = new Unit(args.target!);
-    const output = new Unit(path);
-
+    const output = new Unit(paths['SimulationCheck.sol']);
     const parameters = { source, target, output };
     const { units } = await Product.getSimulationCheckContract(parameters);
 
     for (const unit of units)
         await unit.writeContent();
 
-    const { success, output: lines } = await run(`solc-verify.py`, path);
-    console.log();
+    const { success, output: lines } = await run(`solc-verify.py`, output.getPath());
 
     if (!success)
         throw Error(`Unable to verify simulation relation: ${lines.join('\n')}`);
 
-    console.log(`---`);
-    console.log(`Verified simulation relation`);
-    console.log(`---`);
+    console.log(`Simulation relation verified`);
 }
 
-
-async function run(command: string, ...args: readonly string[]) {
-    const options = {};
-    const childProcess = cp.spawn(command, args, options);
-    const output: string[] = [];
-    const errors: string[] = [];
-    const { stdout, stderr } = childProcess;
-
-    const result = new Promise<boolean>((resolve, reject) => {
-        childProcess.on('exit', (code, signal) => {
-            if (signal !== null)
-                reject(signal);
-
-            else if (code !== null)
-                resolve(code === 0);
-
-            else
-                throw Error(`Unexpected null signal and return code.`);
-        });
-    });
-
-    for await (const line of lines(stdout)) {
-        output.push(line);
-
-        if (verbose)
-            console.log(line);
-    }
-
-    for await (const line of lines(stderr)) {
-        errors.push(line);
-
-        if (verbose)
-            console.error(line);
-    }
-
-    return result.then(success => ({
-        success,
-        output,
-        errors
-    }));
-}
-
+const run = Run(console, args.verbose);
 main();

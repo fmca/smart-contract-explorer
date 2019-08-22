@@ -2,6 +2,16 @@ import { Debugger } from '../utils/debug';
 import { Unit } from '../frontend/unit';
 const debug = Debugger(__filename);
 
+export async function annotate(unit: Unit, clauses: string[], annotated: Unit) {
+    const specification = clauses.map(c => `/// @notice simulation ${c}`).join('\n');
+
+    function rewrite(content: string) {
+        return content
+            .replace(/^(?=\bcontract\b)/m, `${specification}\n`);
+    }
+    await unit.rewriteInto(rewrite, annotated);
+}
+
 export async function internalize(source: Unit, target: Unit) {
     const transform = internalizeTransform(target.getDirname());
     await source.rewriteInto(transform, target);

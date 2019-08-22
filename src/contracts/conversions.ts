@@ -1,6 +1,7 @@
 import { Node, NodeVisitor, Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional, Assignment, FunctionCall } from '../solidity';
 import * as Solidity from '../solidity/conversions';
 import { Expr } from '../sexpr/expression';
+import { Unit } from '../frontend/unit';
 
 export function fromUnparsedExpression(string: string, scope?: Solidity.Scope): string {
     const expression = Expr.parse(string);
@@ -17,6 +18,26 @@ export function fromNode(node: Node): string {
     const visitor = new NodeToContract();
     const contract = visitor.visit(node);
     return contract;
+}
+
+export async function parseSimulation(source: Unit, target: Unit, examples: Unit, lines: string[]) {
+
+    const metadata = {
+        source: await source.getMetadata(),
+        target: await target.getMetadata(),
+        examples: await examples.getMetadata()
+    };
+
+    function findVariable(name: string) { return metadata.examples.findFunction(name); }
+
+    const simulation = lines.map(expr => {
+        const code = fromUnparsedExpression(expr, { findVariable });
+        return code
+            .replace(/\bimpl\$/, `${metadata.source.getName()}.`)
+            .replace(/\bspec\$/, `${metadata.target.getName()}.`);
+    });
+
+    return simulation;
 }
 
 class NodeToContract extends NodeVisitor<string> {

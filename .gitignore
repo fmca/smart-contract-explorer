@@ -1,2 +1,5 @@
 /node_modules
 /dist
+*.annotated.sol
+*.internalized.sol
+*.exemplified.sol

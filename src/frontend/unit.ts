@@ -6,7 +6,10 @@ import path from "path";
 export class Unit {
     protected updated = false;
 
-    constructor(protected path: string, protected content?: string, protected metadata?: Metadata) {}
+    constructor(protected path: string, protected content?: string, protected metadata?: Metadata) {
+        if (content !== undefined)
+            this.updated = true;
+    }
 
     getPath() {
         return this.path;
