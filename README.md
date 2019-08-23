@@ -10,7 +10,8 @@ Exploring behaviors of Solidity smart contracts.
 
 There are available from various package managers, e.g., from [Homebrew](https://brew.sh):
 ```bash
-brew install node opam
+$ brew install node opam
+$ opam init
 ```
 
 ## Setup
