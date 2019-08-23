@@ -34,7 +34,7 @@ export class Evaluator {
 
     async listen() {
         for await (const line of lines(process.stdin)) {
-            debug(`line: %s`, line);
+            debug(`line: %o`, line);
             const request = this.parseRequest(line);
             debug(`request: %o`, request);
             const response = await this.processRequest(request);
@@ -71,6 +71,7 @@ export class Evaluator {
 
         const [ exampleString, exprString ] = split;
         const example: AbstractExample = JSON.parse(exampleString);
+        debug(`expression: %o`, exprString);
         const expression = Expr.parse(exprString);
         return { example, expression };
     }

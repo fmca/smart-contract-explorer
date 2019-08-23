@@ -21,7 +21,7 @@ export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<strin
 
             const prefix = `${metadata.getName()}$${name}`;
 
-            yield `${prefix}: ${type(typeName)}`;
+            yield `"${prefix}": ${type(typeName)}`;
 
             if (Solidity.isMapping(variable.typeName) &&
                 !Solidity.isElementaryTypeName(variable.typeName.valueType)) {
@@ -44,7 +44,7 @@ export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<strin
 
         if (Solidity.isElementaryTypeName(typeName)) {
             if (Solidity.isIntegerType(typeName.name))
-                yield `__verifier_sum_${typeName.name}(${prefix}): Sum`;
+                yield `"__verifier_sum_${typeName.name}(${prefix})": Sum`;
 
             return;
         }

@@ -1,3 +1,6 @@
+import { Debugger } from '../utils/debug';
+const debug = Debugger(__filename);
+
 interface App extends Array<Expr> { }
 export type Expr = App | string;
 export type Boperators = '+' | '-' | '*' | '/' | '||' | '&&' | '==' | '!=' | '<' | '<=' | '>=' | '>';
@@ -8,15 +11,52 @@ export namespace Expr {
         return Array.isArray(expr);
     }
 
-    export function parse(s: string): Expr {
-        //const alphabet = /[\w\-+\|\/\*\!\=\<\>\&]/;
-        // const alphabet = '[\w\-\+\/\*\!\=\<\>\_]+';
-        const json = s
-            .replace(/([\w\-\+\/\*\!\=\<\>\_.$]+)/g, '"$1"')
-            .replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1')
-            .replace(/[(]/g, '[')
-            .replace(/[)]/g, ']');
+    export function parse(string: string): Expr {
+        debug(`original:        %o`, string);
+
+        string = quoteUnquotedIdentifiers(string);
+        debug(`quoted:          %o`, string);
+
+        string = separateTermsByCommas(string);
+        debug(`comma-separated: %o`, string);
+
+        const json = replaceUnquotedParenthesesByBrackets(string);
+        debug(`parenthesized:   %o`, json);
+
         return JSON.parse(json);
+    }
+
+    function quoteUnquotedIdentifiers(string: string) {
+        return string.replace(/(?<=[ (])([\w\-\+\/\*\!\=\<\>\_.$]+)(?=[ )])/g, '"$1"');
+    }
+
+    function separateTermsByCommas(string: string) {
+        return string.replace(/(?<=[)"])(\s+)(?=[("])/g, ',$1');
+    }
+
+    function replaceUnquotedParenthesesByBrackets(string: string) {
+        let quoted = false;
+        let symbols = [''];
+
+        for (const symbol of string) {
+
+            if (symbol === '"')
+                quoted = !quoted;
+
+            if (quoted)
+                symbols.push(symbol);
+
+            else if (symbol === '(')
+                symbols.push('[');
+
+            else if (symbol === ')')
+                symbols.push(']');
+
+            else
+                symbols.push(symbol);
+        }
+
+        return symbols.join('');
     }
 
     export function equals(e1: Expr, e2: Expr) {
