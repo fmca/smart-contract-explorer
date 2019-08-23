@@ -4,7 +4,6 @@ import { AbstractExample, SimulationExample, AbstractExamples } from "../simulat
 import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName } from "../solidity";
 import { ValueGenerator } from "../model/values";
 import { Contract, ContractInfo, block } from "./contract";
-import { type } from "../sexpr/pie";
 import { Operation } from '../model';
 import { Unit } from '../frontend/unit';
 
@@ -83,77 +82,6 @@ export class SimulationExamplesContract extends Contract {
                 members.push(...lines);
 
         return members.flat();
-    }
-
-    * storageAccessorsForPie(): Iterable<string> {
-        for (const metadata of [this.source, this.target]) {
-            for (const variable of metadata.getVariables()) {
-                if (variable.constant)
-                    continue;
-
-                if (isMapping(variable.typeName) &&
-                    !isElementaryTypeName(variable.typeName.valueType)) {
-
-                    console.error(`Warning: did not generate accessor for mapping: ${variable.name}`);
-                    continue;
-                }
-
-                const { name, typeName } = variable;
-                const { typeDescriptions: { typeString } } = typeName;
-                debug(`storageAccessorForPie for %o of type %O`, name, typeName);
-
-                const prefix = `${metadata.getName()}$${name}`;
-
-                yield `${prefix}: ${type(typeName)}`;
-
-                if (isMapping(typeName)) {
-                    for (const path of this.storageAccessorPaths(prefix, variable.typeName, metadata)) {
-                        debug(`path: %o`, path);
-                        yield path;
-                    }
-                }
-            }
-        }
-    }
-
-    * storageAccessorPaths(prefix: string, typeName: TypeName, metadata: Metadata): Iterable<string> {
-        const { typeDescriptions: { typeString } } = typeName;
-
-        if (isElementaryTypeName(typeName)) {
-            if (isIntegerType(typeName.name))
-                yield `${prefix}: ${type(typeName)}`;
-
-            return;
-        }
-
-        if (isUserDefinedTypeName(typeName)) {
-            const { name } = typeName;
-
-            const decl = metadata.findStruct(name);
-
-            if (decl === undefined)
-                throw Error(`Unknown struct name: ${name}`);
-
-            for (const { name, typeName } of decl.members)
-                for (const path of this.storageAccessorPaths(`${prefix}.${name}`, typeName, metadata))
-                    yield path;
-
-            return;
-        }
-
-        if (isMapping(typeName)) {
-            const { keyType, valueType } = typeName;
-
-            if (!isElementaryTypeName(keyType))
-                throw Error(`Unexpected type name: ${keyType}`);
-
-            for (const path of this.storageAccessorPaths(`${prefix}[__verifier_idx_${keyType.name}]`, valueType, metadata))
-                yield path;
-
-            return;
-        }
-
-        throw Error(`Unexpected type: ${typeString}`);
     }
 
     * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {

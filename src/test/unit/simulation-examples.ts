@@ -4,6 +4,7 @@ import * as Compile from '../../frontend/compile';
 import { ValueGenerator } from '../../model';
 import { SimulationExample } from '../../simulation/examples';
 import { Unit } from '../../frontend/unit';
+import { storageAccessorsForPie } from '../../simulation/accessors';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
@@ -22,7 +23,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (int => int) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Int,Int]`, `S$x[__verifier_idx_int]: Int`, `T$y: Int`]
+            [`S$x: Map[Int,Int]`, `__verifier_sum_int(S$x[__verifier_idx_int]): Sum`, `T$y: Int`]
         );
     });
 
@@ -30,7 +31,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (address => int) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Address,Int]`, `S$x[__verifier_idx_address]: Int`, `T$y: Int`]
+            [`S$x: Map[Address,Int]`, `__verifier_sum_int(S$x[__verifier_idx_address]): Sum`, `T$y: Int`]
         );
     });
 
@@ -63,25 +64,17 @@ describe('simulation examples', function() {
 type Contract = { name: string, body: string };
 
 async function testFields(source: Contract, target: Contract, expected: string[]) {
-    const contract = await getExamplesContract(source, target);
-    const actual = contract.storageAccessorsForPie();
+    const actual = [
+        ...await storageAccessorsForPie(getUnit(source)),
+        ...await storageAccessorsForPie(getUnit(target))
+    ];
     assert.deepEqual(new Set(actual), new Set(expected));
 }
 
-async function getExamplesContract(source: Contract, target: Contract) {
-    const s = await getContract(source);
-    const t = await getContract(target);
-    const unit = new Unit('');
-    const values = new ValueGenerator([]);
-    async function* gen(): AsyncIterable<SimulationExample> {}
-    const contract = new SimulationExamplesContract(s, t, unit, gen, values);
-    return contract;
-}
-
-async function getContract(example: Contract) {
+function getUnit(example: Contract) {
     const { name, body } = example;
     const path = `${name}.sol`;
     const content = `${pragmas} contract ${name} { ${body} }`;
-    const metadata = await Compile.fromString({ path, content });
-    return metadata;
+    const unit = new Unit(path, content);
+    return unit;
 }

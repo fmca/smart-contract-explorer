@@ -8,6 +8,7 @@ import * as Chain from '../utils/chain';
 import { getProductSeedFeatures, } from './product';
 import { SimulationExamplesContract } from '../contracts';
 import { SimulationCounterExample } from './counterexample';
+import { storageAccessorsForPie } from './accessors';
 import { exemplify } from '../contracts/rewriting';
 import { ValueGenerator } from '../model/values';
 import { FunctionMapping } from './mapping';
@@ -76,11 +77,15 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 
     const examples = await c.getAbstractExamples();
 
-    const fields = [...c.storageAccessorsForPie()];
+    const fields = [
+        ...await storageAccessorsForPie(se),
+        ...await storageAccessorsForPie(te)
+    ];
     const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
 
     return { units, examples, fields, seedFeatures };
 }
+
 
 export class ExampleGenerator {
     factory: ExecutorFactory;
