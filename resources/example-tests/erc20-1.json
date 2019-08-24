@@ -3,21 +3,19 @@
     "source": "Token/ERC20-molochventures/ERC20.impl.sol",
     "target": "Token/ERC20-openzeppelin/ERC20.spec.sol",
     "fields": [
-        "ERC20$allowances: Map[Address,Map[Address,Int]]",
-        "ERC20$allowances[__verifier_idx_address][__verifier_idx_address]: Int",
-        "ERC20$balances: Map[Address,Int]",
-        "ERC20$balances[__verifier_idx_address]: Int",
-        "ERC20$burners: Map[Address,Bool]",
-        "ERC20$minters: Map[Address,Bool]",
-        "Token$_allowed: Map[Address,Map[Address,Int]]",
-        "Token$_allowed[__verifier_idx_address][__verifier_idx_address]: Int",
-        "Token$_balances: Map[Address,Int]",
-        "Token$_balances[__verifier_idx_address]: Int",
-        "Token$_totalSupply: Int"
+        "\"ERC20$allowances\": Map[Address,Map[Address,Int]]",
+        "\"ERC20$balances\": Map[Address,Int]",
+        "\"ERC20$burners\": Map[Address,Bool]",
+        "\"ERC20$minters\": Map[Address,Bool]",
+        "\"Token$_allowed\": Map[Address,Map[Address,Int]]",
+        "\"Token$_balances\": Map[Address,Int]",
+        "\"Token$_totalSupply\": Int",
+        "\"__verifier_sum_uint(ERC20$balances[__verifier_idx_address])\": Sum",
+        "\"__verifier_sum_uint(Token$_balances[__verifier_idx_address])\": Sum"
     ],
     "seedFeatures": [
-        "(= Token$_balances ERC20$balances)",
-        "(= Token$_allowed ERC20$allowances)"
+        "(= spec$allowances impl$_allowed)",
+        "(= spec$balances impl$_balances)"
     ]
 }
 

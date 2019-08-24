@@ -1,5 +1,6 @@
 /node_modules
 /dist
+/_build
 *.annotated.sol
 *.internalized.sol
 *.exemplified.sol

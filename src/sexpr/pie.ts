@@ -36,7 +36,7 @@ function primitiveType(name: ElementaryType) {
         return `Int`;
 
     if (name === 'bool')
-        return `Int`;
+        return `Bool`;
 
     if (name === 'string')
         return `String`;

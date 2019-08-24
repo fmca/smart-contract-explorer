@@ -15,7 +15,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `int x;` },
             { name: `T`, body: `int y; int z;` },
-            [`S$x: Int`, `T$y: Int`, `T$z: Int`]
+            [`"S$x": Int`, `"T$y": Int`, `"T$z": Int`]
         );
     });
 
@@ -23,7 +23,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (int => int) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Int,Int]`, `__verifier_sum_int(S$x[__verifier_idx_int]): Sum`, `T$y: Int`]
+            [`"S$x": Map[Int,Int]`, `"__verifier_sum_int(S$x[__verifier_idx_int])": Sum`, `"T$y": Int`]
         );
     });
 
@@ -31,7 +31,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (address => int) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Address,Int]`, `__verifier_sum_int(S$x[__verifier_idx_address]): Sum`, `T$y: Int`]
+            [`"S$x": Map[Address,Int]`, `"__verifier_sum_int(S$x[__verifier_idx_address])": Sum`, `"T$y": Int`]
         );
     });
 
@@ -39,7 +39,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (address => mapping (int => int)) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Address,Map[Int,Int]]`, `T$y: Int`]
+            [`"S$x": Map[Address,Map[Int,Int]]`, `"T$y": Int`]
         );
     });
 
@@ -47,7 +47,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `mapping (address => address) x;` },
             { name: `T`, body: `int y;` },
-            [`S$x: Map[Address,Address]`, `T$y: Int`]
+            [`"S$x": Map[Address,Address]`, `"T$y": Int`]
         );
     });
 
@@ -55,7 +55,7 @@ describe('simulation examples', function() {
         await testFields(
             { name: `S`, body: `int x;` },
             { name: `T`, body: `int y; int constant Z = 0;` },
-            [`S$x: Int`, `T$y: Int`]
+            [`"S$x": Int`, `"T$y": Int`]
         );
     });
 
