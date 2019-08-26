@@ -4,11 +4,12 @@ Exploring behaviors of Solidity smart contracts.
 
 ## Requirements
 
+* [solc-verify](https://github.com/SRI-CSL/solidity)
 * [Node.js](https://nodejs.org/en/)
 * [Ocaml](https://ocaml.org)
 * [OCaml Package Manager](https://opam.ocaml.org)
 
-There are available from various package managers, e.g., from [Homebrew](https://brew.sh):
+While `solc-verify` must currently be built from source, the remainder are available from various package managers, e.g., from [Homebrew](https://brew.sh):
 ```bash
 $ brew install node opam
 $ opam init --compiler=4.05.0
