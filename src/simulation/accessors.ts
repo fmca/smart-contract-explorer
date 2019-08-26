@@ -4,10 +4,18 @@ const debug = Debugger(__filename);
 import { Unit } from '../frontend/unit';
 import * as Solidity from '../solidity';
 import { type } from "../sexpr/pie";
-import { TypeName } from '../solidity';
+import { ExpressionData } from './simulation-data';
+import { Metadata } from '../frontend/metadata';
 
-export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<string>> {
+export type PathElement = Solidity.ElementaryTypeName | string;
+export type Path = {
+    elements: PathElement[];
+    typeName: Solidity.ElementaryTypeName;
+}
+
+export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<ExpressionData>> {
     const metadata = await unit.getMetadata();
+    const paths = await sumExpressionPaths(unit);
     return storageAccessors();
 
     function * storageAccessors() {
@@ -21,47 +29,64 @@ export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<strin
 
             const prefix = `${metadata.getName()}$${name}`;
 
-            yield `"${prefix}": ${type(typeName)}`;
+            yield {
+                id: prefix,
+                pieType: type(typeName),
+                evaluatorExpression: prefix,
+                verifierExpression: prefix
+            };
+        }
 
-            if (Solidity.isMapping(variable.typeName) &&
-                !Solidity.isElementaryTypeName(variable.typeName.valueType)) {
+        for (const { elements, typeName } of paths) {
+            const path = elements.map(elem => typeof(elem) === 'string' ? elem : elem.name);
+            const id = ['sum', metadata.name, ...path].join('$');
+            const pieType = 'Sum';
+            const evaluatorExpression = id;
+            const accessor = [metadata.name, '$', ...path].map(p => p.replace(/^(u?int\d*|address)$/, '[__verifier_idx_$1]')).join('');
+            const type = typeName.name;
+            const verifierExpression = `__verifier_sum_${type}(${accessor})`;
+            yield { id, pieType, evaluatorExpression, verifierExpression };
+        }
+    }
+}
 
-                console.error(`Warning: did not sum accessor for mapping: ${variable.name}`);
+export async function sumExpressionPaths(unit: Unit): Promise<Iterable<Path>> {
+    const metadata = await unit.getMetadata();
+    return sumExpressionPathsOfMetadata(metadata);
+}
+
+export function * sumExpressionPathsOfMetadata(metadata: Metadata): Iterable<Path> {
+    for (const variable of metadata.getVariables()) {
+        const { name, typeName } = variable;
+        if (Solidity.isMapping(typeName)) {
+            if (Solidity.isMapping(typeName.valueType)) {
                 continue;
             }
 
-            if (Solidity.isMapping(typeName)) {
-                for (const path of storageAccessorPaths(prefix, variable.typeName)) {
-                    debug(`path: %o`, path);
-                    yield path;
-                }
-            }
+            for (const path of paths([name], typeName))
+                yield path;
         }
     }
 
-    function * storageAccessorPaths(prefix: string, typeName: TypeName): Iterable<string> {
+    function * paths(elements: PathElement[], typeName: Solidity.TypeName): Iterable<Path> {
         const { typeDescriptions: { typeString } } = typeName;
 
         if (Solidity.isElementaryTypeName(typeName)) {
             if (Solidity.isIntegerType(typeName.name))
-                yield `"__verifier_sum_${typeName.name}(${prefix})": Sum`;
+                yield { elements, typeName };
 
             return;
         }
 
         if (Solidity.isUserDefinedTypeName(typeName)) {
             const { name } = typeName;
-
             const decl = metadata.findStruct(name);
-
             if (decl === undefined)
                 throw Error(`Unknown struct name: ${name}`);
 
             for (const { name, typeName } of decl.members)
-                for (const path of storageAccessorPaths(`${prefix}.${name}`, typeName))
+                for (const path of paths([...elements, name], typeName))
                     yield path;
-
-            return;
         }
 
         if (Solidity.isMapping(typeName)) {
@@ -70,7 +95,7 @@ export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<strin
             if (!Solidity.isElementaryTypeName(keyType))
                 throw Error(`Unexpected type name: ${keyType}`);
 
-            for (const path of storageAccessorPaths(`${prefix}[__verifier_idx_${keyType.name}]`, valueType))
+            for (const path of paths([...elements, keyType], valueType))
                 yield path;
 
             return;

@@ -115,6 +115,7 @@ const files = <const>[
     'seed-features.txt',
     'fields.txt',
     'constants.txt',
+    'simulation-data.json',
     'SimulationExamples.sol',
     'SimulationCheck.sol'
 ];
@@ -141,11 +142,21 @@ async function generateExamples() {
     const target = new Unit(args.target!);
     const output = new Unit(paths['SimulationExamples.sol']);
     const parameters = { source, target, output, states };
-    const { units, examples: { positive, negative }, fields, seedFeatures } = await Examples.generateExamples(parameters);
+    const { units, fields, seedFeatures, simulationData } = await Examples.generateExamples(parameters);
+
+    // TODO streamline this
+    const positive = simulationData.examples
+        .filter(({ positive }) => positive)
+        .map(({ id }) => ({ exampleId: id, dataPath: paths[`simulation-data.json`] }));
+
+    const negative = simulationData.examples
+        .filter(({ positive }) => !positive)
+        .map(({ id }) => ({ exampleId: id, dataPath: paths[`simulation-data.json`] }));
 
     for (const unit of units)
         await unit.writeContent();
 
+    await fs.writeFile(paths[`simulation-data.json`], JSON.stringify(simulationData, null, 4));
     await fs.writeFile(paths[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(paths[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(paths[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');

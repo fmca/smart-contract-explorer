@@ -39,7 +39,7 @@ describe('explorer integration', function() {
             } else {
                 await assert.doesNotReject(async () => {
                     const result = await generateExamples(parameters);
-                    const { examples: { positive, negative }, fields, seedFeatures } = result;
+                    const { fields, seedFeatures } = result;
 
                     if (expectedFields !== undefined)
                         assert.deepEqual(new Set(fields), new Set(expectedFields));

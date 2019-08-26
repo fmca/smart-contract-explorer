@@ -31,7 +31,7 @@ contract C { function f(${name} x) public view returns (bool) { return ${solExpr
 }
 
 function fieldsToGetters(expression: string) {
-    return expression.replace(/(\w+)[.$](\w+)/g, 'x.$1$$$2()');
+    return expression.replace(/(?<![\w.$])(\w([\w.$]*)\w)(?![\w.$])/g, 'x.$1()');
 }
 
 export async function extendWithPredicate(contract: Metadata, feature: Expr): Promise<[Metadata, string]> {

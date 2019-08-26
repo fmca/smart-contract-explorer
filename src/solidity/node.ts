@@ -36,3 +36,7 @@ export interface Node {
 export function node<T extends NodeType>(nodeType: T, id = -1, src = ''): Node & { nodeType: T } {
     return { nodeType, id, src } as Node & { nodeType: T };
 }
+
+export function isNode(node: any): node is Node {
+    return node.nodeType !== undefined;
+}

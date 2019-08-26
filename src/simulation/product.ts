@@ -49,8 +49,8 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
 
 export function getProductSeedFeatures(impl: Metadata, spec: Metadata): [string, string][] {
     const features: [string, string][] = [];
-    const specBodyToExpr = getBodyToExpr('spec', spec);
-    const implBodyToExpr = getBodyToExpr('impl', impl);
+    const specBodyToExpr = getBodyToExpr(spec.name, spec);
+    const implBodyToExpr = getBodyToExpr(impl.name, impl);
 
     for (const m1 of spec.getFunctions()) {
         if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
@@ -123,7 +123,7 @@ function fix(f: (_: Expr) => Expr, expr: Expr): Expr {
     return expr;
 }
 
-function getBodyToExpr(mode: 'impl' | 'spec', metadata: Metadata) {
+function getBodyToExpr(mode: string, metadata: Metadata) {
     const ids = fieldNames(metadata);
 
     return function bodyToExpr(block: Block): string {

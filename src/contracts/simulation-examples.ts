@@ -1,11 +1,12 @@
 import { Debugger } from '../utils/debug';
 import { Metadata } from "../frontend/metadata";
 import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName } from "../solidity";
-import { ValueGenerator } from "../model/values";
+import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName, index, ElementaryTypeName, isNode } from "../solidity";
+import { ValueGenerator, Value } from "../model/values";
 import { Contract, ContractInfo, block } from "./contract";
 import { Operation } from '../model';
 import { Unit } from '../frontend/unit';
+import { PathElement, sumExpressionPaths, sumExpressionPathsOfMetadata } from '../simulation/accessors';
 
 const debug = Debugger(__filename);
 
@@ -77,11 +78,31 @@ export class SimulationExamplesContract extends Contract {
 
         debug(`generated ${members.length - 2} example methods`);
 
-        for (const metadata of [this.source, this.target])
+        for (const metadata of [this.source, this.target]) {
             for (const lines of this.storageAccessorMethodDefinitions(metadata))
                 members.push(...lines);
 
+            for (const lines of this.sumAccessorMethodDefinitions(metadata))
+                members.push(...lines);
+        }
+
+
         return members.flat();
+    }
+
+    * sumAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
+        for (const { elements, typeName } of sumExpressionPathsOfMetadata(metadata)) {
+            const { source, name, expr, type } = this.sumAccessor(metadata, elements, typeName);
+            const result = [...expr];
+            result.splice(0, 1, `return ${expr[0]}`);
+            result.splice(-1, 1, `${expr[expr.length-1]};`);
+            yield [
+                ``,
+                `function ${name}() public view returns (${type}) {`,
+                ...block(4)(...result),
+                `}`
+            ];
+        }
     }
 
     * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
@@ -91,7 +112,7 @@ export class SimulationExamplesContract extends Contract {
             result.splice(-1, 1, `${expr[expr.length-1]};`);
             yield [
                 ``,
-                `function ${source}$${name}() public view returns (${type}) {`,
+                `function ${metadata.name}$${name}() public view returns (${type}) {`,
                 ...block(4)(...result),
                 `}`
             ];
@@ -136,6 +157,41 @@ export class SimulationExamplesContract extends Contract {
         }
 
         throw Error(`Unexpected type name: ${typeString}`);
+    }
+
+    sumAccessor(metadata: Metadata, elements: PathElement[], typeName: ElementaryTypeName) {
+        const path = elements.map(p => isNode(p) && isElementaryTypeName(p) ? p.name : p);
+        const name = ['sum', metadata.name, ...path].join('$');
+        const source = metadata === this.source ? 'impl' : 'spec';
+        const indexTypes = elements.filter(p => typeof(p) !== 'string') as ElementaryTypeName[];
+        const indexLists = this.values.valuesOfTypes(indexTypes);
+
+        const expressions: string[] = [];
+        for (const indexList of indexLists) {
+            let expressionParts = [source];
+            for (const elem of elements) {
+                if (isNode(elem)) {
+                    const typedValue = indexList.pop();
+                    if (typedValue === undefined || !Value.isElementaryValue(typedValue))
+                        throw Error(`!`);
+
+                    expressionParts.push(`(${typedValue.value.toString()})`);
+
+                } else {
+                    expressionParts.push(`.${elem}`);
+                }
+            }
+            expressions.push(expressionParts.join(''));
+        }
+
+        const expr = [
+            ...block(4)(
+                ...expressions.slice(0,-1).map(v => `${v} +`),
+                ...expressions.slice(-1)
+            ),
+        ];
+        const { name: type } = typeName;
+        return { source, name, expr, type };
     }
 
     arrayAccessorFunctionName(typeName: ArrayTypeName): string {
