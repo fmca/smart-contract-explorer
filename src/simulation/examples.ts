@@ -30,22 +30,17 @@ interface Result {
     units: Unit[];
 }
 
-type Kind = 'positive' | 'negative';
-
-export type AbstractExample = {
+export interface AbstractExample {
     id: string;
 }
 
-export type AbstractExamples = {
-    positive: AbstractExample[];
-    negative: AbstractExample[];
-}
-
-export type SimulationExample = {
+export interface SimulationExample extends AbstractExample {
     source: State;
     target: State;
     kind: Kind;
 };
+
+type Kind = 'positive' | 'negative';
 
 export async function generateExamples(parameters: Parameters): Promise<Result> {
     const { source: s, target: t, states, output } = parameters;
@@ -62,17 +57,15 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 
     const chain = new Chain.BlockchainInterface();
     const accounts = await chain.getAccounts();
-
-    const generator = new ExampleGenerator(chain, states)
-    const fn = () => generator.simulationExamples(source, target);
-
     const values = new ValueGenerator(accounts);
 
-    const c = new SimulationExamplesContract(source, target, output, fn, values);
+    const generator = new ExampleGenerator(chain, states)
+    const examples = await generator.getExamples(source, target);
+
+    const c = new SimulationExamplesContract(source, target, output, examples, values);
     await output.setContent(c);
 
     const examplesContractPath = output.getPath();
-    const examples = await c.getAbstractExamples();
     const expressions = [
         ...await storageAccessorsForPie(se),
         ...await storageAccessorsForPie(te)
@@ -86,10 +79,12 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
 export class ExampleGenerator {
     factory: ExecutorFactory;
     limiters: LimiterFactory;
+    getId: IdGenerator;
 
     constructor(public chain: Chain.BlockchainInterface, states: number) {
         this.factory = new ExecutorFactory(chain);
         this.limiters = new StateCountLimiterFactory(states);
+        this.getId = idGenerator();
     }
 
     async getExplorer() {
@@ -97,9 +92,20 @@ export class ExampleGenerator {
         return new Explorer(this.factory, accounts);
     }
 
+    async getExamples(source: Metadata, target: Metadata) {
+        const positive: SimulationExample[] = [];
+        const negative: SimulationExample[] = [];
+
+        for await (const example of this.simulationExamples(source, target))
+            (example.kind === 'positive' ? positive : negative).push(example);
+
+        const examples = { positive, negative };
+        return examples;
+    }
+
     async * simulationExamples(source: Metadata, target: Metadata): AsyncIterable<SimulationExample> {
         const explorer = await this.getExplorer();
-        const context = new Context();
+        const context = new Context(this.getId);
         const { limiters } = this;
         const workList: SimulationExample[] = [];
         const mapping = FunctionMapping.getMapping(source, target);
@@ -115,22 +121,23 @@ export class ExampleGenerator {
         }
 
         debug(`exploring target states`);
-        const counts = { positive: 0, negative: 0 };
 
         for await (const transition of explorer.transitions(targetParams)) {
             const { post: t } = transition;
             context.addTarget(transition);
 
             for (const s of context.getSourceTraceEquivalent(t)) {
-                counts.positive++;
-                yield { source: s, target: t, kind: 'positive' };
+                const kind = 'positive';
+                const id = this.getId(kind);
+                yield { id, source: s, target: t, kind };
             }
 
-            for (const s of context.getSourceObservationDistinct(t))
-                workList.push({ source: s, target: t, kind: 'negative' });
+            for (const s of context.getSourceObservationDistinct(t)) {
+                const kind = 'negative';
+                const id = this.getId(kind);
+                workList.push({ id, source: s, target: t, kind });
+            }
         }
-
-        debug(`generated ${counts.positive} positive examples`);
 
         while (workList.length > 0) {
             const example = workList.shift()!;
@@ -140,7 +147,6 @@ export class ExampleGenerator {
             if (source.trace.equals(target.trace))
                 throw new SimulationCounterExample(source, target);
 
-            counts.negative++;
             yield example;
 
             for (const pred of context.getNewJointPredecessors(example)) {
@@ -149,8 +155,6 @@ export class ExampleGenerator {
                 workList.push(pred);
             }
         }
-
-        debug(`generated ${counts.negative} negative examples`);
     }
 }
 
@@ -159,7 +163,7 @@ class Context {
     predecessorStates: Map<State, Map<string, Set<State>>>;
     exploredPairs: Map<State, Set<State>>;
 
-    constructor() {
+    constructor(public getId: IdGenerator) {
         this.traces = new Map<string, Set<State>>();
         this.predecessorStates = new Map<State, Map<string, Set<State>>>();
         this.exploredPairs = new Map<State, Set<State>>();
@@ -241,11 +245,23 @@ class Context {
                     if (this.exploredPairs.get(sp)!.has(tp))
                         continue;
 
-                    yield { source: sp, target: tp, kind };
+                    const id = this.getId(kind);
+                    yield { id, source: sp, target: tp, kind };
                     this.exploredPairs.get(sp)!.add(tp);
                 }
             }
         }
     }
 
+}
+
+type IdGenerator = (_: Kind) => string;
+
+function idGenerator(): IdGenerator {
+    const counts = { positive: 0, negative: 0 };
+
+    return function(kind: Kind) {
+        const id = `${kind}Example${counts[kind]++}`;
+        return id;
+    }
 }

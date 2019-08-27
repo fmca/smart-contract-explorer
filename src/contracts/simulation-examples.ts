@@ -1,9 +1,9 @@
 import { Debugger } from '../utils/debug';
 import { Metadata } from "../frontend/metadata";
-import { AbstractExample, SimulationExample, AbstractExamples } from "../simulation/examples";
-import { isElementaryTypeName, VariableDeclaration, isMapping, TypeName, isIntegerType, isArrayTypeName, isUserDefinedTypeName, FunctionDefinition, ArrayTypeName, index, ElementaryTypeName, isNode } from "../solidity";
+import { SimulationExample } from "../simulation/examples";
+import { isElementaryTypeName, VariableDeclaration, isMapping, isArrayTypeName, FunctionDefinition, ArrayTypeName, ElementaryTypeName, isNode } from "../solidity";
 import { ValueGenerator, Value } from "../model/values";
-import { Contract, ContractInfo, block } from "./contract";
+import { Contract, block } from "./contract";
 import { Operation } from '../model';
 import { Unit } from '../frontend/unit';
 import { PathElement, sumExpressionPaths } from '../simulation/accessors';
@@ -11,11 +11,9 @@ import { PathElement, sumExpressionPaths } from '../simulation/accessors';
 const debug = Debugger(__filename);
 
 export class SimulationExamplesContract extends Contract {
-    examples?: (SimulationExample & AbstractExample)[];
-
     constructor(public source: Metadata, public target: Metadata,
             public unit: Unit,
-            public generator: () => AsyncIterable<SimulationExample>,
+            public examples: { positive: SimulationExample[], negative: SimulationExample[] },
             public values: ValueGenerator) {
 
         super(unit);
@@ -33,47 +31,17 @@ export class SimulationExamplesContract extends Contract {
         return [] as string[];
     }
 
-    async getExamples(): Promise<(SimulationExample & AbstractExample)[]> {
-        if (this.examples !== undefined) {
-            debug(`re-using existing ${this.examples.length} examples`);
-            return this.examples;
-        }
-
-        debug(`generating examples`);
-
-        this.examples = [];
-        const path = this.unit.getPath();
-        const counts = { positive: 0, negative: 0 };
-
-        for await (const example of this.generator()) {
-            const { kind } = example;
-            const id = `${kind}Example${counts[kind]++}`;
-            const abstract = { id };
-            this.examples.push({ ...example, ...abstract });
-        }
-
-        debug(`generated ${counts.positive}/${counts.negative} positive/negative examples`);
-
-        return this.examples;
-    }
-
-    async getAbstractExamples(): Promise<AbstractExamples> {
-        const examples = await this.getExamples();
-        const positive = examples.filter(e => e.kind === 'positive').map(({ id }) => ({ id }));
-        const negative = examples.filter(e => e.kind === 'negative').map(({ id }) => ({ id }));
-        return { positive, negative };
-    }
-
     async getBody(): Promise<string[]> {
         const members: string[] = [];
 
         members.push(`${this.source.getName()} impl;`);
         members.push(`${this.target.getName()} spec;`);
 
-        for await (const example of await this.getExamples()) {
-            const { id } = example;
-            const lines = this.getMethod(example, id);
-            members.push(...lines);
+        for (const examples of Object.values(this.examples)) {
+            for (const example of examples) {
+                const lines = this.getMethod(example);
+                members.push(...lines);
+            }
         }
 
         debug(`generated ${members.length - 2} example methods`);
@@ -85,7 +53,6 @@ export class SimulationExamplesContract extends Contract {
             for (const lines of this.sumAccessorMethodDefinitions(metadata))
                 members.push(...lines);
         }
-
 
         return members.flat();
     }
@@ -228,13 +195,14 @@ export class SimulationExamplesContract extends Contract {
         ];
     }
 
-    getMethod(example: SimulationExample, name: string): string[] {
+    getMethod(example: SimulationExample): string[] {
         const { source: { trace: { operations: sOps }},
-                target: { trace: { operations: tOps }} } = example;
+                target: { trace: { operations: tOps }},
+                id } = example;
 
         return [
             ``,
-            `function ${name}() public {`,
+            `function ${id}() public {`,
             ...block(4)(
                 ...sOps.map(o => this.call(o, 'impl', this.source.getName())),
                 ...tOps.map(o => this.call(o, 'spec', this.target.getName())),
