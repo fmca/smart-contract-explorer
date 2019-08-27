@@ -53,27 +53,27 @@ export function getProductSeedFeatures(impl: Metadata, spec: Metadata): Feature[
     const specBodyToExpr = getBodyToExpr(spec.name, spec);
     const implBodyToExpr = getBodyToExpr(impl.name, impl);
 
-    for (const m1 of spec.getFunctions()) {
-        if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
-            continue;
-
-        const { name, body: b1 } = m1;
-        const m2 = impl.findFunction(name);
-
-        if (m2 === undefined)
-            continue;
-
+    for (const m2 of spec.getFunctions()) {
         if (m2.visibility !== 'public' || m2.stateMutability !== 'view')
             continue;
 
-        const { body: b2 } = m2;
+        const { name, body: b2 } = m2;
+        const m1 = impl.findFunction(name);
+
+        if (m1 === undefined)
+            continue;
+
+        if (m1.visibility !== 'public' || m1.stateMutability !== 'view')
+            continue;
+
+        const { body: b1 } = m1;
 
         if (b1 === null || b2 === null)
             throw Error(`Unexpected null block(s)`);
 
         try {
-            const e1 = specBodyToExpr(b1);
-            const e2 = implBodyToExpr(b2);
+            const e1 = implBodyToExpr(b1);
+            const e2 = specBodyToExpr(b2);
             const expression = simplify(`(= ${e1} ${e2})`);
             features.push({ expression, name });
 
