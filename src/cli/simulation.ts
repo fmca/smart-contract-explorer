@@ -171,13 +171,8 @@ async function synthesizeSimulation() {
     console.log(`Synthesizing simulation relation`);
     console.log(`---`);
 
-    const ligArgs: string[] = [];
     const paths = await getPaths();
-
-    for (const file of files.filter(f => f.endsWith('.txt')))
-        ligArgs.push(`--${path.basename(file, '.txt')}`, paths[file])
-
-    const { success, output, errors } = await run(`lig-symbolic-infer`, ...ligArgs);
+    const { success, output, errors } = await run(`lig-symbolic-infer`, paths['simulation-data.json']);
 
     if (!success)
         throw Error(`Unable to synthesize simulation relation: ${errors.join('\n')}`);
