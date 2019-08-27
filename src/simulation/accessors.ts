@@ -100,7 +100,8 @@ export function getSumAccessor(prefix: string, path: Path) {
     const id = ['sum', prefix, ...strings].join('$');
     const pieType = 'Sum';
     const evaluatorExpression = id;
-    const accessor = [prefix, '$', ...strings].map(p => p.replace(/^(u?int\d*|address)$/, '[__verifier_idx_$1]')).join('');
+    const access = (elem: string) => elem.match(/^(u?int\d*|address)$/) ? `[__verifier_idx_${elem}]` : `.${elem}`;
+    const accessor = [prefix, '$', strings[0], ...strings.slice(1).map(access)].join('');
     const type = typeName.name;
     const verifierExpression = `__verifier_sum_${type}(${accessor})`;
     const expressionData = { id, pieType, evaluatorExpression, verifierExpression };
