@@ -1,5 +1,6 @@
 {
-    "description": "MultiSigWallet_APIS simulates MultiSigWallet",
+    "description": "MultiSigWallet",
     "source": "MultiSigWallet/MultiSigWallet-oxchild-apis/MultiSigWallet.impl.sol",
-    "target": "MultiSigWallet/MultiSigWallet-consensys/MultiSigWallet.spec.sol"
+    "target": "MultiSigWallet/MultiSigWallet-consensys/MultiSigWallet.spec.sol",
+    "skip": "pending solc-verify enchancements"
 }

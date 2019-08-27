@@ -246,7 +246,6 @@ const ASTcondition: BinaryOperation =
 
     it('generate s-expression from ast of lhs', async function() {
         const expr = SExpr.fromNode(ASTleftHandSide);
-        console.log(`expression is : %s`, expr);
         assert.deepEqual(expr, `(index counters i)`);
     });
 

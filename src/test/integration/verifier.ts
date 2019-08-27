@@ -20,10 +20,14 @@ describe('verifier integration', function() {
             description,
             source: s,
             target: t,
-            valid = true
+            valid = true,
+            skip
         } = test;
 
-        it (description, async function() {
+        it (`${description}${skip ? ` (${skip})` : ''}`, async function() {
+            if (skip)
+                this.skip();
+
             const source = new Unit(path.join(contracts, s));
             const target = new Unit(path.join(contracts, t));
             const output = new Unit(path.join(contracts, `SimulationCheck-${name}.sol`));
