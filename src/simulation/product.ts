@@ -12,6 +12,7 @@ import { internalize } from '../contracts/rewriting';
 import { Expr } from '../sexpr/expression';
 import { FunctionMapping } from './mapping';
 import { Unit } from '../frontend/unit';
+import { Feature } from './simulation-data';
 
 const debug = Debugger(__filename);
 
@@ -47,8 +48,8 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
 }
 
 
-export function getProductSeedFeatures(impl: Metadata, spec: Metadata): [string, string][] {
-    const features: [string, string][] = [];
+export function getProductSeedFeatures(impl: Metadata, spec: Metadata): Feature[] {
+    const features: Feature[] = [];
     const specBodyToExpr = getBodyToExpr(spec.name, spec);
     const implBodyToExpr = getBodyToExpr(impl.name, impl);
 
@@ -73,8 +74,8 @@ export function getProductSeedFeatures(impl: Metadata, spec: Metadata): [string,
         try {
             const e1 = specBodyToExpr(b1);
             const e2 = implBodyToExpr(b2);
-            const feature = simplify(`(= ${e1} ${e2})`);
-            features.push([feature, name]);
+            const expression = simplify(`(= ${e1} ${e2})`);
+            features.push({ expression, name });
 
         } catch (e) {
             if (!(e instanceof SyntaxError))

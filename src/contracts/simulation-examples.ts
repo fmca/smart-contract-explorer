@@ -47,8 +47,8 @@ export class SimulationExamplesContract extends Contract {
 
         for await (const example of this.generator()) {
             const { kind } = example;
-            const method = `${kind}Example${counts[kind]++}`;
-            const abstract = { id: { contract: path, method }};
+            const id = `${kind}Example${counts[kind]++}`;
+            const abstract = { id };
             this.examples.push({ ...example, ...abstract });
         }
 
@@ -71,8 +71,8 @@ export class SimulationExamplesContract extends Contract {
         members.push(`${this.target.getName()} spec;`);
 
         for await (const example of await this.getExamples()) {
-            const { method } = example.id;
-            const lines = this.getMethod(example, method);
+            const { id } = example;
+            const lines = this.getMethod(example, id);
             members.push(...lines);
         }
 

@@ -142,16 +142,13 @@ async function generateExamples() {
     const target = new Unit(args.target!);
     const output = new Unit(paths['SimulationExamples.sol']);
     const parameters = { source, target, output, states };
-    const { units, fields, seedFeatures, simulationData } = await Examples.generateExamples(parameters);
+    const { units, simulationData } = await Examples.generateExamples(parameters);
 
-    // TODO streamline this
-    const positive = simulationData.examples
-        .filter(({ positive }) => positive)
-        .map(({ id }) => ({ exampleId: id, dataPath: paths[`simulation-data.json`] }));
-
-    const negative = simulationData.examples
-        .filter(({ positive }) => !positive)
-        .map(({ id }) => ({ exampleId: id, dataPath: paths[`simulation-data.json`] }));
+    const dataPath = paths[`simulation-data.json`];
+    const fields = simulationData.expressions.map(({ id, pieType }) => `${id}: ${pieType}`);
+    const features = simulationData.features.map(({ expression }) => expression);
+    const positive = simulationData.examples.positive.map(({ id }) => ({ id, dataPath }));
+    const negative = simulationData.examples.negative.map(({ id }) => ({ id, dataPath }));
 
     for (const unit of units)
         await unit.writeContent();
@@ -159,7 +156,7 @@ async function generateExamples() {
     await fs.writeFile(paths[`simulation-data.json`], JSON.stringify(simulationData, null, 4));
     await fs.writeFile(paths[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
     await fs.writeFile(paths[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(paths[`seed-features.txt`], seedFeatures.join(`\n`) + '\n');
+    await fs.writeFile(paths[`seed-features.txt`], features.join(`\n`) + '\n');
     await fs.writeFile(paths[`fields.txt`], fields.join(`\n`) + '\n');
     await fs.writeFile(paths[`constants.txt`], '');
 

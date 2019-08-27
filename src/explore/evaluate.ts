@@ -7,7 +7,6 @@ import { Invocation, InvocationGenerator } from '../model';
 import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
-import { AbstractExample } from '../simulation/examples';
 import fs from 'fs-extra';
 import { lines } from '../utils/lines';
 import { ContractInstance } from './instance';
@@ -48,8 +47,8 @@ export class Evaluator {
     }
 
     async processRequest(request: Request): Promise<Response> {
-        const { dataPath, exampleId, expression } = request;
-        const operation = await this.evaluation.evaluate(dataPath, exampleId, expression);
+        const { dataPath, id, expression } = request;
+        const operation = await this.evaluation.evaluate(dataPath, id, expression);
 
         const { result } = operation;
 

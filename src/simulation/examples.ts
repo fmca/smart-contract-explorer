@@ -26,8 +26,6 @@ interface Parameters {
 }
 
 interface Result {
-    fields: string[];
-    seedFeatures: string[];
     simulationData: SimulationData;
     units: Unit[];
 }
@@ -35,10 +33,7 @@ interface Result {
 type Kind = 'positive' | 'negative';
 
 export type AbstractExample = {
-    id: {
-        contract: string;
-        method: string;
-    }
+    id: string;
 }
 
 export type AbstractExamples = {
@@ -76,24 +71,15 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const c = new SimulationExamplesContract(source, target, output, fn, values);
     await output.setContent(c);
 
-    const { positive, negative } = await c.getAbstractExamples();
-
+    const examplesContractPath = output.getPath();
+    const examples = await c.getAbstractExamples();
     const expressions = [
         ...await storageAccessorsForPie(se),
         ...await storageAccessorsForPie(te)
     ];
-    const seedFeatures = getProductSeedFeatures(source, target).map(([f,_]) => f);
-
-    const examples = [
-        ...positive.map(({ id: { method: id } }) => ({ id, positive: true })),
-        ...negative.map(({ id: { method: id } }) => ({ id, positive: false }))
-    ];
-
-    const fields = expressions.map(({ id, pieType }) => `${id}: ${pieType}`);
-
-    const examplesContractPath = output.getPath();
-    const simulationData = { examples, expressions, examplesContractPath };
-    return { units, fields, seedFeatures, simulationData };
+    const features = getProductSeedFeatures(source, target);
+    const simulationData = { examplesContractPath, examples, expressions, features };
+    return { units, simulationData };
 }
 
 

@@ -39,13 +39,16 @@ describe('explorer integration', function() {
             } else {
                 await assert.doesNotReject(async () => {
                     const result = await generateExamples(parameters);
-                    const { fields, seedFeatures } = result;
+                    const { simulationData } = result;
+
+                    const fields = simulationData.expressions.map(({ id, pieType }) => `${id}: ${pieType}`);
+                    const features = simulationData.features.map(({ expression }) => expression);
 
                     if (expectedFields !== undefined)
                         assert.deepEqual(new Set(fields), new Set(expectedFields));
 
                     if (expectedSeedFeatures !== undefined)
-                        assert.deepEqual(new Set(seedFeatures), new Set(expectedSeedFeatures));
+                        assert.deepEqual(new Set(features), new Set(expectedSeedFeatures));
                 });
             }
         });

@@ -1,16 +1,18 @@
 
-type ExampleId = string;
-type ExpressionId = string;
+export type ExampleId = string;
+export type ExpressionId = string;
+
+export type Feature = { name: string, expression: string };
 
 export interface SimulationData {
     examplesContractPath: string;
-    examples: ExampleData[];
+    examples: { positive: ExampleData[], negative: ExampleData[] };
     expressions: ExpressionData[];
+    features: Feature[];
 }
 
 export interface ExampleData {
     id: ExampleId;
-    positive: boolean;
 }
 
 export interface ExpressionData {
@@ -22,6 +24,6 @@ export interface ExpressionData {
 
 export interface EvaluatorQuery {
     dataPath: string;
-    exampleId: ExampleId;
+    id: ExampleId;
     expression?: string;
 }
