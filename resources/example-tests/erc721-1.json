@@ -3,22 +3,22 @@
     "source": "Token/ERC721-ayidouble/ERC721.impl.examples.sol",
     "target": "Token/ERC721-openzeppelin/ERC721.spec.sol",
     "fields": [
-        "\"ERC721_Impl$_operatorApprovals\": Map[Address,Map[Address,Bool]]",
-        "\"ERC721_Impl$_ownedTokensCount\": Map[Address,Int]",
-        "\"ERC721_Impl$_tokenApprovals\": Map[Int,Address]",
-        "\"ERC721_Impl$_tokenOwner\": Map[Int,Address]",
-        "\"ERC721_Spec$_operatorApprovals\": Map[Address,Map[Address,Bool]]",
-        "\"ERC721_Spec$_ownedTokensCount\": Map[Address,Int]",
-        "\"ERC721_Spec$_tokenApprovals\": Map[Int,Address]",
-        "\"ERC721_Spec$_tokenOwner\": Map[Int,Address]",
-        "\"__verifier_sum_uint(ERC721_Impl$_ownedTokensCount[__verifier_idx_address])\": Sum",
-        "\"__verifier_sum_uint(ERC721_Spec$_ownedTokensCount[__verifier_idx_address])\": Sum"
+        "ERC721_Impl$_operatorApprovals: Map[Address,Map[Address,Bool]]",
+        "ERC721_Impl$_ownedTokensCount: Map[Address,Int]",
+        "ERC721_Impl$_tokenApprovals: Map[Int,Address]",
+        "ERC721_Impl$_tokenOwner: Map[Int,Address]",
+        "ERC721_Spec$_operatorApprovals: Map[Address,Map[Address,Bool]]",
+        "ERC721_Spec$_ownedTokensCount: Map[Address,Int]",
+        "ERC721_Spec$_tokenApprovals: Map[Int,Address]",
+        "ERC721_Spec$_tokenOwner: Map[Int,Address]",
+        "__verifier_sum_uint(ERC721_Impl$_ownedTokensCount[__verifier_idx_address]): Sum",
+        "__verifier_sum_uint(ERC721_Spec$_ownedTokensCount[__verifier_idx_address]): Sum"
     ],
     "seedFeatures": [
         "(= spec$_operatorApprovals impl$_operatorApprovals)",
         "(= spec$_ownedTokensCount impl$_ownedTokensCount)",
         "(= spec$_tokenApprovals impl$_tokenApprovals)",
         "(= spec$_tokenOwner impl$_tokenOwner)"
-      
+
     ]
 }

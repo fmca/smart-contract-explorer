@@ -3,10 +3,10 @@
     "source": "Escrow/Escrow-stacktical/Escrow.impl.sol",
     "target": "Escrow/Escrow-openzeppelin/Escrow.spec.no-owner.sol",
     "fields": [
-        "\"Escrow$deposits\": Map[Address,Int]",
-        "\"Escrow_Stacktical$deposits\": Map[Address,Int]",
-        "\"__verifier_sum_uint(Escrow_Stacktical$deposits[__verifier_idx_address])\": Sum",
-        "\"__verifier_sum_uint(Escrow$deposits[__verifier_idx_address])\": Sum"
+        "Escrow$deposits: Map[Address,Int]",
+        "Escrow_Stacktical$deposits: Map[Address,Int]",
+        "__verifier_sum_uint(Escrow_Stacktical$deposits[__verifier_idx_address]): Sum",
+        "__verifier_sum_uint(Escrow$deposits[__verifier_idx_address]): Sum"
     ],
     "seedFeatures": [
         "(= spec$deposits impl$deposits)"
