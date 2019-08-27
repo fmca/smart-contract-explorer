@@ -2,23 +2,24 @@
     "description": "MultiSigWallet examples generation test",
     "source": "MultiSigWallet/MultiSigWallet-oxchild-apis/MultiSigWallet.impl.sol",
     "target": "MultiSigWallet/MultiSigWallet-consensys/MultiSigWallet.spec.sol",
-    "fields": [
-        "MultiSigWallet_APIS$is_owner: Map[Address,Bool]",
-        "MultiSigWallet_APIS$owners: Array[Address]",
-        "MultiSigWallet_APIS$withdrawals: Map[Int,Withdrawal]",
-        "MultiSigWallet_APIS$withdrawals[__verifier_idx_uint].attoApis: Int",
-        "MultiSigWallet_APIS$withdrawalConfirmations: Map[Int,Map[Address,Bool]]",
-        "MultiSigWallet_APIS$withdrawalCount: Int",
-        "MultiSigWallet_APIS$required: Int",
-        "MultiSigWallet$is_owner: Map[Address,Bool]",
-        "MultiSigWallet$owners: Array[Address]",
-        "MultiSigWallet$transactions: Map[Int,Withdrawal]",
-        "MultiSigWallet$transactions[__verifier_idx_uint].attoApis: Int",
-        "MultiSigWallet$confirmations: Map[Int,Map[Address,Bool]]",
-        "MultiSigWallet$transactionCount: Int",
-        "MultiSigWallet$required: Int"
+    "expressions": [
+        { "id": "MultiSigWallet_APIS$is_owner", "pieType": "Map[Address,Bool]" },
+        { "id": "MultiSigWallet_APIS$owners", "pieType": "Array[Address]" },
+        { "id": "MultiSigWallet_APIS$withdrawals", "pieType": "Map[Int,Withdrawal]" },
+        { "id": "sum$MultiSigWallet_APIS$withdrawals$uint$attoApis", "pieType": "Sum" },
+        { "id": "MultiSigWallet_APIS$withdrawalConfirmations", "pieType": "Map[Int,Map[Address,Bool]]" },
+        { "id": "MultiSigWallet_APIS$withdrawalCount", "pieType": "Int" },
+        { "id": "MultiSigWallet_APIS$required", "pieType": "Int" },
+        { "id": "MultiSigWallet$is_owner", "pieType": "Map[Address,Bool]" },
+        { "id": "MultiSigWallet$owners", "pieType": "Array[Address]" },
+        { "id": "MultiSigWallet$transactions", "pieType": "Map[Int,Withdrawal]" },
+        { "id": "sum$MultiSigWallet$transactions$uint$attoApis", "pieType": "Sum" },
+        { "id": "MultiSigWallet$confirmations", "pieType": "Map[Int,Map[Address,Bool]]" },
+        { "id": "MultiSigWallet$transactionCount", "pieType": "Int" },
+        { "id": "MultiSigWallet$required", "pieType": "Int" }
     ],
-    "seedFeatures": [
-        "(= MultiSigWallet_APIS$owners MultiSigWallet$owners)"
+    "features": [
+        { "name": "getOwners", "expression": "(= MultiSigWallet_APIS$owners MultiSigWallet$owners)" },
+        { "name": "owners$length" }
     ]
 }

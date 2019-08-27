@@ -2,15 +2,14 @@
     "description": "Whitelist examples generation test",
     "source": "Roles/Whitelisted-hanzo/Whitelisted.impl.sol",
     "target": "Roles/Whitelisted-openzeppelin/Whitelisted.spec.sol",
-    "fields": [
-        "Whitelist$length: Int",
-        "Whitelist$owner: Address",
-        "Whitelist$whitelist: Map[Address,Bool]",
-        "WhitelistedRole$_whitelisteds: Map[Address,Bool]",
-        "WhitelistedRole$owner: Address"
-        
+    "expressions": [
+        { "id": "Whitelist$length", "pieType": "Int" },
+        { "id": "Whitelist$owner", "pieType": "Address" },
+        { "id": "Whitelist$whitelist", "pieType": "Map[Address,Bool]" },
+        { "id": "WhitelistedRole$_whitelisteds", "pieType": "Map[Address,Bool]" },
+        { "id": "WhitelistedRole$owner", "pieType": "Address" }
     ],
-    "seedFeatures": [
-        "(= (and (or (not (= Whitelist$length 0)) false) (or (not (not (= Whitelist$length 0))) (index Whitelist$whitelist account))) (index WhitelistedRole$_whitelisteds account))"
+    "features": [
+        { "name": "isWhitelisted", "expression": "(= (and (or (not (= Whitelist$length 0)) false) (or (not (not (= Whitelist$length 0))) (index Whitelist$whitelist account))) (index WhitelistedRole$_whitelisteds account))" }
     ]
 }

@@ -2,13 +2,13 @@
     "description": "Escrow examples generation test",
     "source": "Escrow/Escrow-stacktical/Escrow.impl.sol",
     "target": "Escrow/Escrow-openzeppelin/Escrow.spec.no-owner.sol",
-    "fields": [
-        "Escrow$deposits: Map[Address,Int]",
-        "Escrow_Stacktical$deposits: Map[Address,Int]",
-        "__verifier_sum_uint(Escrow_Stacktical$deposits[__verifier_idx_address]): Sum",
-        "__verifier_sum_uint(Escrow$deposits[__verifier_idx_address]): Sum"
+    "expressions": [
+        { "id": "Escrow$deposits", "pieType": "Map[Address,Int]" },
+        { "id": "Escrow_Stacktical$deposits", "pieType": "Map[Address,Int]" },
+        { "id": "sum$Escrow_Stacktical$deposits$address", "pieType": "Sum" },
+        { "id": "sum$Escrow$deposits$address", "pieType": "Sum" }
     ],
-    "seedFeatures": [
-        "(= spec$deposits impl$deposits)"
+    "features": [
+        { "name": "depositsOf", "expression": "(= Escrow_Stacktical$deposits Escrow$deposits)" }
     ]
 }

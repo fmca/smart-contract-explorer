@@ -2,11 +2,11 @@
     "description": "Ownable examples generation test",
     "source": "Ownable/Ownable-siri-labs/Ownable.impl.sol",
     "target": "Ownable/Ownable-openzeppelin/Ownable.spec.sol",
-    "fields": [
-        "Ownable_sirin_labs$owner: Address",
-        "Ownable$_owner: Address"
+    "expressions": [
+        { "id": "Ownable_sirin_labs$owner", "pieType": "Address" },
+        { "id": "Ownable$_owner", "pieType": "Address" }
     ],
-    "seedFeatures": [
-        "(= spec$_owner impl$owner)"
+    "features": [
+        { "name": "getOwner", "expression": "(= Ownable_sirin_labs$owner Ownable$_owner)" }
     ]
 }

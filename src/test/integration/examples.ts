@@ -4,6 +4,7 @@ import assert from 'assert';
 import { generateExamples } from '../../simulation/examples';
 import { SimulationCounterExample } from '../../simulation/counterexample';
 import { Unit } from '../../frontend/unit';
+import { ExpressionData, Feature } from '../../simulation/simulation-data';
 
 const resources = path.resolve(__dirname, '..', '..', '..', 'resources');
 const contracts = path.join(resources, 'contracts');
@@ -22,8 +23,8 @@ describe('explorer integration', function() {
             target: t,
             states = 5,
             failure: expectFailure = false,
-            fields: expectedFields,
-            seedFeatures: expectedSeedFeatures
+            expressions: expectedExpressions,
+            features: expectedFeatures
         } = test;
 
         it (description, async function() {
@@ -41,16 +42,70 @@ describe('explorer integration', function() {
                     const result = await generateExamples(parameters);
                     const { simulationData } = result;
 
-                    const fields = simulationData.expressions.map(({ id, pieType }) => `${id}: ${pieType}`);
-                    const features = simulationData.features.map(({ expression }) => expression);
+                    if (expectedExpressions !== undefined)
+                        compareExpressionLists(simulationData.expressions, expectedExpressions);
 
-                    if (expectedFields !== undefined)
-                        assert.deepEqual(new Set(fields), new Set(expectedFields));
-
-                    if (expectedSeedFeatures !== undefined)
-                        assert.deepEqual(new Set(features), new Set(expectedSeedFeatures));
+                    if (expectedFeatures !== undefined)
+                        compareFeatureLists(simulationData.features, expectedFeatures);
                 });
             }
         });
     }
 });
+
+function compareExpressionLists(actual: ExpressionData[], expected: ExpressionData[]) {
+    const hasIds = expected.some(({ id }) => id !== undefined);
+    const hasTypes = expected.some(({ pieType }) => pieType !== undefined);
+
+    if (hasIds) {
+        assert.deepEqual(
+            new Set(actual.map(({ id }) => id)),
+            new Set(expected.map(({ id }) => id))
+        );
+
+        const m1 = new Map(actual.map(e => [e.id, e]));
+        const m2 = new Map(expected.map(e => [e.id, e]));
+
+        for (const key of m1.keys())
+            compareExpressions(m1.get(key)!, m2.get(key)!);
+
+    } else if (hasTypes) {
+        assert.deepEqual(
+            new Set(actual.map(({ pieType }) => pieType)),
+            new Set(expected.map(({ pieType }) => pieType))
+        );
+    }
+}
+
+function compareExpressions(actual: ExpressionData, expected: ExpressionData) {
+    const { id, pieType } = expected;
+
+    if (id !== undefined)
+        assert.equal(actual.id, id);
+
+    if (pieType !== undefined)
+        assert.equal(actual.pieType, pieType);
+}
+
+function compareFeatureLists(actual: Feature[], expected: Feature[]) {
+    assert.deepEqual(
+        new Set(actual.map(({ name }) => name)),
+        new Set(expected.map(({ name }) => name))
+    );
+
+    const m1 = new Map(actual.map(f => [f.name, f]));
+    const m2 = new Map(expected.map(f => [f.name, f]));
+
+    for (const key of m1.keys())
+        compareFeatures(m1.get(key)!, m2.get(key)!);
+}
+
+function compareFeatures(actual: Feature, expected: Feature) {
+    const { name, expression } = expected;
+
+    if (name !== undefined)
+        assert.equal(actual.name, name);
+
+    if (expression !== undefined)
+        assert.equal(actual.expression, expression);
+}

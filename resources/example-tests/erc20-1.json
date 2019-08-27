@@ -2,19 +2,19 @@
     "description": "ERC20 examples generation test",
     "source": "Token/ERC20-molochventures/ERC20.impl.sol",
     "target": "Token/ERC20-openzeppelin/ERC20.spec.sol",
-    "fields": [
-        "ERC20$allowances: Map[Address,Map[Address,Int]]",
-        "ERC20$balances: Map[Address,Int]",
-        "ERC20$burners: Map[Address,Bool]",
-        "ERC20$minters: Map[Address,Bool]",
-        "Token$_allowed: Map[Address,Map[Address,Int]]",
-        "Token$_balances: Map[Address,Int]",
-        "Token$_totalSupply: Int",
-        "__verifier_sum_uint(ERC20$balances[__verifier_idx_address]): Sum",
-        "__verifier_sum_uint(Token$_balances[__verifier_idx_address]): Sum"
+    "expressions": [
+        { "id": "ERC20$allowances", "pieType": "Map[Address,Map[Address,Int]]" },
+        { "id": "ERC20$balances", "pieType": "Map[Address,Int]" },
+        { "id": "ERC20$burners", "pieType": "Map[Address,Bool]" },
+        { "id": "ERC20$minters", "pieType": "Map[Address,Bool]" },
+        { "id": "Token$_allowed", "pieType": "Map[Address,Map[Address,Int]]" },
+        { "id": "Token$_balances", "pieType": "Map[Address,Int]" },
+        { "id": "Token$_totalSupply", "pieType": "Int" },
+        { "id": "sum$ERC20$balances$address", "pieType": "Sum" },
+        { "id": "sum$Token$_balances$address", "pieType": "Sum" }
     ],
-    "seedFeatures": [
-        "(= spec$allowances impl$_allowed)",
-        "(= spec$balances impl$_balances)"
+    "features": [
+        { "name": "allowance" },
+        { "name": "balance" }
     ]
 }

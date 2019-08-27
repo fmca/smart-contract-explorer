@@ -63,6 +63,8 @@ export function * sumExpressionPaths(metadata: Metadata): Iterable<Path> {
             for (const { name, typeName } of decl.members)
                 for (const path of paths([...elements, name], typeName))
                     yield path;
+
+            return;
         }
 
         if (Solidity.isMapping(typeName)) {
