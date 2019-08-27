@@ -1,4 +1,4 @@
-import { Node } from './node';
+import { Node, node } from './node';
 
 export interface TypeDescriptions {
     typeIdentifier: string;
@@ -68,4 +68,32 @@ export function getKeyTypesAndValueType(mapping: Mapping) {
     }
 
     return { keyTypes, valueType };
+}
+
+export function descriptions(typeIdentifier: string, typeString: string) {
+    return { typeIdentifier, typeString };
+}
+
+export function elementary(name: ElementaryType, typeDescriptions?: TypeDescriptions): ElementaryTypeName {
+
+    if (typeDescriptions === undefined) {
+        const typeIdentifier = `t_${name}`;
+        const typeString = name;
+        typeDescriptions = { typeIdentifier, typeString };
+    }
+
+    return { ...node('ElementaryTypeName'), name, typeDescriptions };
+}
+
+export function mapping(keyType: TypeName, valueType: TypeName, typeDescriptions?: TypeDescriptions): Mapping {
+
+    if (typeDescriptions === undefined) {
+        const { typeDescriptions: { typeIdentifier: k1, typeString: k2 } } = keyType;
+        const { typeDescriptions: { typeIdentifier: v1, typeString: v2 } } = valueType;
+        const typeIdentifier = `t_mapping$_t_${k1}_$_t_${v1}_$`;
+        const typeString = `mapping(${k2} => ${v2})`;
+        typeDescriptions = { typeIdentifier, typeString };
+    }
+
+    return { ...node('Mapping'), keyType, valueType, typeDescriptions };
 }

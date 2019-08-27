@@ -1,64 +1,92 @@
 import assert from 'assert';
 import { Unit } from '../../frontend/unit';
-import { storageAccessorsForPie } from '../../simulation/accessors';
+import { storageAccessorsForPie, Path, getAccessor, getSumAccessor, PathElement } from '../../simulation/accessors';
+import { ExpressionData } from '../../simulation/simulation-data';
+import { elementary, mapping, TypeName, ElementaryTypeName } from '../../solidity';
 
 const pragmas = `pragma solidity ^0.5.0;`;
 
+const int = elementary('int');
+const address = elementary('address');
+const map = (keyType: TypeName, valueType: TypeName) => mapping(keyType, valueType);
+const path = (typeName: ElementaryTypeName, ...elements: PathElement[]) => ({ elements, typeName });
+
 describe('simulation examples', function() {
 
-    it ('all fields listed' /*, async function() {
+    it ('all fields listed', async function() {
         await testFields(
             { name: `S`, body: `int x;` },
             { name: `T`, body: `int y; int z;` },
-            [`"S$x": Int`, `"T$y": Int`, `"T$z": Int`]
+            [
+                getAccessor('S', 'x', int),
+                getAccessor('T', 'y', int),
+                getAccessor('T', 'z', int)
+            ]
         );
-    } */);
+    });
 
-    it ('int mappings listed with accessors' /*, async function() {
+    it ('int mappings listed with accessors',  async function() {
         await testFields(
             { name: `S`, body: `mapping (int => int) x;` },
             { name: `T`, body: `int y;` },
-            [`"S$x": Map[Int,Int]`, `"__verifier_sum_int(S$x[__verifier_idx_int])": Sum`, `"T$y": Int`]
+            [
+                getAccessor('S', 'x', map(int,int)),
+                getAccessor('T', 'y', int),
+                getSumAccessor('S', path(int, 'x', int))
+            ]
         );
-    } */);
+    });
 
-    it ('address mappings listed with accessors' /*, async function() {
+    it ('address mappings listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (address => int) x;` },
             { name: `T`, body: `int y;` },
-            [`"S$x": Map[Address,Int]`, `"__verifier_sum_int(S$x[__verifier_idx_address])": Sum`, `"T$y": Int`]
+            [
+                getAccessor('S', 'x', map(address,int)),
+                getAccessor('T', 'y', int),
+                getSumAccessor('S', path(int, 'x', address))
+            ]
         );
-    } */);
+    });
 
-    it ('nested mappings listed with accessors' /*, async function() {
+    it ('nested mappings listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (address => mapping (int => int)) x;` },
             { name: `T`, body: `int y;` },
-            [`"S$x": Map[Address,Map[Int,Int]]`, `"T$y": Int`]
+            [
+                getAccessor('S', 'x', map(address,map(int,int))),
+                getAccessor('T', 'y', int)
+            ]
         );
-    } */);
+    });
 
-    it ('only mappings to int listed with accessors' /*, async function() {
+    it ('only mappings to int listed with accessors', async function() {
         await testFields(
             { name: `S`, body: `mapping (address => address) x;` },
             { name: `T`, body: `int y;` },
-            [`"S$x": Map[Address,Address]`, `"T$y": Int`]
+            [
+                getAccessor('S', 'x', map(address,address)),
+                getAccessor('T', 'y', int)
+            ]
         );
-    } */);
+    });
 
-    it ('constants are not listed' /*, async function() {
+    it ('constants are not listed', async function() {
         await testFields(
             { name: `S`, body: `int x;` },
             { name: `T`, body: `int y; int constant Z = 0;` },
-            [`"S$x": Int`, `"T$y": Int`]
+            [
+                getAccessor('S', 'x', int),
+                getAccessor('T', 'y', int)
+            ]
         );
-    } */);
+    });
 
 });
 
 type Contract = { name: string, body: string };
 
-async function testFields(source: Contract, target: Contract, expected: string[]) {
+async function testFields(source: Contract, target: Contract, expected: ExpressionData[]) {
     const actual = [
         ...await storageAccessorsForPie(getUnit(source)),
         ...await storageAccessorsForPie(getUnit(target))
