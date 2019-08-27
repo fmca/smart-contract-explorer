@@ -11,11 +11,10 @@ export type PathElement = Solidity.ElementaryTypeName | string;
 export type Path = {
     elements: PathElement[];
     typeName: Solidity.ElementaryTypeName;
-}
+};
 
 export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<ExpressionData>> {
     const metadata = await unit.getMetadata();
-    const paths = await sumExpressionPaths(unit);
     return storageAccessors();
 
     function * storageAccessors() {
@@ -24,38 +23,15 @@ export async function storageAccessorsForPie(unit: Unit): Promise<Iterable<Expre
                 continue;
 
             const { name, typeName } = variable;
-            const { typeDescriptions: { typeString } } = typeName;
-            debug(`storageAccessorForPie for %o of type %O`, name, typeName);
-
-            const prefix = `${metadata.getName()}$${name}`;
-
-            yield {
-                id: prefix,
-                pieType: type(typeName),
-                evaluatorExpression: prefix,
-                verifierExpression: prefix
-            };
+            yield getAccessor(metadata.name, name, typeName);
         }
 
-        for (const { elements, typeName } of paths) {
-            const path = elements.map(elem => typeof(elem) === 'string' ? elem : elem.name);
-            const id = ['sum', metadata.name, ...path].join('$');
-            const pieType = 'Sum';
-            const evaluatorExpression = id;
-            const accessor = [metadata.name, '$', ...path].map(p => p.replace(/^(u?int\d*|address)$/, '[__verifier_idx_$1]')).join('');
-            const type = typeName.name;
-            const verifierExpression = `__verifier_sum_${type}(${accessor})`;
-            yield { id, pieType, evaluatorExpression, verifierExpression };
-        }
+        for (const path of sumExpressionPaths(metadata))
+            yield getSumAccessor(metadata.name, path);
     }
 }
 
-export async function sumExpressionPaths(unit: Unit): Promise<Iterable<Path>> {
-    const metadata = await unit.getMetadata();
-    return sumExpressionPathsOfMetadata(metadata);
-}
-
-export function * sumExpressionPathsOfMetadata(metadata: Metadata): Iterable<Path> {
+export function * sumExpressionPaths(metadata: Metadata): Iterable<Path> {
     for (const variable of metadata.getVariables()) {
         const { name, typeName } = variable;
         if (Solidity.isMapping(typeName)) {
@@ -103,4 +79,30 @@ export function * sumExpressionPathsOfMetadata(metadata: Metadata): Iterable<Pat
 
         throw Error(`Unexpected type: ${typeString}`);
     }
+}
+
+export function getAccessor(prefix: string, name: string, typeName: Solidity.TypeName) {
+    const pieType = type(typeName);
+    return getAccessorFromPieType(prefix, name, pieType);
+}
+
+export function getAccessorFromPieType(prefix: string, name: string, pieType: string) {
+    const id = [prefix, name].join('$');
+    const evaluatorExpression = id;
+    const verifierExpression = id;
+    const expressionData = { id, pieType, evaluatorExpression, verifierExpression };
+    return expressionData;
+}
+
+export function getSumAccessor(prefix: string, path: Path) {
+    const { elements, typeName } = path;
+    const strings = elements.map(elem => Solidity.isNode(elem) ? elem.name : elem);
+    const id = ['sum', prefix, ...strings].join('$');
+    const pieType = 'Sum';
+    const evaluatorExpression = id;
+    const accessor = [prefix, '$', ...strings].map(p => p.replace(/^(u?int\d*|address)$/, '[__verifier_idx_$1]')).join('');
+    const type = typeName.name;
+    const verifierExpression = `__verifier_sum_${type}(${accessor})`;
+    const expressionData = { id, pieType, evaluatorExpression, verifierExpression };
+    return expressionData;
 }

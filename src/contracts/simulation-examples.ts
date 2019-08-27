@@ -6,7 +6,7 @@ import { ValueGenerator, Value } from "../model/values";
 import { Contract, ContractInfo, block } from "./contract";
 import { Operation } from '../model';
 import { Unit } from '../frontend/unit';
-import { PathElement, sumExpressionPaths, sumExpressionPathsOfMetadata } from '../simulation/accessors';
+import { PathElement, sumExpressionPaths } from '../simulation/accessors';
 
 const debug = Debugger(__filename);
 
@@ -91,7 +91,7 @@ export class SimulationExamplesContract extends Contract {
     }
 
     * sumAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
-        for (const { elements, typeName } of sumExpressionPathsOfMetadata(metadata)) {
+        for (const { elements, typeName } of sumExpressionPaths(metadata)) {
             const { source, name, expr, type } = this.sumAccessor(metadata, elements, typeName);
             const result = [...expr];
             result.splice(0, 1, `return ${expr[0]}`);

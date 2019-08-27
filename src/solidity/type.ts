@@ -69,4 +69,3 @@ export function getKeyTypesAndValueType(mapping: Mapping) {
 
     return { keyTypes, valueType };
 }
-
