@@ -60,12 +60,16 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const values = new ValueGenerator(accounts);
 
     const generator = new ExampleGenerator(chain, states)
-    const examples = await generator.getExamples(source, target);
+    const fullExamples = await generator.getExamples(source, target);
 
-    const c = new SimulationExamplesContract(source, target, output, examples, values);
+    const c = new SimulationExamplesContract(source, target, output, fullExamples, values);
     await output.setContent(c);
 
     const examplesContractPath = output.getPath();
+    const examples = {
+        positive: fullExamples.positive.map(({ id }) => ({ id })),
+        negative: fullExamples.negative.map(({ id }) => ({ id }))
+    };
     const expressions = [
         ...await storageAccessorsForPie(se),
         ...await storageAccessorsForPie(te)
