@@ -12,6 +12,9 @@ import * as Contracts from '../contracts/conversions';
 import { Unit } from '../frontend/unit';
 import { Run } from '../utils/run';
 import { annotate } from '../contracts/rewriting';
+import { setConsole } from '../utils/warn';
+
+setConsole(console);
 
 const args = yargs.usage(`usage: $0 --source <filename> --target <filename>`)
     .strict()

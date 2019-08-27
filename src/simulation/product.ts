@@ -13,6 +13,7 @@ import { Expr } from '../sexpr/expression';
 import { FunctionMapping } from './mapping';
 import { Unit } from '../frontend/unit';
 import { Feature } from './simulation-data';
+import { warning } from '../utils/warn';
 
 const debug = Debugger(__filename);
 
@@ -81,7 +82,7 @@ export function getProductSeedFeatures(impl: Metadata, spec: Metadata): Feature[
             if (!(e instanceof SyntaxError))
                 throw e;
 
-            console.error(`Warning: did not generate seed feature from function: ${name}`);
+            warning(`did not generate seed feature from function: ${name}`);
         }
     }
 

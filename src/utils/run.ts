@@ -1,5 +1,6 @@
 import cp from 'child_process';
 import { lines } from './lines';
+import { warning } from './warn';
 
 export function Run(console: Console, verbose = false) {
     return async function(command: string, ...args: readonly string[]) {
@@ -33,7 +34,7 @@ export function Run(console: Console, verbose = false) {
             errors.push(line);
 
             if (verbose)
-                console.error(line);
+                warning(line);
         }
 
         return result.then(success => ({

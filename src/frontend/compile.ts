@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import { Debugger } from '../utils/debug';
 import * as Solc from './solc';
 import { Metadata, SourceInfo } from './metadata';
+import { warning } from '../utils/warn';
 
 const debug = Debugger(__filename);
 
@@ -49,7 +50,7 @@ function handleErrors(output: Solc.Output): void {
     }
 
     for (const { formattedMessage } of errors)
-        console.error(formattedMessage);
+        warning(formattedMessage);
 }
 
 function toMetadata(output: Solc.Output, source: SourceInfo): Metadata {

@@ -4,6 +4,9 @@ require('source-map-support').install();
 
 import yargs from 'yargs';
 import { Evaluator } from '../explore/evaluate';
+import { setConsole } from '../utils/warn';
+
+setConsole(console);
 
 yargs.usage(`usage: $0`)
     .strict()
