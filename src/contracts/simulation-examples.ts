@@ -7,6 +7,7 @@ import { Contract, block } from "./contract";
 import { Operation } from '../model';
 import { Unit } from '../frontend/unit';
 import { PathElement, sumExpressionPaths } from '../simulation/accessors';
+import path from 'path';
 
 const debug = Debugger(__filename);
 
@@ -20,7 +21,10 @@ export class SimulationExamplesContract extends Contract {
     }
 
     async getImports() {
-        return [this.source.getSource().path, this.target.getSource().path];
+        const base = this.unit.getDirname();
+        const source = path.relative(base, this.source.getSource().path);
+        const target = path.relative(base, this.target.getSource().path);
+        return [`./${source}`, `./${target}`];
     }
 
     async getParents() {
@@ -61,8 +65,8 @@ export class SimulationExamplesContract extends Contract {
         for (const { elements, typeName } of sumExpressionPaths(metadata)) {
             const { source, name, expr, type } = this.sumAccessor(metadata, elements, typeName);
             const result = [...expr];
-            result.splice(0, 1, `return ${expr[0]}`);
-            result.splice(-1, 1, `${expr[expr.length-1]};`);
+            result.splice(0, 1, `return ${result[0]}`);
+            result.splice(-1, 1, `${result[result.length-1]};`);
             yield [
                 ``,
                 `function ${name}() public view returns (${type}) {`,
@@ -75,8 +79,8 @@ export class SimulationExamplesContract extends Contract {
     * storageAccessorMethodDefinitions(metadata: Metadata): Iterable<string[]> {
         for (const { source, name, expr, type } of this.storageAccessors(metadata)) {
             const result = [...expr];
-            result.splice(0, 1, `return ${expr[0]}`);
-            result.splice(-1, 1, `${expr[expr.length-1]};`);
+            result.splice(0, 1, `return ${result[0]}`);
+            result.splice(-1, 1, `${result[result.length-1]};`);
             yield [
                 ``,
                 `function ${metadata.name}$${name}() public view returns (${type}) {`,

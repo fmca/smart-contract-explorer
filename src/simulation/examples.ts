@@ -15,6 +15,7 @@ import { FunctionMapping } from './mapping';
 import { InvocationGenerator } from '../model';
 import { Unit } from '../frontend/unit';
 import { SimulationData } from './simulation-data';
+import path from 'path';
 
 const debug = Debugger(__filename);
 
@@ -65,7 +66,7 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const c = new SimulationExamplesContract(source, target, output, fullExamples, values);
     await output.setContent(c);
 
-    const examplesContractPath = output.getPath();
+    const examplesContractPath = output.getBasename();
     const examples = {
         positive: fullExamples.positive.map(({ id }) => ({ id })),
         negative: fullExamples.negative.map(({ id }) => ({ id }))

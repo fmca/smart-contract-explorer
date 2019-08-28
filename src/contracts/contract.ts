@@ -1,6 +1,6 @@
 import { Operation,  Value, TypedValue, TypedArrayValue, Values } from "../model";
 import { Debugger } from '../utils/debug';
-import { VariableDeclaration, FunctionDefinition } from "../solidity";
+import { VariableDeclaration, FunctionDefinition, fullNameOfElementaryType } from "../solidity";
 import { Unit } from "../frontend/unit";
 
 const debug = Debugger(__filename);
@@ -97,15 +97,14 @@ export abstract class Contract {
         return `${lhs}${extra}${args};`;
     }
 
-    lowLevelCall(operation: Operation, target?: string) {
+    lowLevelCall(operation: Operation, target: string = 'this') {
         const { invocation: { method: { name }, inputs, value } } = operation;
-        const lhs = target === undefined ? name : `${target}.${name}`;
-        const types = inputs.map(v => Value.isElementaryValue(v) ? v.type : '');
+        const types = inputs.map(v => Value.isElementaryValue(v) ? fullNameOfElementaryType(v.type) : '');
         const sig = `"${name}(${types.join(',')})"`;
         const args = [ sig, ...inputs.map(i => this.argument(i)) ];
         const extra = value === undefined ? '' : `.value(${value})`;
         // TODO what about the value?
-        return `address(${lhs}).call${extra}(abi.encodeWithSignature(${args.join(', ')}));`;
+        return `address(${target}).call${extra}(abi.encodeWithSignature(${args.join(', ')}));`;
     }
 
     constructorCall(operation: Operation, target: string) {

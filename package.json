@@ -14,8 +14,7 @@
     "postinstall": "npm run build",
     "test:unit": "mocha dist/test/unit/**/*.js",
     "test:integration": "mocha dist/test/integration/**/*.js",
-    "pretest:infer": "npm run build:infer",
-    "test:infer": "cd LoopInvGen && dune runtest ; ./_build/default/test/Runner.exe $(which z3)",
+    "test:infer": "cd LoopInvGen && dune runtest --no-buffer",
     "test": "npm-run-all test:*"
   },
   "keywords": [],

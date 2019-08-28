@@ -58,8 +58,9 @@ function internalizePublicAndExternal(content: string) {
         .replace(/\bexternal\b/g, 'internal');
 }
 
-function publicizeInternalAndExternal(content: string) {
+export function publicizeInternalAndExternal(content: string) {
     return content
+        .replace(/\b(u?int\d*|address)\b\s*\b([\w]+)\b\s*;/g, '$1 public $2;')
         .replace(/\bmapping\b\s*\((.*)\)\s*([^;()\s]*)\s*;/g, 'mapping ($1) public $2;')
         .replace(/\bexternal\b/g, 'public')
         .replace(/\binternal\b/g, 'public');

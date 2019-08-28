@@ -8,6 +8,7 @@ import * as Chain from '../utils/chain';
 import { Metadata } from '../frontend/metadata';
 import { extendWithPredicate, expressionEvaluator } from '../contracts/extension';
 import fs from 'fs-extra';
+import path from 'path';
 import { lines } from '../utils/lines';
 import { ContractInstance } from './instance';
 import { ContractInstantiation } from './instantiate';
@@ -133,7 +134,7 @@ class ExtensionEvaluation extends Evaluation {
 
     async evaluate(dataPath: string, exampleId: string, expression: string): Promise<Operation> {
         const data = await this.getSimualtionData(dataPath);
-        const { examplesContractPath } = data;
+        const examplesContractPath = path.join(path.dirname(dataPath), data.examplesContractPath);
         const metadata = await this.getMetadata(examplesContractPath);
         const expr = await this.parseExpression(dataPath, expression);
         const [ extension, predicateMethod ] = await extendWithPredicate(metadata, expr);
@@ -195,7 +196,7 @@ class CachingEvaluation extends Evaluation {
         if (!this.exampleCache.has(key)) {
             debug(`caching example: %o`, exampleId);
             const data = await this.getSimualtionData(dataPath);
-            const { examplesContractPath } = data;
+            const examplesContractPath = path.join(path.dirname(dataPath), data.examplesContractPath);
             const metadata = await this.getMetadata(examplesContractPath);
             const value = undefined;
             const instance = await this.creator.instantiate(metadata, value);

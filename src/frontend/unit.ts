@@ -40,6 +40,10 @@ export class Unit {
         return path.dirname(this.path);
     }
 
+    getBasename() {
+        return path.basename(this.path);
+    }
+
     async getContent() {
         if (this.content === undefined) {
             const buffer = await fs.readFile(this.path);

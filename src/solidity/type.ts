@@ -37,6 +37,16 @@ export interface Mapping extends TypeNameBase {
     valueType: TypeName;
 }
 
+export function fullNameOfElementaryType(type: ElementaryType) {
+    if (type === 'int')
+        return 'int256';
+
+    else if (type === 'uint')
+        return 'uint256';
+
+    return type;
+}
+
 export function isElementaryTypeName(node: TypeName): node is ElementaryTypeName {
     return node.nodeType === 'ElementaryTypeName';
 }
