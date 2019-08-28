@@ -113,11 +113,6 @@ async function main() {
 }
 
 const files = <const>[
-    'positive-examples.txt',
-    'negative-examples.txt',
-    'seed-features.txt',
-    'fields.txt',
-    'constants.txt',
     'simulation-data.json',
     'SimulationExamples.sol',
     'SimulationCheck.sol'
@@ -147,21 +142,10 @@ async function generateExamples() {
     const parameters = { source, target, output, states };
     const { units, simulationData } = await Examples.generateExamples(parameters);
 
-    const dataPath = paths[`simulation-data.json`];
-    const fields = simulationData.expressions.map(({ id, pieType }) => `${id}: ${pieType}`);
-    const features = simulationData.features.map(({ expression }) => expression);
-    const positive = simulationData.examples.positive.map(({ id }) => ({ id, dataPath }));
-    const negative = simulationData.examples.negative.map(({ id }) => ({ id, dataPath }));
-
     for (const unit of units)
         await unit.writeContent();
 
     await fs.writeFile(paths[`simulation-data.json`], JSON.stringify(simulationData, null, 4));
-    await fs.writeFile(paths[`positive-examples.txt`], positive.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(paths[`negative-examples.txt`], negative.map(e => `${JSON.stringify(e)}\n`).join(''));
-    await fs.writeFile(paths[`seed-features.txt`], features.join(`\n`) + '\n');
-    await fs.writeFile(paths[`fields.txt`], fields.join(`\n`) + '\n');
-    await fs.writeFile(paths[`constants.txt`], '');
 
     console.log();
 }
