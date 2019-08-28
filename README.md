@@ -24,6 +24,12 @@ $ git submodule update
 $ npm link
 ```
 
+## Test
+
+```bash
+$ npm run test
+```
+
 ## Usage
 
 ```bash
