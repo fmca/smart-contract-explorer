@@ -11,7 +11,7 @@ const contracts = path.join(resources, 'contracts');
 const tests = path.resolve(resources, 'example-tests');
 
 describe('explorer integration', function() {
-    this.timeout(5000);
+    this.timeout(10000);
 
     for (const filename of fs.readdirSync(tests)) {
         const name = path.basename(filename, '.json');

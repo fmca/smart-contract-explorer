@@ -1,5 +1,6 @@
 import { Debugger } from '../utils/debug';
 import { Unit } from '../frontend/unit';
+import { Metadata } from '../frontend/metadata';
 const debug = Debugger(__filename);
 
 export async function annotate(unit: Unit, clauses: string[], annotated: Unit) {
@@ -18,7 +19,8 @@ export async function internalize(source: Unit, target: Unit) {
 }
 
 export async function exemplify(source: Unit, target: Unit) {
-    const transform = exemplifyTransform(target.getDirname());
+    const metadata = await source.getMetadata();
+    const transform = exemplifyTransform(metadata, target.getDirname());
     await source.rewriteInto(transform, target);
 }
 
@@ -31,9 +33,9 @@ function internalizeTransform(dirname: string) {
     }
 }
 
-function exemplifyTransform(dirname: string) {
+function exemplifyTransform(metadata: Metadata, dirname: string) {
     return function (content: string) {
-        content = publicizeInternalAndExternal(content);
+        content = publicizeInternalAndExternal(metadata, content);
         content = addLengthAccessors(content);
         content = moveImports(dirname, content);
         return content;
@@ -58,10 +60,14 @@ function internalizePublicAndExternal(content: string) {
         .replace(/\bexternal\b/g, 'internal');
 }
 
-export function publicizeInternalAndExternal(content: string) {
+export function publicizeInternalAndExternal(metadata: Metadata, content: string) {
+    for (const { name, visibility } of metadata.getVariables()) {
+        if (visibility !== 'public') {
+            const re = new RegExp(`((internal|private)\\s+)?\\b(${name})\\b\\s*;`);
+            content = content.replace(re, 'public $3;');
+        }
+    }
     return content
-        .replace(/\b(u?int\d*|address)\b\s*\b([\w]+)\b\s*;/g, '$1 public $2;')
-        .replace(/\bmapping\b\s*\((.*)\)\s*([^;()\s]*)\s*;/g, 'mapping ($1) public $2;')
         .replace(/\bexternal\b/g, 'public')
         .replace(/\binternal\b/g, 'public');
 }

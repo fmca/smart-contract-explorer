@@ -69,6 +69,7 @@ export interface VariableDeclaration extends ContractMember {
     storageLocation: StorageLocation;
     typeDescriptions: TypeDescriptions;
     typeName: TypeName;
+    visibility: Visibility;
 }
 
 export interface StructDefinition extends ContractMember {
