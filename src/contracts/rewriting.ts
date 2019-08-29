@@ -3,29 +3,28 @@ import { Unit } from '../frontend/unit';
 import { Metadata } from '../frontend/metadata';
 const debug = Debugger(__filename);
 
-export async function annotate(unit: Unit, clauses: string[], annotated: Unit) {
+export async function annotate(unit: Unit, clauses: string[]) {
     const specification = clauses.map(c => `/// @notice simulation ${c}`).join('\n');
-
-    function rewrite(content: string) {
+    const annotated = unit.suffix('.annotated');
+    await annotated.rewrite(async (content: string) => {
         return content
             .replace(/^(?=\bcontract\b)/m, `${specification}\n`);
-    }
-    await unit.rewriteInto(rewrite, annotated);
+    });
+    return annotated;
 }
 
-export async function internalize(source: Unit, target: Unit) {
-    const transform = internalizeTransform(target.getDirname());
-    await source.rewriteInto(transform, target);
+export async function internalize(unit: Unit) {
+    const transform = internalizeTransform(unit.getDirname());
+    await unit.rewrite(transform);
 }
 
-export async function exemplify(source: Unit, target: Unit) {
-    const metadata = await source.getMetadata();
-    const transform = exemplifyTransform(metadata, target.getDirname());
-    await source.rewriteInto(transform, target);
+export async function exemplify(unit: Unit) {
+    const transform = exemplifyTransform(unit.getDirname());
+    await unit.rewrite(transform);
 }
 
 function internalizeTransform(dirname: string) {
-    return function (content: string) {
+    return async function (content: string) {
         content = internalizePublicAndExternal(content);
         content = moveImports(dirname, content);
         content = qualifyStructs(content);
@@ -33,8 +32,8 @@ function internalizeTransform(dirname: string) {
     }
 }
 
-function exemplifyTransform(metadata: Metadata, dirname: string) {
-    return function (content: string) {
+function exemplifyTransform(dirname: string) {
+    return async function (content: string, metadata: Metadata) {
         content = publicizeInternalAndExternal(metadata, content);
         content = addLengthAccessors(content);
         content = moveImports(dirname, content);

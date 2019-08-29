@@ -8,16 +8,14 @@
             "type": "node",
             "request": "launch",
             "name": "Examples",
-            "program": "${workspaceFolder}/dist/cli/examples.js",
+            "program": "${workspaceFolder}/dist/cli/simulation.js",
             "args": [
                 "--source",
-                "${workspaceFolder}/resources/contracts/Token/ERC20-molochventures/ERC20.impl.sol",
+                "${workspaceFolder}/resources/contracts/MultiSigWallet/MultiSigWallet-oxchild-apis/MultiSigWallet.impl.sol",
                 "--target",
-                "${workspaceFolder}/resources/contracts/Token/ERC20-openzeppelin/ERC20.spec.sol",
-                "--output",
-                ".ignore",
-                "--states",
-                "50"
+                "${workspaceFolder}/resources/contracts/MultiSigWallet/MultiSigWallet-consensys/MultiSigWallet.spec.sol",
+                "--no-synthesize",
+                "--no-verify"
             ]
         },
         {

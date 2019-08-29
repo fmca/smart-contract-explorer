@@ -4,11 +4,42 @@ import fs from "fs-extra";
 import path from "path";
 
 export class Unit {
-    protected updated = false;
+    protected updated: boolean;
+    protected content: Supplier<string>;
+    protected metadata: Supplier<Metadata>;
 
-    constructor(protected path: string, protected content?: string, protected metadata?: Metadata) {
-        if (content !== undefined)
-            this.updated = true;
+    constructor(protected path: string, content?: Supplier<string>, metadata?: Supplier<Metadata>) {
+        this.updated = !!content;
+        this.content = content || this.defaultContentSupplier();
+        this.metadata = metadata || this.defaultMetadataSupplier();
+    }
+
+    defaultContentSupplier() {
+        let content: string | undefined;
+        return {
+            get: async () => {
+                if (content === undefined) {
+                    const buffer = await fs.readFile(this.path);
+                    content = buffer.toString();
+                }
+                return content;
+            }
+        };
+    }
+
+    defaultMetadataSupplier() {
+        let metadata: Metadata | undefined;
+        return {
+            get: async () => {
+                if (metadata === undefined) {
+                    const path = this.path;
+                    const content = await this.content.get();
+                    const sourceInfo = { path, content };
+                    metadata = await Compile.fromString(sourceInfo);
+                }
+                return metadata;
+            }
+        };
     }
 
     getPath() {
@@ -27,13 +58,13 @@ export class Unit {
         const extname = path.extname(this.path);
         const basename = path.basename(this.path, extname);
         const _path = path.join(dirname, `${basename}${suffix}${extname}`);
-        return new Unit(_path);
+        return new Unit(_path, this.content);
     }
 
     relocate(dirname: string) {
         const basename = path.basename(this.path);
         const _path = path.join(dirname, basename);
-        return new Unit(_path);
+        return new Unit(_path, this.content);
     }
 
     getDirname() {
@@ -45,11 +76,7 @@ export class Unit {
     }
 
     async getContent() {
-        if (this.content === undefined) {
-            const buffer = await fs.readFile(this.path);
-            this.content = buffer.toString();
-        }
-        return this.content;
+        return this.content.get();
     }
 
     async getSourceInfo() {
@@ -59,46 +86,42 @@ export class Unit {
     }
 
     async getMetadata() {
-        if (this.metadata === undefined) {
-            const sourceInfo = await this.getSourceInfo();
-            this.metadata = await Compile.fromString(sourceInfo);
-        }
-        return this.metadata;
+        return this.metadata.get();
     }
 
-    async rewrite(f: (content: string) => string | Promise<string>, path: string) {
+    async rewrite(f: SyntacticRewriter | SemanticRewriter) {
         const content = await this.getContent();
-        const modified = await f(content);
-        return new Unit(path, modified);
+        const modified = isSyntacticRewriter(f)
+            ? await f(content)
+            : await f(content, await this.getMetadata());
+        this.setContent(modified);
     }
 
-    async rewriteInto(f: (content: string) => string | Promise<string>, unit: Unit) {
-        const content = await this.getContent();
-        const modified = await f(content);
-        unit.setContent(modified);
-    }
-
-    async rewriteInPlace(f: (content: string) => string | Promise<string>) {
-        const content = await this.getContent();
-        const modified = await f(content);
-        await this.setContent(modified);
-    }
-
-    async setContent(content: string | Content) {
-        this.content = (typeof(content) === 'string')
-            ? content
-            : await content.getContent();
+    setContent(content: string) {
+        this.content = { get: async () => content };
         this.updated = true;
     }
 
     async writeContent() {
         if (this.updated) {
-            await fs.writeFile(this.path, this.content);
+            const content = await this.content.get();
+            await fs.writeFile(this.path, content);
             this.updated = false;
         }
     }
 }
 
-interface Content {
-    getContent: () => Promise<string>;
+interface Supplier<T> {
+    get(): Promise<T>;
+}
+
+type SyntacticRewriter = (content: string) => Promise<string>;
+type SemanticRewriter = (content: string, metadata: Metadata) => Promise<string>;
+
+function isSyntacticRewriter(f: (...args: any[]) => any): f is SyntacticRewriter {
+    return f.length === 1;
+}
+
+function isSemanticRewriter(f: (...args: any[]) => any): f is SemanticRewriter {
+    return f.length === 2;
 }

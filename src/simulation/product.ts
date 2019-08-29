@@ -34,8 +34,8 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
     const ti = t.suffix('.internalized').relocate(output.getDirname());
     const units = [si, ti, output];
 
-    await internalize(s, si);
-    await internalize(t, ti);
+    await internalize(si);
+    await internalize(ti);
 
     const source = await s.getMetadata();
     const target = await t.getMetadata();
@@ -44,7 +44,7 @@ export async function getSimulationCheckContract(parameters: Parameters): Promis
     const tr = target.redirect(await ti.getSourceInfo());
     const mapping = FunctionMapping.getMapping(sr, tr);
     const c = new SimulationCheckingContract(mapping, output);
-    await output.setContent(c);
+    output.setContent(await c.getContent());
     return { units };
 }
 

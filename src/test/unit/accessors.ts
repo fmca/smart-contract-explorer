@@ -130,6 +130,6 @@ function getUnit(example: Contract) {
     const { name, body } = example;
     const path = `${name}.sol`;
     const content = `${pragmas} contract ${name} { ${body} }`;
-    const unit = new Unit(path, content);
+    const unit = new Unit(path, { get: async () => content });
     return unit;
 }

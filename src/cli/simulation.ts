@@ -173,8 +173,7 @@ async function synthesizeSimulation() {
         console.log(`  `, clause);
     console.log();
 
-    const annotated = source.suffix('.annotated');
-    await annotate(source, clauses, annotated);
+    const annotated = await annotate(source, clauses);
     await annotated.writeContent();
     console.log(`Annotated source contract: ${annotated.getPath()}`);
     console.log();

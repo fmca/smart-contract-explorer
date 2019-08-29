@@ -21,7 +21,7 @@ function publicize(content: string) {
     return {
         expect: async function(expected: string) {
             expected = `${pragmas} contract A { ${expected} }`;
-            const unit = new Unit('', content);
+            const unit = new Unit('', { get: async () => content });
             const metadata = await unit.getMetadata();
             const actual = publicizeInternalAndExternal(metadata, content);
             assert.equal(actual, expected);

@@ -50,8 +50,8 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const te = t.suffix('.exemplified').relocate(output.getDirname());
     const units = [se, te, output];
 
-    await exemplify(s, se);
-    await exemplify(t, te);
+    await exemplify(se);
+    await exemplify(te);
 
     const source = await se.getMetadata();
     const target = await te.getMetadata();
@@ -64,7 +64,7 @@ export async function generateExamples(parameters: Parameters): Promise<Result> 
     const fullExamples = await generator.getExamples(source, target);
 
     const c = new SimulationExamplesContract(source, target, output, fullExamples, values);
-    await output.setContent(c);
+    output.setContent(await c.getContent());
 
     const examplesContractPath = output.getBasename();
     const examples = {
