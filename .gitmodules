@@ -1,3 +1,4 @@
 [submodule "LoopInvGen"]
 	path = LoopInvGen
 	url = git@github.com:SRI-CSL/LoopInvGen.git
+	branch = symbolic-valuation
