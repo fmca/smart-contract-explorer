@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build:node": "tsc",
-    "build:infer": "cd LoopInvGen && opam install . --working-dir -t -y && eval $(opam env) && dune build @install",
+    "prebuild:infer": "cd LoopInvGen && opam install --deps-only -wy .",
+    "pretest:infer": "cd LoopInvGen && opam install --deps-only -wty .",
+    "build:infer": "cd LoopInvGen && opam install -wy .",
     "build": "npm-run-all build:*",
     "postinstall": "npm run build",
     "test:unit": "mocha dist/test/unit/**/*.js",

@@ -10,23 +10,21 @@ Exploring behaviors of Solidity smart contracts.
 * [OCaml Package Manager](https://opam.ocaml.org)
 
 While `solc-verify` must currently be built from source, the remainder are available from various package managers, e.g., from [Homebrew](https://brew.sh):
-```bash
+```
 $ brew install node opam
-$ opam init --compiler=4.05.0
+$ opam init
 ```
 
 ## Setup
 
-```bash
+```
 $ git clone git@github.com:SRI-CSL/smart-contract-explorer.git
 $ git submodule init
 $ git submodule update
 $ npm link
 ```
-
-## Test
-
-```bash
+and optionally:
+```
 $ npm run test
 ```
 
