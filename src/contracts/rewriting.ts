@@ -42,9 +42,9 @@ function exemplifyTransform(metadata: Metadata, dirname: string) {
     }
 }
 
+
 function addLengthAccessors(content: string) {
-    return content
-        .replace(/(?<=^(\s*)\S+\[\] public (\S+);)/m, `\n$1function $2$$length() public view returns (uint) { return $2.length; }`);
+    return content.replace(/^(\s*)\S+\[\] public (\S+);/gm, `$&\n$1function $2$$length() public view returns (uint) { return $2.length; }`);
 }
 
 function moveImports(dirname: string, content: string) {

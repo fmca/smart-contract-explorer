@@ -144,3 +144,8 @@ export function conditional(condition: Expression, trueExpression: Expression, f
     const node = get('Conditional');
     return { ...node, condition, trueExpression, falseExpression };
 }
+
+export function member(expression: Expression, memberName: string, isConstant = false, isPure = false, isLValue = false): MemberAccess {
+    const node = get('MemberAccess');
+    return { ...node, expression, memberName, isConstant, isPure, isLValue };
+}

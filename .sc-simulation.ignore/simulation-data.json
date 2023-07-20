@@ -1,0 +1,149 @@
+{
+    "examplesContractPath": "SimulationExamples.sol",
+    "examples": {
+        "positive": [
+            {
+                "id": "positiveExample0"
+            },
+            {
+                "id": "positiveExample1"
+            },
+            {
+                "id": "positiveExample2"
+            },
+            {
+                "id": "positiveExample3"
+            },
+            {
+                "id": "positiveExample4"
+            },
+            {
+                "id": "positiveExample5"
+            }
+        ],
+        "negative": [
+            {
+                "id": "negativeExample0"
+            },
+            {
+                "id": "negativeExample1"
+            },
+            {
+                "id": "negativeExample2"
+            },
+            {
+                "id": "negativeExample3"
+            },
+            {
+                "id": "negativeExample4"
+            },
+            {
+                "id": "negativeExample5"
+            },
+            {
+                "id": "negativeExample6"
+            },
+            {
+                "id": "negativeExample7"
+            },
+            {
+                "id": "negativeExample8"
+            },
+            {
+                "id": "negativeExample9"
+            },
+            {
+                "id": "negativeExample10"
+            },
+            {
+                "id": "negativeExample11"
+            },
+            {
+                "id": "negativeExample12"
+            },
+            {
+                "id": "negativeExample13"
+            },
+            {
+                "id": "negativeExample14"
+            },
+            {
+                "id": "negativeExample15"
+            },
+            {
+                "id": "negativeExample16"
+            },
+            {
+                "id": "negativeExample17"
+            },
+            {
+                "id": "negativeExample18"
+            },
+            {
+                "id": "negativeExample19"
+            },
+            {
+                "id": "negativeExample20"
+            },
+            {
+                "id": "negativeExample21"
+            },
+            {
+                "id": "negativeExample22"
+            },
+            {
+                "id": "negativeExample23"
+            }
+        ]
+    },
+    "expressions": [
+        {
+            "id": "Test11$valueA",
+            "pieType": "Map[Int,Int]",
+            "evaluatorExpression": "Test11$valueA",
+            "verifierExpression": "Test11$valueA"
+        },
+        {
+            "id": "Test11$valueB",
+            "pieType": "Map[Int,Int]",
+            "evaluatorExpression": "Test11$valueB",
+            "verifierExpression": "Test11$valueB"
+        },
+        {
+            "id": "sum$Test11$valueA$uint",
+            "pieType": "Sum",
+            "evaluatorExpression": "sum$Test11$valueA$uint",
+            "verifierExpression": "__verifier_sum_uint(Test11$valueA[__verifier_idx_uint])"
+        },
+        {
+            "id": "sum$Test11$valueB$uint",
+            "pieType": "Sum",
+            "evaluatorExpression": "sum$Test11$valueB$uint",
+            "verifierExpression": "__verifier_sum_uint(Test11$valueB[__verifier_idx_uint])"
+        },
+        {
+            "id": "Test22$containers",
+            "pieType": "Map[Int,Container]",
+            "evaluatorExpression": "Test22$containers",
+            "verifierExpression": "Test22$containers"
+        },
+        {
+            "id": "sum$Test22$containers$uint$a",
+            "pieType": "Sum",
+            "evaluatorExpression": "sum$Test22$containers$uint$a",
+            "verifierExpression": "__verifier_sum_uint(Test22$containers[__verifier_idx_uint].a)"
+        },
+        {
+            "id": "sum$Test22$containers$uint$b",
+            "pieType": "Sum",
+            "evaluatorExpression": "sum$Test22$containers$uint$b",
+            "verifierExpression": "__verifier_sum_uint(Test22$containers[__verifier_idx_uint].b)"
+        }
+    ],
+    "features": [
+        {
+            "expression": "(= (+ (index Test11$valueA val) (index Test11$valueB val)) (+ (getattr (index containers val) a) (getattr (index containers val) b)))",
+            "name": "value"
+        }
+    ]
+}

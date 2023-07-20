@@ -74,14 +74,19 @@ export function getProductSeedFeatures(impl: Metadata, spec: Metadata): Feature[
 
         try {
             const e1 = implBodyToExpr(b1);
+            console.log("e1", e1);
             const e2 = specBodyToExpr(b2);
+            console.log("e2", e2);
+            
             const expression = simplify(`(= ${e1} ${e2})`);
+            console.log("exp", expression)
             features.push({ expression, name });
 
         } catch (e) {
             if (!(e instanceof SyntaxError))
                 throw e;
 
+            console.log(e, name, m2.body);
             warning(`did not generate seed feature from function: ${name}`);
         }
     }

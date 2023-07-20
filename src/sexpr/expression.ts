@@ -14,13 +14,21 @@ export namespace Expr {
     export function parse(string: string): Expr {
         debug(`original:        %o`, string);
 
+        console.log("original", string);
+
         string = quoteUnquotedIdentifiers(string);
         debug(`quoted:          %o`, string);
+
+        console.log("quoted", string);
 
         string = separateTermsByCommas(string);
         debug(`comma-separated: %o`, string);
 
+        console.log("comma", string);
         const json = replaceUnquotedParenthesesByBrackets(string);
+
+        console.log(json)
+        
         debug(`parenthesized:   %o`, json);
 
         return JSON.parse(json);

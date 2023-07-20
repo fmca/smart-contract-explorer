@@ -57,6 +57,8 @@ export class ContractInstance {
             return result;
 
         } catch (e) {
+            const { method: { name }, inputs } = invocation;
+            console.log((await this.contract).getABI()[0].name, name, inputs);
             return this.handleErrors(e);
         }
     }
@@ -101,8 +103,11 @@ export class ContractInstance {
 
         const [ result ] = results;
 
-        if (result.error !== 'revert')
-            throw Error(`Unexpected error: ${result.error}`);
+        if (result.error !== 'revert') {
+            console.log(result);
+            throw Error(`Unexpected: ${result.error}`);
+        }
+            
 
         const { error, reason } = result;
         return new ErrorResult(error, reason);

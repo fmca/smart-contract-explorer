@@ -51,6 +51,7 @@ class NodeToContract extends NodeVisitor<string> {
     }
 
     visitIndexAccess(node: IndexAccess) {
+
         const base = this.visit(node.baseExpression);
         const index = this.visit(node.indexExpression);
         return `${base}[${index}]`;

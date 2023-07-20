@@ -24,7 +24,7 @@ class NodeToSExpr extends NodeVisitor<string> {
 
     visitMemberAccess(node: MemberAccess) {
         const exper = this.visit(node.expression);
-        return `${exper}.${node.memberName}`;
+        return `(getattr ${exper} ${node.memberName})`;
     }
 
     visitAssignment(node: Assignment) {

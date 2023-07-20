@@ -1,6 +1,6 @@
 import { Node } from './node';
 import { NodeVisitor } from './visitor';
-import { Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional } from './expression';
+import { Identifier, Literal, IndexAccess, MemberAccess, BinaryOperation, UnaryOperation, Conditional} from './expression';
 import { Assignment, Block, Return, ExpressionStatement, IfStatement } from './statement';
 
 export class NodeSubstituter extends NodeVisitor<Node> {

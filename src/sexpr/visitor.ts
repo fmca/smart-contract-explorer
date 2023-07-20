@@ -13,6 +13,10 @@ export class Visitor<T> {
             const head = hExpr;
 
             switch (head) {
+                case 'getattr':
+                    checkArity(args, 2)
+                    const [obj, attr] = args;
+                    return this.visitMember(obj, attr);
                 case 'index':
                     checkArity(args, 2);
                     const [ base, index ] = args;
@@ -49,7 +53,10 @@ export class Visitor<T> {
 
         else
         {
-            if (expr.charAt(0) === '-')
+            if (typeof(expr) == 'boolean') {
+                return this.visitLiteral((expr as boolean).toString());
+            }
+            else if (expr.charAt(0) === '-')
             {
                 const usub = expr.substr(1);;
                 return this.visitUnaryOperation('-', usub);
@@ -66,6 +73,10 @@ export class Visitor<T> {
 
     visitIndex(base: Expr, index: Expr): T {
         return unimplemented([ 'index', base, index ]);
+    }
+
+    visitMember(obj: Expr, attr: Expr):T {
+        return unimplemented([ 'member', obj, attr ]);
     }
 
     visitBinaryOperation(head: Boperators, bleft: Expr, bright: Expr): T {

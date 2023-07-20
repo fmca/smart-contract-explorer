@@ -215,7 +215,7 @@ Computed simulation relation:
 ### Verifying simulation relations
 
 ```bash
-$ DEBUG=*:evaluate sc-simulation --source resources/contracts/Token/ERC20-molochventures/ERC20.impl.sol  --target resources/contracts/Token/ERC20-openzeppelin/ERC20.spec.sol --no-synthesize && cat .sc-simulation.ignore/SimulationCheck.sol
+$ DEBUG=* sc-simulation --source resources/contracts/Token/ERC20-molochventures/ERC20.impl.sol  --target resources/contracts/Token/ERC20-openzeppelin/ERC20.spec.sol --no-synthesize && cat .sc-simulation.ignore/SimulationCheck.sol
 ```
 ```
 Keccak bindings are not compiled. Pure JS implementation will be used.

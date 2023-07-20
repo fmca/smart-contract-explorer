@@ -24,6 +24,7 @@ function expressionEvaluationContract(expression: Expr, examples: Metadata) {
     const expr = Contracts.fromNode(node);
     debug(`expr: %o`, expr);
     const solExpr = fieldsToGetters(expr);
+    console.log(expr);
     debug(`solExpr: %o`, solExpr);
     return `pragma solidity ^0.5.0;
 import "${path}";

@@ -131,7 +131,7 @@ async function getPaths(): Promise<Paths> {
 
 async function generateExamples() {
     console.log(`---`);
-    console.log(`Generating examples`);
+    console.log(`Generating examples 2`);
     console.log(`---`);
 
     const { states } = args;

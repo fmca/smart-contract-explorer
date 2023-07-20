@@ -4,7 +4,7 @@ import { Metadata } from "../frontend/metadata";
 const { isVariableDeclaration } = ContractMember;
 
 export function fieldNames(metadata: Metadata): string[] {
-    return metadata.getMembers().filter(isVariableDeclaration)
+    return (metadata.getMembers() || []).filter(isVariableDeclaration)
         .filter(f => f.stateVariable)
         .map(({ name }) => name);
 }

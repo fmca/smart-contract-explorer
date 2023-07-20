@@ -1,7 +1,7 @@
 import { Expr, Boperators, Uoperators } from '../sexpr/expression';
 import { Visitor } from '../sexpr/visitor';
-import { Node, Expression, IndexAccess, BinaryOperation, Conditional, UnaryOperation, Identifier, Literal } from '.';
-import { binary, unary, index, isIdentifier, call, identifier, Operation, literal, conditional } from './expression';
+import { Node, Expression, IndexAccess, BinaryOperation, Conditional, UnaryOperation, Identifier, Literal, MemberAccess } from '.';
+import { binary, unary, index, isIdentifier, call, identifier, Operation, literal, conditional, member } from './expression';
 import { isMapping } from './type';
 import { ContractMember } from './declaration';
 
@@ -70,7 +70,13 @@ class ExprToNode extends Visitor<Expression> {
         return identifier(name);
     }
 
-    visitLiteral(value: string): Literal {
+    visitMember(obj: Expr, attr: Expr): MemberAccess {
+        const expression = this.visit(obj);
+        // const memberName = this.visit(attr);
+        return member(expression, attr.toString());
+    }
+
+    visitLiteral(value: any): Literal {
         const kind = 'number';
         return literal(value, kind);
     }
